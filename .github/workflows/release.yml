@@ -1,0 +1,58 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          # No dependency cache in a job that can write releases.
+          package-manager-cache: false
+
+      - name: Check tag matches package.json and pbiviz.json
+        run: |
+          node -e '
+            const tag = process.env.GITHUB_REF_NAME.replace(/^v/, "");
+            const pkg = require("./package.json").version;
+            const visual = require("./pbiviz.json").visual.version;
+            if (pkg !== tag || visual !== `${tag}.0`) {
+              console.error(`Tag ${tag} does not match package.json ${pkg} / pbiviz.json ${visual}`);
+              process.exit(1);
+            }
+          '
+
+      - name: Extract release notes from CHANGELOG.md
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          awk -v heading="## [$version]" '
+            index($0, heading) == 1 { found = 1; next }
+            found && /^## / { exit }
+            found { print }
+          ' CHANGELOG.md > release-notes.md
+          if [ ! -s release-notes.md ]; then
+            echo "CHANGELOG.md has no '## [$version]' section" >&2
+            exit 1
+          fi
+
+      - run: npm ci
+      - run: npx puppeteer browsers install chrome
+      - run: npm test
+
+      - name: Package
+        run: npx pbiviz package
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist/*.pbiviz --title "$GITHUB_REF_NAME" --notes-file release-notes.md

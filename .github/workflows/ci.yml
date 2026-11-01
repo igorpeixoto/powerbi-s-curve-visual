@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      # npm ci runs puppeteer's postinstall only when allowScripts permits it; install Chrome
+      # explicitly so the harness never depends on that.
+      - run: npx puppeteer browsers install chrome
+
+      - run: npm test

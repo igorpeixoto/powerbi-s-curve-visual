@@ -1,0 +1,50 @@
+{
+  "name": "powerbi-s-curve-visual",
+  "description": "Planned vs. actual physical progress S-curve for project controls: weekly bars, cumulative lines and a summary matrix, all aligned on one time axis.",
+  "version": "0.1.0",
+  "private": true,
+  "author": "Igor Peixoto <visuals@igorpp.dev>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/igorpeixoto/powerbi-s-curve-visual.git"
+  },
+  "bugs": {
+    "url": "https://github.com/igorpeixoto/powerbi-s-curve-visual/issues"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "pbiviz": "pbiviz",
+    "start": "pbiviz start",
+    "package": "pbiviz package",
+    "lint": "eslint .",
+    "check:capabilities": "node tools/check-capabilities.mjs",
+    "test:unit": "vitest run",
+    "test:harness": "pbiviz package --resources && node tools/run-harness.mjs",
+    "test": "npm run lint && npm run check:capabilities && npm run test:unit && npm run test:harness"
+  },
+  "dependencies": {
+    "d3": "7.9.0",
+    "powerbi-visuals-api": "5.11.1",
+    "powerbi-visuals-utils-formattingmodel": "6.0.4",
+    "powerbi-visuals-utils-formattingutils": "7.0.0",
+    "powerbi-visuals-utils-tooltiputils": "7.1.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@types/d3": "7.4.3",
+    "@typescript-eslint/eslint-plugin": "^8.8.0",
+    "eslint": "^9.11.1",
+    "eslint-plugin-powerbi-visuals": "^1.1.1",
+    "globals": "^17.14.0",
+    "powerbi-visuals-tools": "7.2.1",
+    "puppeteer": "25.16.0",
+    "typescript": "5.5.4",
+    "vitest": "^5.0.5"
+  },
+  "allowScripts": {
+    "puppeteer@25.16.0": true
+  }
+}
