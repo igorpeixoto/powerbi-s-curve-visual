@@ -88,6 +88,18 @@ describe("parseDataView", () => {
         ]);
     });
 
+    it("uses the host's rolesIndex for well order when a shared measure isn't first in its second well", () => {
+        const parsed = parse(makeDataView({
+            bucketRole: "category",
+            buckets: ["W01"],
+            measures: [
+                { name: "Planned", roles: ["columnValues", "lineValues"], rolesIndex: { columnValues: [0], lineValues: [1] }, values: [1] },
+                { name: "Actual", roles: ["lineValues"], rolesIndex: { lineValues: [0] }, values: [1] },
+            ],
+        }));
+        expect(parsed.measures.filter((m) => m.role === "lineValues").map((m) => m.displayName)).toEqual(["Actual", "Planned"]);
+    });
+
     it("combines daily rows into weeks: sums per-bucket values, takes the last value of cumulative inputs", () => {
         const dataView = makeDataView({
             bucketRole: "categoryDate",
@@ -123,7 +135,7 @@ describe("parseDataView", () => {
             measures: [{ name: "Planned", roles: ["columnValues"], values: [1, 2] }],
             reduced: true,
         }));
-        expect(parsed.warnings).toEqual({ excludedDateRows: 1, dataReduced: true });
+        expect(parsed.warnings).toEqual({ excludedDateRows: 1, dataReduced: true, emptyWeeksSkipped: false });
         expect(parsed.values["columnValues:Sum(Progress.Planned)"]).toEqual([[1]]);
     });
 

@@ -18,6 +18,8 @@ export interface Identities<Id> {
     series: Id[];
     /** Identities of one mark: bucket rows × (series) × measure. seriesIndex null = total across series. */
     point(measureKey: string, seriesIndex: number | null, bucketIndex: number): Id[];
+    /** Measure-only identity (measure row headers, legend entries); emphasises within the visual only. */
+    measure(measureKey: string): Id | null;
 }
 
 export function buildIdentities<Id>(
@@ -50,5 +52,10 @@ export function buildIdentities<Id>(
         });
     };
 
-    return { buckets, series, point };
+    const measure = (measureKey: string): Id | null => {
+        const info = measures.get(measureKey);
+        return info ? createBuilder().withMeasure(info.queryName).createSelectionId() : null;
+    };
+
+    return { buckets, series, point, measure };
 }

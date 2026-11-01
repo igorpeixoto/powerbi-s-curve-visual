@@ -9,6 +9,8 @@ export interface MeasureSpec {
     /** Every role this column is flagged with (two roles = one column bound to two wells). */
     roles: ValueRole[];
     format?: string;
+    /** Position in each role's well, as the host's `rolesIndex`; omitted to test the column-order fallback. */
+    rolesIndex?: Record<string, number[]>;
     /** Values per row, or per series then per row when the dataView has series. */
     values: unknown[] | unknown[][];
     highlights?: unknown[] | unknown[][];
@@ -52,7 +54,8 @@ export function makeDataView(spec: DataViewSpec): powerbi.DataView {
             isMeasure: true,
             format: m.format,
             index: columns.length,
-        };
+            ...(m.rolesIndex ? { rolesIndex: m.rolesIndex } : {}),
+        } as powerbi.DataViewMetadataColumn;
         columns.push(source);
         return source;
     });

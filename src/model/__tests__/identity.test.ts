@@ -47,6 +47,8 @@ describe("buildIdentities", () => {
             measures: [{ name: "Planned", roles: ["columnValues"], values: [[1, 2], [3, 4]] }],
         }));
         expect(ids.series).toEqual(["series:series0", "series:series1"]);
+        expect(ids.measure("columnValues:Sum(Progress.Planned)")).toBe("measure:Sum(Progress.Planned)");
+        expect(ids.measure("columnValues:nope")).toBeNull();
         expect(ids.point("columnValues:Sum(Progress.Planned)", 1, 0))
             .toEqual(["cat:row0|series:series1|measure:Sum(Progress.Planned)"]);
         // A line summed across series (seriesIndex null) is identified by bucket and measure only.

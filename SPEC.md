@@ -140,7 +140,7 @@ If Power BI reduces the data (more than 1000 categories or 30 series), the visua
 ### 6.1 Date bucketing (weekly)
 
 - Every date maps to the **week that contains it**, starting on **Week start day** (Monday by default, or Sunday). Dates use their local calendar date; time of day is ignored.
-- **Show empty weeks** (default on): weeks between the first and last bucket that have no rows are inserted as empty buckets, so the time axis stays continuous. Text buckets are never inferred.
+- **Show empty weeks** (default on): weeks between the first and last bucket that have no rows are inserted as empty buckets, so the time axis stays continuous. Text buckets are never inferred. If the range spans more than 1000 weeks (typically one outlier date), empty weeks are not filled and the warning icon says so.
 - When several dates fall in one week, values are combined per role: column and table-only measures are **summed**; line measures in *as provided* mode take the **last non-null** value in the week (a cumulative measure must not be summed); line measures in *running total* mode are summed and then accumulated.
 - If the bound date column is already weekly (one date per week), no combining happens. The documentation will recommend binding a week-start column from a date table.
 - Null dates, and values in the Date well that aren't dates, are excluded and counted; if any were excluded, the warning icon says how many.

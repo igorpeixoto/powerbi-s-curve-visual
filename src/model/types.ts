@@ -68,6 +68,8 @@ export interface ModelWarnings {
     excludedDateRows: number;
     /** Power BI sent a reduced dataset (more data exists than was delivered). */
     dataReduced: boolean;
+    /** Empty weeks were not filled because the date range spans more than MAX_FILLED_WEEKS. */
+    emptyWeeksSkipped: boolean;
 }
 
 export interface ModelOptions {

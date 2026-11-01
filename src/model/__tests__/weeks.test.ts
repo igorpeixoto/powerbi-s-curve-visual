@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildWeekBuckets, dateKey, isoWeek, toLocalDate, weekStartOf } from "../weeks";
+import { buildWeekBuckets, dateKey, isoWeek, MAX_FILLED_WEEKS, toLocalDate, weekStartOf } from "../weeks";
 import { d } from "./fixtures";
 
 describe("time zone pin", () => {
@@ -81,6 +81,13 @@ describe("buildWeekBuckets", () => {
     });
 
     it("returns no buckets when there are no valid dates", () => {
-        expect(buildWeekBuckets([null], options)).toEqual({ buckets: [], excludedRows: 1 });
+        expect(buildWeekBuckets([null], options)).toEqual({ buckets: [], excludedRows: 1, emptyWeeksSkipped: false });
+    });
+
+    it("doesn't fill empty weeks when an outlier date stretches the range past the cap", () => {
+        const { buckets, emptyWeeksSkipped } = buildWeekBuckets([d(1899, 12, 30), d(2026, 2, 3)], options);
+        expect(emptyWeeksSkipped).toBe(true);
+        expect(buckets).toHaveLength(2);
+        expect(MAX_FILLED_WEEKS).toBe(1000);
     });
 });

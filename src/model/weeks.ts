@@ -2,6 +2,9 @@ import type { Bucket, WeekStartDay } from "./types";
 
 const DAY_MS = 86_400_000;
 
+/** Filling empty weeks stops past this many buckets (one outlier date would otherwise add thousands). */
+export const MAX_FILLED_WEEKS = 1000;
+
 /** A valid Date becomes local midnight of its calendar day; anything else is null. */
 export function toLocalDate(value: unknown): Date | null {
     if (!(value instanceof Date) || Number.isNaN(value.getTime())) return null;
@@ -42,6 +45,8 @@ export interface WeekBucketing {
     buckets: Bucket[];
     /** Rows whose value was null or not a date. */
     excludedRows: number;
+    /** True when empty weeks were not filled because the range exceeded MAX_FILLED_WEEKS. */
+    emptyWeeksSkipped: boolean;
 }
 
 /** Groups source rows into weekly buckets, chronologically, optionally filling empty weeks. */
@@ -70,14 +75,19 @@ export function buildWeekBuckets(
 
     const sorted = [...byKey.values()].sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
     if (!options.showEmptyWeeks || sorted.length < 2) {
-        return { buckets: sorted, excludedRows };
+        return { buckets: sorted, excludedRows, emptyWeeksSkipped: false };
+    }
+
+    const first = sorted[0].weekStart as Date;
+    const last = sorted[sorted.length - 1].weekStart as Date;
+    if (daysBetween(first, last) / 7 + 1 > MAX_FILLED_WEEKS) {
+        return { buckets: sorted, excludedRows, emptyWeeksSkipped: true };
     }
 
     const filled: Bucket[] = [];
-    const last = sorted[sorted.length - 1].weekStart as Date;
-    for (let week = sorted[0].weekStart as Date; daysBetween(week, last) >= 0; week = addDays(week, 7)) {
+    for (let week = first; daysBetween(week, last) >= 0; week = addDays(week, 7)) {
         const key = dateKey(week);
         filled.push(byKey.get(key) ?? { key, kind: "week", weekStart: week, rowIndices: [], inserted: true });
     }
-    return { buckets: filled, excludedRows };
+    return { buckets: filled, excludedRows, emptyWeeksSkipped: false };
 }

@@ -74,6 +74,20 @@ describe("buildModel", () => {
         expect(model.lines[0].highlights).toEqual([4, 10]);
     });
 
+    it("uses the first measure in the line well as the percent baseline, not the first column", () => {
+        const dataView = makeDataView({
+            bucketRole: "category",
+            buckets: ["W01", "W02"],
+            measures: [
+                { name: "Actual", roles: ["columnValues", "lineValues"], rolesIndex: { columnValues: [0], lineValues: [1] }, values: [5, 5] },
+                { name: "Planned", roles: ["lineValues"], rolesIndex: { lineValues: [0] }, values: [10, 30] },
+            ],
+        });
+        const model = buildModel(dataView, { displayAs: "percentOfBaseline" });
+        expect(model.baseline).toBe(40);
+        expect(model.lines.map((l) => l.measureKey)).toEqual([`lineValues:${PLANNED}`, `lineValues:${ACTUAL}`]);
+    });
+
     it("produces an empty but valid model with no data", () => {
         const model = buildModel(undefined, {});
         expect(model.buckets).toEqual([]);

@@ -2,7 +2,7 @@ import type powerbi from "powerbi-visuals-api";
 
 import type { Bucket, BucketRole, MeasureInfo, ModelOptions, ParsedDataView, SeriesInfo, ValueRole, Values } from "./types";
 import { combine, toNumber } from "./values";
-import { buildWeekBuckets } from "./weeks";
+import { buildWeekBuckets, type WeekBucketing } from "./weeks";
 
 type DataView = powerbi.DataView;
 type ValueColumn = powerbi.DataViewValueColumn;
@@ -19,7 +19,7 @@ export function emptyParsedDataView(): ParsedDataView {
         values: {},
         highlights: null,
         tooltipValues: {},
-        warnings: { excludedDateRows: 0, dataReduced: false },
+        warnings: { excludedDateRows: 0, dataReduced: false, emptyWeeksSkipped: false },
     };
 }
 
@@ -27,6 +27,17 @@ export function emptyParsedDataView(): ParsedDataView {
 export function valueGroups(values: powerbi.DataViewValueColumns | undefined): powerbi.DataViewValueColumnGroup[] {
     if (!values) return [];
     return typeof values.grouped === "function" ? values.grouped() : [{ values } as powerbi.DataViewValueColumnGroup];
+}
+
+/**
+ * Position of a column within a role's well. The host is believed to send `rolesIndex`, but API 5.11's typings
+ * don't declare it and the docs don't mention it, so it's read defensively; without it, column order is assumed
+ * to be well order (wrong for a measure bound to two wells when it isn't first in the second well).
+ */
+function roleIndexOf(source: powerbi.DataViewMetadataColumn, role: ValueRole): number | undefined {
+    const rolesIndex = (source as { rolesIndex?: Record<string, number[] | undefined> }).rolesIndex;
+    const index = rolesIndex?.[role]?.[0];
+    return typeof index === "number" ? index : undefined;
 }
 
 /**
@@ -50,8 +61,7 @@ function readMeasures(columns: readonly ValueColumn[]): MeasureInfo[] {
                 queryName,
                 displayName: source.displayName,
                 format: source.format,
-                // Columns arrive in well order within each role, so encounter order is the well order.
-                roleIndex: measures.filter((m) => m.role === role).length,
+                roleIndex: roleIndexOf(source, role) ?? measures.filter((m) => m.role === role).length,
                 columnIndexInGroup,
             });
         }
@@ -59,7 +69,7 @@ function readMeasures(columns: readonly ValueColumn[]): MeasureInfo[] {
     return measures.sort((a, b) => VALUE_ROLES.indexOf(a.role) - VALUE_ROLES.indexOf(b.role) || a.roleIndex - b.roleIndex);
 }
 
-function readBuckets(category: powerbi.DataViewCategoryColumn, role: BucketRole, options: ModelOptions): { buckets: Bucket[]; excludedRows: number } {
+function readBuckets(category: powerbi.DataViewCategoryColumn, role: BucketRole, options: ModelOptions): WeekBucketing {
     if (role === "categoryDate") {
         return buildWeekBuckets(category.values, options);
     }
@@ -70,7 +80,7 @@ function readBuckets(category: powerbi.DataViewCategoryColumn, role: BucketRole,
         rowIndices: [rowIndex],
         inserted: false,
     }));
-    return { buckets, excludedRows: 0 };
+    return { buckets, excludedRows: 0, emptyWeeksSkipped: false };
 }
 
 /** Week buckets combine several rows: sums for per-bucket values, the last value for cumulative inputs. */
@@ -90,10 +100,11 @@ export function parseDataView(dataView: DataView | undefined, options: ModelOpti
     const category = categorical?.categories?.[0];
     const bucketRole: BucketRole | null = category?.source.roles?.categoryDate ? "categoryDate" : category ? "category" : null;
     if (category && bucketRole) {
-        const { buckets, excludedRows } = readBuckets(category, bucketRole, options);
+        const { buckets, excludedRows, emptyWeeksSkipped } = readBuckets(category, bucketRole, options);
         parsed.bucketRole = bucketRole;
         parsed.buckets = buckets;
         parsed.warnings.excludedDateRows = excludedRows;
+        parsed.warnings.emptyWeeksSkipped = emptyWeeksSkipped;
     }
 
     const groups = valueGroups(categorical?.values);
