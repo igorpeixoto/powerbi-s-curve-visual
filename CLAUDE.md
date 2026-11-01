@@ -20,7 +20,9 @@ It is **step zero**: it establishes the canonical 6-stage order (Scope/Contract 
 
 ## 2. Custom Visual Skills Map
 
-Authoring is **direct file editing** of `src/`, `capabilities.json`, `pbiviz.json`, and `style/`. The `pbiviz` CLI builds and packages; it never authors. The `pbi` CLI appears exactly once, to import the compiled binary into a report.
+Authoring is **direct file editing** of `src/`, `capabilities.json`, `pbiviz.json`, and `style/`. The `pbiviz` CLI builds and packages; it never authors. Importing the compiled binary into a report is done by the report author.
+
+The skills below are optional Claude Code skills from the maintainer's local setup; they are not part of this repo, and the rules in this file stand on their own without them.
 
 - **power-bi-visual-dev** — Step zero for this repo: policies, the 6 canonical stages, the Visual Validation Gate, extraction from a host report, git checkpoints
 - **power-bi-custom-visuals** — Construction: `pbiviz` build loop, `capabilities.json`, the mandatory `CompositeCard`/`Group` formatting-settings shape, `/code-review` pass, import into a report
@@ -29,9 +31,7 @@ Authoring is **direct file editing** of `src/`, `capabilities.json`, `pbiviz.jso
 - **dataviz** (built-in) — Chart-form heuristic, mark specs, and palette construction. A custom visual *is* a chart: load this before choosing the encoding, the default palette, or a KPI/tile composition, exactly as a report visual would
 - **artifact-design** (built-in) — Optional consumer-facing usage doc (data roles, format options, screenshots) for the report authors who will import this visual
 
-**`power-bi-dev` is explicitly NOT step zero here**, despite announcing itself as step zero of *every* project — it is step zero of every **report** project. Its canonical 5-stage order (scope → source analysis → ETL → modeling → theme/pages/viz), its star-schema mandate and its TMDL policies have no referent in this repository. Skip it; `power-bi-visual-dev` is this repo's step zero.
-
-The rest of the report-project skills (`power-bi-modeling`, `-partitions`, `-dax`, `-report`, `-pages`, `-visuals`, `-filters`, `-security`, `-deployment`, `-docs`, `-diagnostics`) **do not apply here** either. If a task seems to need one, the task belongs in the consuming report's repo, not this one.
+Report-project skills (semantic model, DAX, TMDL/PBIR report authoring) **do not apply here**. If a task seems to need one, it belongs in a consuming report, not in this repo.
 
 ---
 
@@ -40,22 +40,27 @@ The rest of the report-project skills (`power-bi-modeling`, `-partitions`, `-dax
 ```
 pbiviz.json                  ← visual metadata: guid (permanent), version, displayName, apiVersion
 capabilities.json            ← dataRoles, dataViewMappings, objects (one entry per formatting card)
-package.json  tsconfig.json  ← Node/TS toolchain
+package.json  tsconfig.json  ← Node/TS toolchain (tsconfig.typecheck.json checks all of src/)
 src/visual.ts                ← IVisual implementation: constructor + update()
 src/settings.ts              ← formatting model (CompositeCard ➔ Group ➔ slices)
+src/model/                   ← pure functions, no DOM; unit tests in src/**/__tests__
 style/visual.less            ← styles
 assets/icon.png              ← 20x20 pane icon
+harness/                     ← headless harness page, mock host and synthetic data
+tools/                       ← run-harness.mjs (Puppeteer), check-capabilities.mjs
+.github/workflows/           ← ci.yml (push/PR), release.yml (v* tags)
 dist/                        ← build output (gitignored — see Hard Rule #13)
+docs/BUILD_LOG.md            ← per-session log of what the AI and the maintainer did
 docs/tasks/                  ← task specifications for Claude Code (read before acting)
-CLAUDE.md  RELEASING.md  CHANGELOG.md
-.gitattributes               ← forces LF on .ts/.json/.less/.md (see Hard Rule #14)
+CLAUDE.md  RELEASING.md  CHANGELOG.md  LICENSE
+.gitattributes               ← forces LF on every text file (see Hard Rule #14)
 ```
 
 **`capabilities.json` + the formatting model are the contract.** Everything a report author can bind or configure is declared there; `src/` may only read what the contract declares.
 
 ---
 
-## 4. Hard Rules (Paid in Blood)
+## 4. Hard Rules
 
 ### Identity & Versioning
 1. **Never change `visual.guid` in `pbiviz.json`.** Power BI binds an imported visual to a report **by GUID**. Change it and every report already using this visual shows a missing-visual placeholder; re-importing under the new GUID does **not** restore the field bindings — every well has to be re-bound by hand, on every page, in every report. The `displayName` can be renamed freely; the GUID is permanent from the first import onward.
@@ -130,6 +135,7 @@ The consumer of this repo is a **report author who has already bound fields and 
 - **Never push, create remotes or publish** without the maintainer's explicit approval; show the exact commands first.
 - **Never invent numbers** (time spent, users, feedback): use `TODO(igor): …` placeholders.
 - **Commits** use the repo-local identity (`git config --local`), never the global one.
-- **Toolchain:** Node 24 (CI and local), `powerbi-visuals-tools` pinned as a devDependency, API 5.11.1. `pbiviz start` is unavailable on this machine (no `pwsh` for the dev certificate), so the headless harness stands in for the data-shape half of the Visual Validation Gate (Hard Rule #15).
+- **Toolchain:** Node 24 (CI and local), `powerbi-visuals-tools` pinned as a devDependency, API 5.11.1. `pbiviz start` works locally (PowerShell 7 generates the dev certificate into the user's personal store; trusting it with `pbiviz --install-cert` is a maintainer action). The headless harness is the automated data-shape half of the Visual Validation Gate (Hard Rule #15); the Desktop checks stay manual. **Never run `pbiviz package` while `pbiviz start` is running:** the dev server rewrites `.tmp/precompile/visualPlugin.ts` with a `<guid>_DEBUG` plugin name and the package picks it up (the harness GUID check fails when this happens). On Windows, stopping `npx pbiviz start` can leave the `pbiviz.js` node process alive on port 8080; kill it explicitly.
 - **Tests:** `npm test` runs `lint` (ESLint + `tsc -p tsconfig.typecheck.json` over all of `src/`) → `check:capabilities` → `test:unit` (Vitest, `src/**/__tests__`) → `test:harness` (`pbiviz package --resources`, then Puppeteer drives `harness/index.html` against the packaged JS). Fix failing tests in the code, never by weakening a test.
+- **Governance block:** the section between the `power-bi-visual-skills` markers was adapted and sanitized from the maintainer's personal starter kit. Do not overwrite it from the kit; reconcile by hand.
 - **Build log:** append an entry to `docs/BUILD_LOG.md` at the end of every working session.

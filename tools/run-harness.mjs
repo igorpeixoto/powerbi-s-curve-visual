@@ -61,15 +61,17 @@ async function main() {
     const packageFile = await findPackageJson();
     const server = await startServer();
     const { port } = server.address();
-    const browser = await puppeteer.launch({
-        headless: true,
-        // Required on GitHub-hosted Ubuntu runners, where the Chrome sandbox is unavailable.
-        args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    });
-
     const pageErrors = [];
+    let browser;
     let result;
+    // Everything after the server starts sits in this try, so a failed Chrome launch still closes
+    // the server; an open server would keep Node alive and hang CI instead of exiting 1.
     try {
+        browser = await puppeteer.launch({
+            headless: true,
+            // Required on GitHub-hosted Ubuntu runners, where the Chrome sandbox is unavailable.
+            args: ["--no-sandbox", "--disable-setuid-sandbox"],
+        });
         const page = await browser.newPage();
         page.on("pageerror", (error) => pageErrors.push(`pageerror: ${error.message}`));
         page.on("console", (message) => {
@@ -87,7 +89,7 @@ async function main() {
             result = { pass: 0, fail: 1, lines: [`FAIL harness did not finish within ${timeoutMs} ms`] };
         }
     } finally {
-        await browser.close();
+        await browser?.close();
         server.close();
     }
 
@@ -101,5 +103,6 @@ async function main() {
 
 main().catch((error) => {
     console.error(error);
-    process.exitCode = 1;
+    // Exit explicitly: a leaked handle (browser process, socket) must never turn a failure into a hang.
+    process.exit(1);
 });
