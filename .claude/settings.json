@@ -44,7 +44,10 @@
       "Bash(awk *)",
       "Bash(sort *)",
       "Bash(uniq *)",
-      "Bash(gh *)",
+      "Bash(gh run list *)",
+      "Bash(gh run view *)",
+      "Bash(gh run watch *)",
+      "Bash(gh repo view *)",
 
       "Bash(node *)",
       "Bash(npm --version)",

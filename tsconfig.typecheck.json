@@ -1,0 +1,15 @@
+{
+    // Type-checks all of src/, including tests and model code not yet reachable from visual.ts.
+    // The pbiviz build only checks what visual.ts imports, and Vitest strips types without checking.
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "noEmit": true,
+        "module": "esnext",
+        "moduleResolution": "bundler",
+        "skipLibCheck": true,
+        "declaration": false,
+        "sourceMap": false
+    },
+    "files": [],
+    "include": ["src/**/*.ts"]
+}

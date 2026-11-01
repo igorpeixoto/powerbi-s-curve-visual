@@ -131,5 +131,5 @@ The consumer of this repo is a **report author who has already bound fields and 
 - **Never invent numbers** (time spent, users, feedback): use `TODO(igor): …` placeholders.
 - **Commits** use the repo-local identity (`git config --local`), never the global one.
 - **Toolchain:** Node 24 (CI and local), `powerbi-visuals-tools` pinned as a devDependency, API 5.11.1. `pbiviz start` is unavailable on this machine (no `pwsh` for the dev certificate), so the headless harness stands in for the data-shape half of the Visual Validation Gate (Hard Rule #15).
-- **Tests:** `npm test` runs `lint` → `check:capabilities` → `test:unit` (Vitest, `src/**/__tests__`) → `test:harness` (`pbiviz package --resources`, then Puppeteer drives `harness/index.html` against the packaged JS). Fix failing tests in the code, never by weakening a test.
+- **Tests:** `npm test` runs `lint` (ESLint + `tsc -p tsconfig.typecheck.json` over all of `src/`) → `check:capabilities` → `test:unit` (Vitest, `src/**/__tests__`) → `test:harness` (`pbiviz package --resources`, then Puppeteer drives `harness/index.html` against the packaged JS). Fix failing tests in the code, never by weakening a test.
 - **Build log:** append an entry to `docs/BUILD_LOG.md` at the end of every working session.

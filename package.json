@@ -19,7 +19,7 @@
     "pbiviz": "pbiviz",
     "start": "pbiviz start",
     "package": "pbiviz package",
-    "lint": "eslint .",
+    "lint": "eslint . && tsc -p tsconfig.typecheck.json",
     "check:capabilities": "node tools/check-capabilities.mjs",
     "test:unit": "vitest run",
     "test:harness": "pbiviz package --resources && node tools/run-harness.mjs",
