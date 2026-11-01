@@ -1,6 +1,6 @@
 # SPEC: Physical Progress S-Curve (v1)
 
-Status: **draft for review**. Everything from Phase 2 onward is built against this document. Sections marked **⚑ Decision** are proposals that need the maintainer's confirmation; they are collected again in [§13 Open questions](#13-open-questions).
+Status: **approved 2026-11-01** (v1 contract). Everything from Phase 2 onward is built against this document. The decisions taken during review are recorded in [§13 Decisions](#13-decisions); changing a role, card, group or property `name` from here on needs a deliberate SPEC change.
 
 ## 1. Purpose
 
@@ -73,7 +73,7 @@ Typical use: bind `Planned qty` and `Actual qty` to both *Column values* and *Li
 | `tableOnlyValues` | Table-only values | Measure | numeric | 0–10 | Rows shown only in the matrix. |
 | `tooltips` | Tooltips | Measure | any | 0–10 | Extra fields in the default tooltip. |
 
-- `category` and `categoryDate` are **mutually exclusive**, enforced by Power BI through two `conditions` entries (one with `category ≤ 1, categoryDate = 0`, one the other way round). The code never has to arbitrate between them. ⚑ Decision: see open question 9.
+- `category` and `categoryDate` are **mutually exclusive**, enforced by Power BI through two `conditions` entries (one with `category ≤ 1, categoryDate = 0`, one the other way round). The code never has to arbitrate between them. (Decision 9.)
 - The same measure may be bound to several wells (the typical case is `Planned qty` in both *Column values* and *Line values*). The public docs don't pin down whether Power BI then sends **one** value column whose `source.roles` flags both roles, or **one column per role**. The parser must handle both: it reads each value column's `source.roles` and creates one entry per role flagged, so a single source column can yield a column series, a line series and their matrix rows. Phase 2 unit tests cover both shapes.
 - Role names above are final once SPEC.md is approved: renaming a role after release discards report authors' bindings.
 
@@ -81,7 +81,7 @@ Typical use: bind `Planned qty` and `Actual qty` to both *Column values* and *Li
 
 One **categorical** mapping:
 
-- `categories`: `select` binding `category` and `categoryDate`; `dataReductionAlgorithm: { top: { count: 1000 } }`. The limit counts **distinct source values before weekly bucketing**: 1000 daily dates is under three years, and `top` keeps the first 1000 in sort order, so the most recent dates (the actuals tail) are the ones cut. The documentation will recommend binding a week-start column (1000 weeks ≈ 19 years); raising the count is the alternative (⚑ open question 8).
+- `categories`: `select` binding `category` and `categoryDate`; `dataReductionAlgorithm: { top: { count: 1000 } }`. The limit counts **distinct source values before weekly bucketing**: 1000 daily dates is under three years, and `top` keeps the first 1000 in sort order, so the most recent dates (the actuals tail) are the ones cut. The documentation will recommend binding a week-start column (1000 weeks ≈ 19 years); the count stays at 1000 for v1 (Decision 8).
 - `values`: `group` **by** `series`, `select` binding `columnValues`, `lineValues`, `tableOnlyValues`, `tooltips`; `dataReductionAlgorithm: { top: { count: 30 } }` on series.
 - `sorting: { default: {} }`, so authors can sort text buckets from the visual's menu. Date buckets are always chronological.
 
@@ -155,9 +155,9 @@ Per line measure (and per series in `perSeries` mode):
 - **Line end** `lastValue` (default): the line stops at the last bucket with a non-null source value. This makes an actuals line end at the last reported week instead of running flat to the end of the project. `lastBucket`: the line carries its last cumulative value to the final bucket (useful for a plan whose last weeks are blank).
 - Leading nulls: the line starts at the first non-null bucket.
 
-### 6.3 Percent display ⚑ Decision
+### 6.3 Percent display
 
-Physical progress is usually read as a percentage. Proposal: **Display as** `value` (default) or `percentOfBaseline`, where the baseline is the **grand total of the first line measure** (normally the plan). In percent mode every line and its matrix rows show `cumulative ÷ baseline`, and the right axis runs from 0 % to 100 % (it extends above 100 % if values exceed the baseline). Column values and the left axis are unaffected.
+Physical progress is usually read as a percentage. **Display as** `value` (default) or `percentOfBaseline`, where the baseline is the **grand total of the first line measure** (normally the plan). In percent mode every line and its matrix rows show `cumulative ÷ baseline`, and the right axis runs from 0 % to 100 % (it extends above 100 % if values exceed the baseline). Column values and the left axis are unaffected.
 
 ### 6.4 Scales and domains
 
@@ -183,7 +183,7 @@ Physical progress is usually read as a percentage. Proposal: **Display as** `val
 - **Stale selections**: after a data update, identities that no longer exist are dropped; if none remain, the visual shows the unselected state. Selection restored by bookmarks is honoured through the selection callback.
 - When the host disallows interactions (`allowInteractions = false`), clicks do nothing and nothing dims.
 
-### 7.2 Highlights from other visuals ⚑ Decision
+### 7.2 Highlights from other visuals
 
 When another visual highlights a subset, the highlighted part is shown solid and the full value faded: bars draw the full bar faded with the highlighted portion solid; lines draw the cumulative of the highlighted values solid, with the full line faded behind it; matrix cells show the highlighted values (the tooltip shows both).
 
@@ -221,7 +221,7 @@ When another visual highlights a subset, the highlighted part is shown solid and
 
 - Every card is a `CompositeCard` split into named groups. Property names are unique across their card (they are flattened into one `capabilities.json` object per card).
 - Property, group and card `name`s below are **final** once SPEC.md is approved; `displayName`s are localised.
-- v1 has **86 static controls**, plus per-instance controls (colours, line styles, value modes, totals) repeated once per measure or series. Candidates to cut if that's too many: `cornerRadius`, `xTitleShow`/`xTitleText`, `banding`, `legendShowTitle`/`legendTitleText`.
+- v1 has **86 static controls**, plus per-instance controls (colours, line styles, value modes, totals) repeated once per measure or series. All of them stay in v1 (Decision 7).
 
 ### 9.2 Style presets and the resolution rule
 
@@ -337,14 +337,16 @@ Harness (packaged visual, mock host):
 - High contrast: no data colour other than foreground/selected colours is used.
 - Each preset renders without errors; capability parity stays green.
 
-## 13. Open questions
+## 13. Decisions
 
-1. **Percent display (§6.3)**: include `displayAs = percentOfBaseline` in v1, with the baseline = grand total of the first line measure? Or leave percentages to DAX measures in *as provided* mode?
-2. **Highlights (§7.2)**: show the highlighted subset everywhere (bars, lines, matrix) as proposed, or highlight bars only and leave lines and the matrix on full values?
-3. **Line end default (§6.2)**: `lastValue` for every line measure by default (right for actuals; a plan with blank final weeks needs `lastBucket`), or should the default differ by position, e.g. the first line measure carries to the end?
-4. **Series with several measures (§5.1)**: stacked by series with lighter tints per measure as the default, or clustered?
-5. **Measure-row selection (§7.1)**: clicking a measure row header (no series) only emphasises the measure inside the visual, since Power BI cannot cross-filter by a measure. Acceptable?
-6. **Matrix suffix (§5.6)**: is " (cumulative)" (and its pt-BR translation) the right default for accumulated line rows?
-7. **Control count (§9.1)**: 86 static controls is in the upper half of the 60–100 target. Keep, or cut the listed candidates now?
-8. **Limits (§4.1)**: 1000 distinct dates or categories *before* weekly bucketing (so about 2.7 years of daily dates, or 19 years of week-start dates), 30 series, 6 column, 6 line and 10 table-only measures. Keep 1000 and recommend a week-start column, or raise the category count (e.g. 3000, about 8 years of daily dates)?
-9. **Category and Date together (§4)**: the draft makes them mutually exclusive, enforced by Power BI. The plan's "and/or" suggests an alternative: when both are bound, the date drives ordering and weekly bucketing and the text supplies the labels (e.g. a project's own week names). Recommendation: **mutually exclusive in v1**, because the weekly label formats (§6.1) cover the common naming needs, and combining the two raises cases with no clear answer (several labels in one week, labels on inserted empty weeks). Allowing both later is an additive change.
+Settled in the SPEC review on 2026-11-01 (all as proposed in the draft):
+
+1. **Percent display (§6.3)**: included. `displayAs = percentOfBaseline`, baseline = grand total of the first line measure.
+2. **Highlights (§7.2)**: the highlighted subset is shown in bars, lines and the matrix, with full values as faded context in the chart.
+3. **Line end (§6.2)**: `lastValue` is the default for every line measure; a plan with blank final weeks is switched to `lastBucket` by the author. No positional assumptions.
+4. **Series with several measures (§5.1)**: `stacked` by series is the default, with lighter tints for the 2nd and later measures.
+5. **Measure-row selection (§7.1)**: clicking a measure row header (no series) only emphasises that measure inside the visual.
+6. **Cumulative suffix (§5.6)**: " (cumulative)" by default, localised.
+7. **Control count (§9.1)**: all 86 static controls stay in v1.
+8. **Limits (§4.1)**: 1000 distinct dates or categories before bucketing, 30 series, 6 column, 6 line and 10 table-only measures; the documentation recommends binding a week-start date column.
+9. **Category and Date (§4)**: mutually exclusive in v1, enforced by `conditions`. Allowing both (date for ordering, text for labels) would be an additive change later.

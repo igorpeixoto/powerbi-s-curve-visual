@@ -11,7 +11,7 @@ How this visual was built, session by session: what the AI (Claude Code) did and
 
 ## 2026-11-01: Phase 1 (SPEC.md draft)
 - Time: TODO(igor) h
-- AI did: drafted `SPEC.md` from the plan's outline: purpose, layout and the shared x geometry contract, field wells and dataViewMappings, rendering, weekly bucketing and cumulative rules, interaction, empty states, the Format pane (cards, groups, property names, defaults, presets and the resolution rule), localization, non-goals, acceptance criteria, and eight open questions.
-- I did: TODO(igor): review and corrections.
+- AI did: drafted `SPEC.md` from the plan's outline: purpose, layout and the shared x geometry contract, field wells and dataViewMappings, rendering, weekly bucketing and cumulative rules, interaction, empty states, the Format pane (cards, groups, property names, defaults, presets and the resolution rule), localization, non-goals, acceptance criteria, and open questions. A review pass (advisor model) added: handling a measure bound to two wells in either dataView shape, totals per row kind, the category limit counting dates before bucketing, a DST-observing time zone for date tests, and a ninth question (category and date together).
+- I did: settled the nine open questions (accepted all the proposed defaults), approved the spec, and authorised pushing phase commits to the private repo so CI runs on each. TODO(igor): anything else.
 - Where it got stuck / how it was unblocked: n/a so far.
-- Tests: unchanged (documentation only).
+- Tests: unchanged (documentation only); CI green on the pushed draft (run 41334756165).
