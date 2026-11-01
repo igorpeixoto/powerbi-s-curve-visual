@@ -73,15 +73,15 @@ Typical use: bind `Planned qty` and `Actual qty` to both *Column values* and *Li
 | `tableOnlyValues` | Table-only values | Measure | numeric | 0–10 | Rows shown only in the matrix. |
 | `tooltips` | Tooltips | Measure | any | 0–10 | Extra fields in the default tooltip. |
 
-- `category` and `categoryDate` are **mutually exclusive**, enforced by Power BI through two `conditions` entries (one with `category ≤ 1, categoryDate = 0`, one the other way round). The code never has to arbitrate between them.
-- The same measure may be bound to several wells (the typical case is `Planned qty` in both *Column values* and *Line values*).
+- `category` and `categoryDate` are **mutually exclusive**, enforced by Power BI through two `conditions` entries (one with `category ≤ 1, categoryDate = 0`, one the other way round). The code never has to arbitrate between them. ⚑ Decision: see open question 9.
+- The same measure may be bound to several wells (the typical case is `Planned qty` in both *Column values* and *Line values*). The public docs don't pin down whether Power BI then sends **one** value column whose `source.roles` flags both roles, or **one column per role**. The parser must handle both: it reads each value column's `source.roles` and creates one entry per role flagged, so a single source column can yield a column series, a line series and their matrix rows. Phase 2 unit tests cover both shapes.
 - Role names above are final once SPEC.md is approved: renaming a role after release discards report authors' bindings.
 
 ### 4.1 dataViewMappings
 
 One **categorical** mapping:
 
-- `categories`: `select` binding `category` and `categoryDate`; `dataReductionAlgorithm: { top: { count: 1000 } }`.
+- `categories`: `select` binding `category` and `categoryDate`; `dataReductionAlgorithm: { top: { count: 1000 } }`. The limit counts **distinct source values before weekly bucketing**: 1000 daily dates is under three years, and `top` keeps the first 1000 in sort order, so the most recent dates (the actuals tail) are the ones cut. The documentation will recommend binding a week-start column (1000 weeks ≈ 19 years); raising the count is the alternative (⚑ open question 8).
 - `values`: `group` **by** `series`, `select` binding `columnValues`, `lineValues`, `tableOnlyValues`, `tooltips`; `dataReductionAlgorithm: { top: { count: 30 } }` on series.
 - `sorting: { default: {} }`, so authors can sort text buckets from the visual's menu. Date buckets are always chronological.
 
@@ -123,16 +123,16 @@ If Power BI reduces the data (more than 1000 categories or 30 series), the visua
 
 ### 5.5 Legend
 
-- One entry per drawn measure (and per series when series are bound), with the mark it represents (bar swatch or line sample with its dash style).
+- One entry per drawn mark: a measure bound to both columns and lines appears twice, as a bar swatch and as a line sample (with its dash style); the line entry carries the same cumulative suffix as its matrix row (§5.6). With series bound, entries are per series as well.
 - Position: top (default), bottom, left, right.
 - Clicking a legend entry selects its series (or measure) like a row header (§7.1).
 
 ### 5.6 Matrix
 
 - **Rows**, in this order: column measures, then line measures, then table-only measures, each in well order. With **Expand series** on, each measure becomes a group: one row per series, then a measure total row.
-- **Row labels**: the field's display name (which authors can rename in the well). Line rows whose values the visual accumulates get a localised suffix, default " (cumulative)", so that a measure bound to both columns and lines reads as two distinct rows.
+- **Row labels**: the field's display name (which authors can rename in the well). Line rows whose values the visual accumulates get the **cumulative suffix** (`lines.cumulativeSuffix`, localised default " (cumulative)"), so that a measure bound to both columns and lines reads as two distinct rows. The legend uses the same suffix.
 - **Cells** show exactly what the chart shows: per-bucket values for column and table-only rows, the plotted cumulative value for line rows. Formatting uses each measure's own format string and the matrix display units.
-- **Totals column** (optional, default on): per row, the aggregation chosen for that measure: `sum` (default for column and table-only rows), `last` (default for line rows: the final cumulative value), `average`, or `none`.
+- **Totals column** (optional, default on): per row, `sum`, `last`, `average` or `none`. The setting is per measure **and per row kind**, so a measure shown as both a weekly row and a cumulative row can total each one differently: column rows default to `sum`, line rows to `last` (the final cumulative value), table-only rows to `sum`.
 - Empty cells are blank, not "0".
 
 ## 6. Calculations
@@ -264,7 +264,7 @@ Types: T toggle, N number, % percent number, C colour, D dropdown, X text, F fon
 
 **Lines** (`lines`), card toggle `showLines` T
 - *Options* (`options`): `lineSeriesMode` D (total | perSeries), `strokeWidth` N (2), `lineOpacity` % (100), `interpolation` D (linear | monotone), `showMarkers` T (off), `markerSize` N (4)
-- *Values* (`values`): `valueMode` D (runningTotal | asProvided), Inst.; `lineEnd` D (lastValue | lastBucket), Inst.; `displayAs` D (value | percentOfBaseline)
+- *Values* (`values`): `valueMode` D (runningTotal | asProvided), Inst.; `lineEnd` D (lastValue | lastBucket), Inst.; `displayAs` D (value | percentOfBaseline); `cumulativeSuffix` X (" (cumulative)")
 - *Colors and style* (`colors`): `lineColor` C, Inst.; `lineStyle` D (solid | dashed | dotted), Inst.
 
 **Y-axis (columns)** (`leftAxis`), card toggle `showLeftAxis` T
@@ -292,8 +292,8 @@ Types: T toggle, N number, % percent number, C colour, D dropdown, X text, F fon
 - *Text* (`text`): `legendFontSize` N (9), `legendColor` C
 
 **Matrix** (`matrix`), card toggle `showMatrix` T
-- *Options* (`options`): `showTotals` T (on), `totalsLabel` X ("Total"), `expandSeries` T (off), `cumulativeSuffix` X (" (cumulative)")
-- *Values* (`values`): `totalAggregation` D (sum | last | average | none), Inst.; `matrixDisplayUnits` D (auto), `matrixPrecision` N (auto)
+- *Options* (`options`): `showTotals` T (on), `totalsLabel` X ("Total"), `expandSeries` T (off)
+- *Values* (`values`): `columnTotalAggregation`, `lineTotalAggregation`, `tableTotalAggregation` D (sum | last | average | none), each Inst. per measure; `matrixDisplayUnits` D (auto), `matrixPrecision` N (auto)
 - *Text* (`text`): `matrixFontSize` N (9), `matrixFontColor` C, `headerFontColor` C, `headerBold` T (on)
 - *Grid* (`grid`): `rowHeight` N (20), `showBorders` T (on), `borderColor` C, `banding` T (off), `maxHeightPercent` % (50)
 
@@ -320,7 +320,7 @@ All colour defaults come from the theme (foreground, secondary foreground, or `g
 ## 12. Acceptance criteria (drive the tests)
 
 Unit (model layer, no DOM):
-- Weekly bucketing for both week start days, across year boundaries and DST changes; empty weeks inserted only when enabled.
+- Weekly bucketing for both week start days, across year boundaries and DST changes; empty weeks inserted only when enabled. Date tests run under a pinned time zone that observes DST (e.g. `Europe/Berlin`), set in the Vitest setup, because CI runs in UTC and the development machine's zone has no DST.
 - Per-role combining within a week (sum vs. last non-null).
 - Running totals: carry across null buckets, stop after the last non-null value (`lastValue`), carry to the end (`lastBucket`), leading nulls, negative values, a single bucket.
 - Percent of baseline, including a zero or null baseline (no division by zero: lines stay in value mode with a warning).
@@ -346,4 +346,5 @@ Harness (packaged visual, mock host):
 5. **Measure-row selection (§7.1)**: clicking a measure row header (no series) only emphasises the measure inside the visual, since Power BI cannot cross-filter by a measure. Acceptable?
 6. **Matrix suffix (§5.6)**: is " (cumulative)" (and its pt-BR translation) the right default for accumulated line rows?
 7. **Control count (§9.1)**: 86 static controls is in the upper half of the 60–100 target. Keep, or cut the listed candidates now?
-8. **Limits (§4.1)**: 1000 buckets, 30 series, 6 column, 6 line and 10 table-only measures. Reasonable for your projects?
+8. **Limits (§4.1)**: 1000 distinct dates or categories *before* weekly bucketing (so about 2.7 years of daily dates, or 19 years of week-start dates), 30 series, 6 column, 6 line and 10 table-only measures. Keep 1000 and recommend a week-start column, or raise the category count (e.g. 3000, about 8 years of daily dates)?
+9. **Category and Date together (§4)**: the draft makes them mutually exclusive, enforced by Power BI. The plan's "and/or" suggests an alternative: when both are bound, the date drives ordering and weekly bucketing and the text supplies the labels (e.g. a project's own week names). Recommendation: **mutually exclusive in v1**, because the weekly label formats (§6.1) cover the common naming needs, and combining the two raises cases with no clear answer (several labels in one week, labels on inserted empty weeks). Allowing both later is an additive change.
