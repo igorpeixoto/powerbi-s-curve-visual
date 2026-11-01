@@ -9,6 +9,8 @@ Every version heading must match `pbiviz.json`'s `visual.version` and a `vX.Y.Z`
 
 ## [Unreleased]
 
+- Data roles per SPEC §4: Category or Date, Series, Column values, Line values, Table-only values, Tooltips
+- Model layer: weekly bucketing, running totals, percent of baseline, axis domains, shared x geometry, selection identities
 - Scaffold, strict TypeScript, ESLint, unit tests (Vitest), headless harness (Puppeteer), capability parity check, CI and tag-driven release workflow
 
 <!-- Release protocol: the human or Claude Code bumps pbiviz.json visual.version, renames

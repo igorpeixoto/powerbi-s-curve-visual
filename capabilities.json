@@ -2,12 +2,47 @@
     "dataRoles": [
         {
             "displayName": "Category",
+            "description": "Text time buckets, shown in data order.",
             "name": "category",
             "kind": "Grouping"
         },
         {
-            "displayName": "Values",
-            "name": "measure",
+            "displayName": "Date",
+            "description": "Dates, grouped into weeks by the visual.",
+            "name": "categoryDate",
+            "kind": "Grouping"
+        },
+        {
+            "displayName": "Series",
+            "description": "Splits every measure by this field (legend).",
+            "name": "series",
+            "kind": "Grouping"
+        },
+        {
+            "displayName": "Column values",
+            "description": "Per-bucket values, drawn as columns on the left axis.",
+            "name": "columnValues",
+            "kind": "Measure",
+            "requiredTypes": [{ "numeric": true }, { "integer": true }]
+        },
+        {
+            "displayName": "Line values",
+            "description": "Drawn as lines on the right axis; accumulated by default.",
+            "name": "lineValues",
+            "kind": "Measure",
+            "requiredTypes": [{ "numeric": true }, { "integer": true }]
+        },
+        {
+            "displayName": "Table-only values",
+            "description": "Rows shown only in the matrix.",
+            "name": "tableOnlyValues",
+            "kind": "Measure",
+            "requiredTypes": [{ "numeric": true }, { "integer": true }]
+        },
+        {
+            "displayName": "Tooltips",
+            "description": "Extra fields in the tooltip.",
+            "name": "tooltips",
             "kind": "Measure"
         }
     ],
@@ -26,26 +61,55 @@
     },
     "dataViewMappings": [
         {
+            "conditions": [
+                {
+                    "category": { "max": 1 },
+                    "categoryDate": { "max": 0 },
+                    "series": { "max": 1 },
+                    "columnValues": { "max": 6 },
+                    "lineValues": { "max": 6 },
+                    "tableOnlyValues": { "max": 10 },
+                    "tooltips": { "max": 10 }
+                },
+                {
+                    "category": { "max": 0 },
+                    "categoryDate": { "max": 1 },
+                    "series": { "max": 1 },
+                    "columnValues": { "max": 6 },
+                    "lineValues": { "max": 6 },
+                    "tableOnlyValues": { "max": 10 },
+                    "tooltips": { "max": 10 }
+                }
+            ],
             "categorical": {
                 "categories": {
-                    "for": {
-                        "in": "category"
-                    },
+                    "select": [
+                        { "bind": { "to": "category" } },
+                        { "bind": { "to": "categoryDate" } }
+                    ],
                     "dataReductionAlgorithm": {
-                        "top": {}
+                        "top": { "count": 1000 }
                     }
                 },
                 "values": {
-                    "select": [
-                        {
-                            "bind": {
-                                "to": "measure"
-                            }
+                    "group": {
+                        "by": "series",
+                        "select": [
+                            { "for": { "in": "columnValues" } },
+                            { "for": { "in": "lineValues" } },
+                            { "for": { "in": "tableOnlyValues" } },
+                            { "for": { "in": "tooltips" } }
+                        ],
+                        "dataReductionAlgorithm": {
+                            "top": { "count": 30 }
                         }
-                    ]
+                    }
                 }
             }
         }
     ],
+    "sorting": {
+        "default": {}
+    },
     "privileges": []
 }

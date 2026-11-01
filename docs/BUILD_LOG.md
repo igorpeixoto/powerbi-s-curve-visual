@@ -15,3 +15,10 @@ How this visual was built, session by session: what the AI (Claude Code) did and
 - I did: settled the nine open questions (accepted all the proposed defaults), approved the spec, and authorised pushing phase commits to the private repo so CI runs on each. TODO(igor): anything else.
 - Where it got stuck / how it was unblocked: n/a so far.
 - Tests: unchanged (documentation only); CI green on the pushed draft (run 41334756165).
+
+## 2026-11-01: Phase 2 (model layer, test-first)
+- Time: TODO(igor) h
+- AI did: updated `capabilities.json` to the SPEC §4 data roles (mutually exclusive Category/Date via `conditions`, series grouping, data reduction limits) and taught the parity check about `group.by`. Pinned the test time zone to Europe/Berlin (observes DST) with a guard test. Wrote 72 model tests and a dataView fixture builder first, ran them red, then implemented `src/model/`: value helpers, weekly bucketing (Monday/Sunday weeks, ISO weeks, empty-week filling, DST-safe date arithmetic), bucket labels, running totals with null carry and line-end rules, percent of baseline, the dataView parser (series groups, highlights, tooltips, both shapes of a measure bound to two wells), the model builder (total vs. per-series lines), axis domains with d3's nice ticks, the shared x geometry (gutters, bucket bands, cluster slots, label thinning, horizontal scroll) and selection identities through an injected builder.
+- I did: TODO(igor): review.
+- Where it got stuck / how it was unblocked: the capabilities schema has no date type for data roles, so the Date well can't be restricted; non-date values are excluded and counted instead (SPEC §4 and §6.1 updated). API 5.11's typings have no `rolesIndex`, so well order comes from column order rather than an untyped field.
+- Tests: 74 unit (72 model + 2 placeholder), 6 harness, capability parity green, lint and typecheck clean.

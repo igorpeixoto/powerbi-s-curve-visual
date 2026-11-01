@@ -2,8 +2,8 @@
 
 export function weeklyDataView() {
     const week = { displayName: "Week", queryName: "Progress.Week", roles: { category: true }, index: 0 };
-    const planned = { displayName: "Planned", queryName: "Sum(Progress.Planned)", roles: { measure: true }, isMeasure: true, index: 1 };
-    const actual = { displayName: "Actual", queryName: "Sum(Progress.Actual)", roles: { measure: true }, isMeasure: true, index: 2 };
+    const planned = { displayName: "Planned", queryName: "Sum(Progress.Planned)", roles: { columnValues: true }, isMeasure: true, index: 1 };
+    const actual = { displayName: "Actual", queryName: "Sum(Progress.Actual)", roles: { columnValues: true }, isMeasure: true, index: 2 };
 
     return {
         metadata: { columns: [week, planned, actual] },

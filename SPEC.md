@@ -66,7 +66,7 @@ Typical use: bind `Planned qty` and `Actual qty` to both *Column values* and *Li
 | Role `name` | Display name | Kind | Types | Min–max | Notes |
 |---|---|---|---|---|---|
 | `category` | Category | Grouping | any | 0–1 | Text buckets, shown in data order (the model's sort order is respected, e.g. a week label sorted by week number). |
-| `categoryDate` | Date | Grouping | dateTime | 0–1 | Grouped into weeks by the visual (§6.1). |
+| `categoryDate` | Date | Grouping | date (see note) | 0–1 | Grouped into weeks by the visual (§6.1). The capabilities schema can't require a date type for a role, so values that aren't dates are excluded and counted like null dates (§6.1). |
 | `series` | Series | Grouping | any | 0–1 | Legend split. |
 | `columnValues` | Column values | Measure | numeric | 0–6 | Per-bucket values, drawn as columns on the left axis. |
 | `lineValues` | Line values | Measure | numeric | 0–6 | Drawn as lines on the right axis; by default the visual plots their running total (§6.2). |
@@ -143,7 +143,7 @@ If Power BI reduces the data (more than 1000 categories or 30 series), the visua
 - **Show empty weeks** (default on): weeks between the first and last bucket that have no rows are inserted as empty buckets, so the time axis stays continuous. Text buckets are never inferred.
 - When several dates fall in one week, values are combined per role: column and table-only measures are **summed**; line measures in *as provided* mode take the **last non-null** value in the week (a cumulative measure must not be summed); line measures in *running total* mode are summed and then accumulated.
 - If the bound date column is already weekly (one date per week), no combining happens. The documentation will recommend binding a week-start column from a date table.
-- Null dates are excluded and counted; if any were excluded, the warning icon says how many.
+- Null dates, and values in the Date well that aren't dates, are excluded and counted; if any were excluded, the warning icon says how many.
 - **Week label format**: `weekStart` (the week's start date, short date in the report locale; default), `isoWeek` (e.g. `2026-W05`), or `projectWeek` (`W1`, `W2`, … counted from the first bucket).
 
 ### 6.2 Cumulative values

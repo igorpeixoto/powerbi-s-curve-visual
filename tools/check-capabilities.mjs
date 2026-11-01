@@ -91,7 +91,7 @@ function collectRoleReferences(node, references = new Set()) {
         node.forEach((item) => collectRoleReferences(item, references));
     } else if (node && typeof node === "object") {
         for (const [key, value] of Object.entries(node)) {
-            if ((key === "in" || key === "to") && typeof value === "string") {
+            if ((key === "in" || key === "to" || key === "by") && typeof value === "string") {
                 references.add(value);
             } else if (key === "conditions" && Array.isArray(value)) {
                 value.forEach((condition) => Object.keys(condition).forEach((role) => references.add(role)));
