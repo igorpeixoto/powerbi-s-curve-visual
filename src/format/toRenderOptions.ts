@@ -6,7 +6,7 @@ import type { DisplayAs, LineEnd, LineSeriesMode, TotalAggregation, ValueMode, W
 import type { WeekLabelFormat } from "../model/labels";
 import type { SeriesLayout } from "../model/columns";
 import { defaultRenderOptions, type GridlineStyle, type LegendPosition, type LineStyle, type RenderOptions } from "../render/options";
-import { MAX_MATRIX_LINE_WIDTH } from "../settings";
+import { LIMITS, type Limit } from "../settings";
 import type { AppliedSettings } from "./applySettings";
 import { THEME_LIGHT_TINT } from "./presets";
 
@@ -14,14 +14,14 @@ function finite(value: unknown): number | undefined {
     return typeof value === "number" && Number.isFinite(value) ? value : undefined;
 }
 
-function clamp(value: unknown, min: number, max: number, fallback: number): number {
+function clamp(value: unknown, [min, max]: Limit, fallback: number): number {
     const n = finite(value);
     return n === undefined ? fallback : Math.min(max, Math.max(min, n));
 }
 
 function precision(value: unknown): number | undefined {
     const n = finite(value);
-    return n === undefined ? undefined : Math.min(9, Math.max(0, Math.round(n)));
+    return n === undefined ? undefined : clamp(Math.round(n), LIMITS.precision, 0);
 }
 
 function oneOf<T extends string>(value: unknown, allowed: readonly T[], fallback: T): T {
@@ -45,7 +45,7 @@ export function toRenderOptions(applied: AppliedSettings): RenderOptions {
     for (const [key, value] of Object.entries(instances.aggregations)) aggregations[key] = oneOf(value, ["sum", "last", "average", "none"], "sum");
 
     const rowLineWidths: Record<string, number> = {};
-    for (const [key, width] of Object.entries(instances.rowLineWidths)) rowLineWidths[key] = clamp(width, 0, MAX_MATRIX_LINE_WIDTH, 0);
+    for (const [key, width] of Object.entries(instances.rowLineWidths)) rowLineWidths[key] = clamp(width, LIMITS.matrixLineWidth, 0);
 
     const general = m.general;
     const columns = m.columns;
@@ -56,7 +56,7 @@ export function toRenderOptions(applied: AppliedSettings): RenderOptions {
     const labels = m.dataLabels;
     const legend = m.legend;
     const matrix = m.matrix;
-    const fontSize = (value: unknown, fallback: number) => clamp(value, 6, 40, fallback);
+    const fontSize = (value: unknown, fallback: number) => clamp(value, LIMITS.fontSize, fallback);
     const secondLine = oneOf<WeekLabelFormat | "none">(dropdown(x.labels.weekLabelSecondLine), ["none", "weekStart", "isoWeek", "projectWeek"], "none");
     const gridlineColor = color("leftAxis", left.gridlines.gridlineColor)
         ?? (fromPreset.get("leftAxis.gridlineColor") === THEME_LIGHT_TINT ? THEME_LIGHT_TINT : null);
@@ -73,23 +73,23 @@ export function toRenderOptions(applied: AppliedSettings): RenderOptions {
             percentBaseline: instances.percentBaselines[0] ?? null,
         },
         fontFamily: general.layout.fontFamily.value || base.fontFamily,
-        bucketGap: clamp(general.layout.bucketGap.value, 0, 90, 20) / 100,
-        minBucketWidth: clamp(general.layout.minBucketWidth.value, 0, 400, 0),
+        bucketGap: clamp(general.layout.bucketGap.value, LIMITS.bucketGap, 20) / 100,
+        minBucketWidth: clamp(general.layout.minBucketWidth.value, LIMITS.minBucketWidth, 0),
         columns: {
             show: columns.topLevelSlice.value !== false,
             layout: oneOf<SeriesLayout>(dropdown(columns.options.seriesLayout), ["stacked", "clustered"], "stacked"),
-            clusterGap: clamp(columns.options.clusterGap.value, 0, 100, 10) / 100,
-            opacity: clamp(columns.options.columnOpacity.value, 0, 100, 100) / 100,
-            cornerRadius: clamp(columns.options.cornerRadius.value, 0, 40, 0),
+            clusterGap: clamp(columns.options.clusterGap.value, LIMITS.percent, 10) / 100,
+            opacity: clamp(columns.options.columnOpacity.value, LIMITS.percent, 100) / 100,
+            cornerRadius: clamp(columns.options.cornerRadius.value, LIMITS.cornerRadius, 0),
             colors: { ...instances.columnFills },
         },
         lines: {
             show: lines.topLevelSlice.value !== false,
-            strokeWidth: clamp(lines.options.strokeWidth.value, 0.5, 12, 2),
-            opacity: clamp(lines.options.lineOpacity.value, 0, 100, 100) / 100,
+            strokeWidth: clamp(lines.options.strokeWidth.value, LIMITS.strokeWidth, 2),
+            opacity: clamp(lines.options.lineOpacity.value, LIMITS.percent, 100) / 100,
             interpolation: oneOf(dropdown(lines.options.interpolation), ["linear", "monotone"] as const, "linear"),
             showMarkers: lines.options.showMarkers.value === true,
-            markerSize: clamp(lines.options.markerSize.value, 1, 20, 4),
+            markerSize: clamp(lines.options.markerSize.value, LIMITS.markerSize, 4),
             styles: lineStyles,
             colors: { ...instances.lineColors },
             cumulativeSuffix: explicit.has("lines.cumulativeSuffix") ? String(lines.values.cumulativeSuffix.value ?? "") : null,
@@ -128,7 +128,7 @@ export function toRenderOptions(applied: AppliedSettings): RenderOptions {
         },
         gridlines: {
             style: oneOf<GridlineStyle>(dropdown(left.gridlines.gridlineStyle), ["solid", "dashed", "dotted"], "dashed"),
-            width: clamp(left.gridlines.gridlineWidth.value, 0.5, 6, 1),
+            width: clamp(left.gridlines.gridlineWidth.value, LIMITS.gridlineWidth, 1),
             color: gridlineColor,
         },
         xAxis: {
@@ -172,15 +172,15 @@ export function toRenderOptions(applied: AppliedSettings): RenderOptions {
             expandSeries: matrix.options.expandSeries.value === true,
             fontSize: fontSize(matrix.text.matrixFontSize.value, 9),
             headerBold: matrix.text.headerBold.value !== false,
-            rowHeight: clamp(matrix.grid.rowHeight.value, 12, 60, 20),
+            rowHeight: clamp(matrix.grid.rowHeight.value, LIMITS.rowHeight, 20),
             showBorders: matrix.grid.showBorders.value !== false,
             banding: matrix.grid.banding.value === true,
-            maxHeightPercent: clamp(matrix.grid.maxHeightPercent.value, 10, 90, 50),
+            maxHeightPercent: clamp(matrix.grid.maxHeightPercent.value, LIMITS.maxHeightPercent, 50),
             aggregations: base.matrix.aggregations,
             measureAggregations: aggregations,
             rowPositions: { ...instances.rowPositions },
             rowLineWidths,
-            headerLineWidth: explicit.has("matrix.headerLineWidth") ? clamp(matrix.grid.headerLineWidth.value, 0, MAX_MATRIX_LINE_WIDTH, 0) : null,
+            headerLineWidth: explicit.has("matrix.headerLineWidth") ? clamp(matrix.grid.headerLineWidth.value, LIMITS.matrixLineWidth, 0) : null,
             displayUnits: finite(matrix.values.matrixDisplayUnits.value) ?? 0,
             precision: precision(matrix.values.matrixPrecision.value),
             fontColor: color("matrix", matrix.text.matrixFontColor),

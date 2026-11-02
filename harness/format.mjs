@@ -178,6 +178,20 @@ export function runFormatChecks(plugin, check) {
     render(visual, container, progressDataView({ reportedWeeks: 20, objects: { matrix: { showBorders: false } } }));
     check("with Borders off and nothing saved, no lines draw", qa('[data-role="row-line"]').length === 0 && q('[data-role="header-line"]') === null);
 
+    // Every number box in the real pane model carries its limits, except the axis ranges, where negatives are valid.
+    const numberBoxes = [];
+    const walkPane = (node) => {
+        if (Array.isArray(node)) node.forEach(walkPane);
+        else if (node && typeof node === "object") {
+            if (node.descriptor?.propertyName && "options" in node) numberBoxes.push(node);
+            Object.values(node).forEach(walkPane);
+        }
+    };
+    walkPane(rowModel);
+    const withoutLimits = numberBoxes.filter((n) => !n.options?.minValue || !n.options?.maxValue).map((n) => n.descriptor.propertyName).sort();
+    check("every number box in the pane has limits, except the axis ranges", numberBoxes.length > 25 && withoutLimits.join() === "leftMax,leftMin,rightMax,rightMin", `${numberBoxes.length} boxes; without limits: ${withoutLimits.join()}`);
+    check("no number box in the pane allows a negative number", numberBoxes.filter((n) => n.options?.minValue).every((n) => n.options.minValue.value >= 0));
+
     // Two-line x-axis labels (SPEC Decision 12): date above, ISO week below, still aligned with the marks.
     render(visual, container, progressDataView({ reportedWeeks: 20 }));
     const oneLineY = Number(q('[data-role="x-label"][data-bucket="0"]').getAttribute("y"));

@@ -9,6 +9,7 @@ Every version heading must match `pbiviz.json`'s `visual.version` and a `vX.Y.Z`
 
 ## [Unreleased]
 
+- Format pane: number boxes enforce their valid range (text sizes, widths, percentages, decimal places, row height); axis minimum and maximum stay open because negative values are valid
 - Matrix: custom row order and a width for the line below any measure row or the header, so rows can be grouped and separated
 - X-axis: optional second label line for weeks (e.g. date above, ISO or project week below)
 - Format pane: nine grouped cards (86 controls plus per-measure and per-series colours, styles, value modes and totals) and three style presets (Classic S-curve, Weekly progress, Minimal) resolved as explicit value, then preset, then base default; axis titles, legend title, label colours, units and precision

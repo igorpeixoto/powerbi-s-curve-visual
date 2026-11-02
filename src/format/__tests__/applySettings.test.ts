@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type powerbi from "powerbi-visuals-api";
 
+import { formattingSettings } from "powerbi-visuals-utils-formattingmodel";
+
 import { applySettings, type ApplyContext } from "../applySettings";
 import { THEME_LIGHT_TINT } from "../presets";
 import { toRenderOptions } from "../toRenderOptions";
@@ -21,6 +23,56 @@ describe("Format pane model", () => {
         const names = model.cards.flatMap((card) => ("groups" in card ? card.groups.map((g) => g.name) : []));
         expect(names.length).toBe(26);
         expect(new Set(names).size).toBe(names.length);
+    });
+});
+
+describe("Format pane number limits", () => {
+    const numberBoxes = () => {
+        const { model } = applySettings(undefined, context({
+            measures: [
+                { queryName: "A", displayName: "A", role: "columnValues", objects: undefined },
+                { queryName: "B", displayName: "B", role: "columnValues", objects: undefined },
+            ],
+        }));
+        return model.cards.flatMap((card) => ("groups" in card ? card.groups.flatMap((g) => g.slices ?? []) : []))
+            .filter((slice): slice is formattingSettings.NumUpDown => slice instanceof formattingSettings.NumUpDown);
+    };
+
+    it("gives every number box limits that exclude negatives, except the axis ranges", () => {
+        const boxes = numberBoxes();
+        const unlimited = boxes.filter((box) => !box.options).map((box) => box.name);
+        expect(unlimited.sort()).toEqual(["leftMax", "leftMin", "rightMax", "rightMin"]);
+        const limited = boxes.filter((box) => box.options);
+        expect(limited.length).toBeGreaterThan(25);
+        for (const box of limited) {
+            expect(box.options?.minValue?.value, box.name).toBeGreaterThanOrEqual(0);
+            expect(box.options?.maxValue?.value, box.name).toBeGreaterThan(box.options?.minValue?.value ?? 0);
+        }
+    });
+
+    it("allows 0 only where 0 means something", () => {
+        const min = (name: string) => numberBoxes().find((box) => box.name === name)?.options?.minValue?.value;
+        for (const name of ["matrixFontSize", "legendFontSize", "leftTitleFontSize", "markerSize", "strokeWidth", "gridlineWidth", "rowHeight", "maxHeightPercent", "columnRowPosition"]) {
+            expect(min(name), name).toBeGreaterThan(0);
+        }
+        for (const name of ["minBucketWidth", "bucketGap", "columnOpacity", "cornerRadius", "leftPrecision", "headerLineWidth", "columnRowLineWidth"]) {
+            expect(min(name), name).toBe(0);
+        }
+    });
+
+    it("clamps saved values to the same limits the pane enforces", () => {
+        const options = toRenderOptions(applySettings(view({
+            lines: { strokeWidth: -2, markerSize: 0 },
+            matrix: { rowHeight: 1, matrixFontSize: 0, maxHeightPercent: -10 },
+            leftAxis: { leftPrecision: -1, gridlineWidth: 0 },
+        }), context()));
+        expect(options.lines.strokeWidth).toBe(0.5);
+        expect(options.lines.markerSize).toBe(1);
+        expect(options.matrix.rowHeight).toBe(12);
+        expect(options.matrix.fontSize).toBe(6);
+        expect(options.matrix.maxHeightPercent).toBe(10);
+        expect(options.leftAxis.precision).toBe(0);
+        expect(options.gridlines.width).toBe(0.5);
     });
 });
 
