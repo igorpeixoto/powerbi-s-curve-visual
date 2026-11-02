@@ -19,8 +19,18 @@ export function drawLegend(svg: SvgSelection, scene: Scene): void {
         .style("left", `${legend.rect.x}px`).style("top", `${legend.rect.y}px`)
         .attr("width", legend.rect.width).attr("height", legend.rect.height);
 
+    const offset = scene.titles.legend ? 1 : 0;
+    const titlePosition = legend.items[0];
+    if (scene.titles.legend && titlePosition) {
+        svg.append("text")
+            .attr("data-role", "legend-title")
+            .attr("x", titlePosition.x).attr("y", titlePosition.y + itemHeight / 2).attr("dy", "0.35em")
+            .attr("fill", scene.ink.legend).style("font-size", `${fontPx}px`).style("font-weight", "600")
+            .text(scene.titles.legend);
+    }
+
     scene.legendItems.forEach((item, i) => {
-        const position = legend.items[i];
+        const position = legend.items[i + offset];
         if (!position) return;
         const g = svg.append("g")
             .attr("data-role", "legend-item")
@@ -39,7 +49,7 @@ export function drawLegend(svg: SvgSelection, scene: Scene): void {
         }
         g.append("text")
             .attr("x", LEGEND_LAYOUT.swatch + LEGEND_LAYOUT.gap).attr("y", middle).attr("dy", "0.35em")
-            .attr("fill", scene.theme.text).style("font-size", `${fontPx}px`)
+            .attr("fill", scene.ink.legend).style("font-size", `${fontPx}px`)
             .text(item.label);
     });
 }

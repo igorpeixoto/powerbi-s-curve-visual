@@ -8,16 +8,36 @@ export type LineStyle = "solid" | "dashed" | "dotted";
 export type LegendPosition = "top" | "bottom" | "left" | "right";
 export type GridlineStyle = "solid" | "dashed" | "dotted";
 
+/** An explicit colour from the Format pane, or null to follow the report theme. */
+export type ColorOverride = string | null;
+
+export interface TitleOptions {
+    show: boolean;
+    /** Empty = the field's name. */
+    text: string;
+    fontSize: number;
+    color: ColorOverride;
+}
+
 export interface AxisOptions {
     show: boolean;
     min?: number;
     max?: number;
     /** pt */
     fontSize: number;
-    /** 0 = auto */
+    /** 0 = auto, 1 = none, otherwise the unit (1e3, 1e6, …). */
     displayUnits: number;
     precision?: number;
     gridlines: boolean;
+    labelColor: ColorOverride;
+    title: TitleOptions;
+}
+
+export interface LabelOptions {
+    fontSize: number;
+    color: ColorOverride;
+    displayUnits: number;
+    precision?: number;
 }
 
 export interface RenderOptions {
@@ -34,6 +54,8 @@ export interface RenderOptions {
         /** 0–1 */
         opacity: number;
         cornerRadius: number;
+        /** Explicit fills, by series key (with series) or measure queryName. */
+        colors: Record<string, string>;
     };
     lines: {
         show: boolean;
@@ -44,18 +66,21 @@ export interface RenderOptions {
         markerSize: number;
         /** Per line-measure queryName. */
         styles: Record<string, LineStyle>;
+        /** Explicit colours of total-across-series lines, per measure queryName. */
+        colors: Record<string, string>;
         /** null = localised default. */
         cumulativeSuffix: string | null;
     };
     leftAxis: AxisOptions;
     rightAxis: AxisOptions;
-    gridlines: { style: GridlineStyle; width: number };
-    xAxis: { show: boolean; fontSize: number; weekLabelFormat: WeekLabelFormat };
+    /** color: explicit, the "themeLightTint" preset token, or null for the theme's gridline colour. */
+    gridlines: { style: GridlineStyle; width: number; color: ColorOverride };
+    xAxis: { show: boolean; fontSize: number; weekLabelFormat: WeekLabelFormat; labelColor: ColorOverride; title: { show: boolean; text: string } };
     dataLabels: {
-        columns: { show: boolean; position: "outsideEnd" | "insideEnd"; fontSize: number };
-        lines: { show: boolean; points: "last" | "all"; fontSize: number };
+        columns: LabelOptions & { show: boolean; position: "outsideEnd" | "insideEnd" };
+        lines: LabelOptions & { show: boolean; points: "last" | "all" };
     };
-    legend: { show: boolean; position: LegendPosition; fontSize: number };
+    legend: { show: boolean; position: LegendPosition; fontSize: number; color: ColorOverride; showTitle: boolean; titleText: string };
     matrix: {
         show: boolean;
         showTotals: boolean;
@@ -73,6 +98,9 @@ export interface RenderOptions {
         measureAggregations: Record<string, TotalAggregation>;
         displayUnits: number;
         precision?: number;
+        fontColor: ColorOverride;
+        headerColor: ColorOverride;
+        borderColor: ColorOverride;
     };
 }
 
@@ -81,7 +109,7 @@ export const defaultRenderOptions: RenderOptions = {
     fontFamily: "'Segoe UI', wf_segoe-ui_normal, helvetica, arial, sans-serif",
     bucketGap: 0.2,
     minBucketWidth: 0,
-    columns: { show: true, layout: "stacked", clusterGap: 0.1, opacity: 1, cornerRadius: 0 },
+    columns: { show: true, layout: "stacked", clusterGap: 0.1, opacity: 1, cornerRadius: 0, colors: {} },
     lines: {
         show: true,
         strokeWidth: 2,
@@ -90,17 +118,18 @@ export const defaultRenderOptions: RenderOptions = {
         showMarkers: false,
         markerSize: 4,
         styles: {},
+        colors: {},
         cumulativeSuffix: null,
     },
-    leftAxis: { show: true, fontSize: 9, displayUnits: 0, gridlines: true },
-    rightAxis: { show: true, fontSize: 9, displayUnits: 0, gridlines: false },
-    gridlines: { style: "dashed", width: 1 },
-    xAxis: { show: true, fontSize: 9, weekLabelFormat: "weekStart" },
+    leftAxis: { show: true, fontSize: 9, displayUnits: 0, gridlines: true, labelColor: null, title: { show: false, text: "", fontSize: 11, color: null } },
+    rightAxis: { show: true, fontSize: 9, displayUnits: 0, gridlines: false, labelColor: null, title: { show: false, text: "", fontSize: 11, color: null } },
+    gridlines: { style: "dashed", width: 1, color: null },
+    xAxis: { show: true, fontSize: 9, weekLabelFormat: "weekStart", labelColor: null, title: { show: false, text: "" } },
     dataLabels: {
-        columns: { show: false, position: "outsideEnd", fontSize: 9 },
-        lines: { show: true, points: "last", fontSize: 9 },
+        columns: { show: false, position: "outsideEnd", fontSize: 9, color: null, displayUnits: 0 },
+        lines: { show: true, points: "last", fontSize: 9, color: null, displayUnits: 0 },
     },
-    legend: { show: true, position: "top", fontSize: 9 },
+    legend: { show: true, position: "top", fontSize: 9, color: null, showTitle: false, titleText: "" },
     matrix: {
         show: true,
         showTotals: true,
@@ -115,6 +144,9 @@ export const defaultRenderOptions: RenderOptions = {
         aggregations: { column: "sum", line: "last", table: "sum" },
         measureAggregations: {},
         displayUnits: 0,
+        fontColor: null,
+        headerColor: null,
+        borderColor: null,
     },
 };
 

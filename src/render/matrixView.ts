@@ -41,13 +41,13 @@ export function drawMatrix(container: DivSelection, scene: Scene, clipId: string
         header.append("text")
             .attr("data-role", "totals-header")
             .attr("x", plotRight + totalsWidth / 2).attr("y", matrix.headerHeight / 2).attr("dy", "0.35em")
-            .attr("text-anchor", "middle").attr("fill", theme.text)
+            .attr("text-anchor", "middle").attr("fill", scene.ink.matrixHeader)
             .style("font-size", `${fontPx}px`).style("font-weight", options.matrix.headerBold ? "600" : "normal")
             .text(truncate(scene.totalsLabel, totalsWidth - 8, (t) => scene.measure(t, fontPt, options.matrix.headerBold)));
     }
     if (options.matrix.showBorders) {
         header.append("line").attr("x1", 0).attr("x2", bodyWidth).attr("y1", matrix.headerHeight - 0.5).attr("y2", matrix.headerHeight - 0.5)
-            .attr("stroke", theme.border).attr("stroke-width", 1);
+            .attr("stroke", scene.ink.matrixBorder).attr("stroke-width", 1);
     }
 
     const body = container.append("div").attr("class", "s-curve__matrix-body")
@@ -70,7 +70,7 @@ export function drawMatrix(container: DivSelection, scene: Scene, clipId: string
         .attr("data-row", (_, i) => i)
         .attr("x", (r) => 12 + (r.level ? 12 : 0))
         .attr("y", (_, i) => i * rowHeight + rowHeight / 2).attr("dy", "0.35em")
-        .attr("fill", theme.text)
+        .attr("fill", scene.ink.matrixHeader)
         .style("font-size", `${fontPx}px`)
         .style("font-weight", (r) => (options.matrix.headerBold && r.level === 0 ? 600 : null))
         .text((r) => truncate(r.label, geometry.plotLeft - 18 - (r.level ? 12 : 0), (t) => scene.measure(t, fontPt, options.matrix.headerBold && r.level === 0)));
@@ -88,7 +88,7 @@ export function drawMatrix(container: DivSelection, scene: Scene, clipId: string
             .attr("x", (b) => b.x0).attr("width", (b) => b.x1 - b.x0)
             .attr("y", y).attr("height", rowHeight)
             .attr("fill", "transparent")
-            .attr("stroke", options.matrix.showBorders ? theme.border : null)
+            .attr("stroke", options.matrix.showBorders ? scene.ink.matrixBorder : null)
             .attr("stroke-width", options.matrix.showBorders ? 0.5 : null);
         group.selectAll("text").data(geometry.buckets).join("text")
             .attr("data-role", "cell-text")
@@ -96,7 +96,7 @@ export function drawMatrix(container: DivSelection, scene: Scene, clipId: string
             .attr("data-row", rowIndex)
             .attr("x", (b) => b.center)
             .attr("y", y + rowHeight / 2).attr("dy", "0.35em")
-            .attr("text-anchor", "middle").attr("fill", theme.text)
+            .attr("text-anchor", "middle").attr("fill", scene.ink.matrixText)
             .style("font-size", `${fontPx}px`)
             .text((b) => scene.cellText(row, row.values[b.index] ?? null, b.x1 - b.x0 - 4));
     });
@@ -108,7 +108,7 @@ export function drawMatrix(container: DivSelection, scene: Scene, clipId: string
             .attr("data-row", (_, i) => i)
             .attr("x", plotRight + totalsWidth / 2)
             .attr("y", (_, i) => i * rowHeight + rowHeight / 2).attr("dy", "0.35em")
-            .attr("text-anchor", "middle").attr("fill", theme.text)
+            .attr("text-anchor", "middle").attr("fill", scene.ink.matrixText)
             .style("font-size", `${fontPx}px`)
             .style("font-weight", (r) => (options.matrix.headerBold && r.level === 0 ? 600 : null))
             .text((r) => scene.cellText(r, r.total, totalsWidth - 8));
@@ -117,7 +117,7 @@ export function drawMatrix(container: DivSelection, scene: Scene, clipId: string
         svg.append("g").selectAll("line").data(rows).join("line")
             .attr("x1", 0).attr("x2", bodyWidth)
             .attr("y1", (_, i) => (i + 1) * rowHeight - 0.5).attr("y2", (_, i) => (i + 1) * rowHeight - 0.5)
-            .attr("stroke", theme.border).attr("stroke-width", 0.5);
+            .attr("stroke", scene.ink.matrixBorder).attr("stroke-width", 0.5);
     }
 
     return { scrolled: [cells] };

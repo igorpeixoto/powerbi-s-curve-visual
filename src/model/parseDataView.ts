@@ -16,6 +16,7 @@ export function emptyParsedDataView(): ParsedDataView {
         series: [],
         hasSeries: false,
         seriesFieldName: null,
+        bucketFieldName: null,
         measures: [],
         values: {},
         highlights: null,
@@ -107,6 +108,7 @@ export function parseDataView(dataView: DataView | undefined, options: ModelOpti
     parsed.warnings.dataReduced = Boolean(dataView?.metadata?.segment);
 
     const category = categorical?.categories?.[0];
+    parsed.bucketFieldName = category?.source.displayName ?? null;
     if (category?.source.roles?.categoryDate && isDateHierarchy(categorical?.categories ?? [])) {
         // Year/Quarter/Month/Day levels instead of a date: nothing to bucket (SPEC §8).
         parsed.bucketRole = "categoryDate";

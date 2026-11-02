@@ -9,6 +9,7 @@ Every version heading must match `pbiviz.json`'s `visual.version` and a `vX.Y.Z`
 
 ## [Unreleased]
 
+- Format pane: nine grouped cards (86 controls plus per-measure and per-series colours, styles, value modes and totals) and three style presets (Classic S-curve, Weekly progress, Minimal) resolved as explicit value, then preset, then base default; axis titles, legend title, label colours, units and precision
 - Interaction: selection and cross-filtering from bars, line points, axis labels, matrix cells, row headers and legend entries (Ctrl/Cmd for multi-select, background click clears), highlights from other visuals, tooltips including report-page tooltips, context menu, keyboard navigation with a focus ring and announcements, high-contrast styling, bookmark restore
 - Rendering: stacked or clustered columns, cumulative lines with end labels, value axes, weekly x-axis labels, legend, and the aligned matrix with totals, all positioned from the shared x geometry
 - Empty states: landing page, missing wells, zero rows, date hierarchy in the Date well, viewport too small

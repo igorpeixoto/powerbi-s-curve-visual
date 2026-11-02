@@ -4,6 +4,7 @@ import { curveLinear, curveMonotoneX, line as d3line, scaleLinear, type Selectio
 
 import type { BarSegment } from "../model/columns";
 import { clusterSlots, labelStep } from "../model/geometry";
+import { truncate } from "./measure";
 import { ptToPx, type LineStyle } from "./options";
 import type { Scene } from "./scene";
 
@@ -67,22 +68,41 @@ export function drawChart(svg: SvgSelection, scene: Scene, clipId: string, scrol
         content.append("g").attr("class", "s-curve__grid").selectAll("line").data(grid.ticks).join("line")
             .attr("x1", 0).attr("x2", geometry.contentWidth)
             .attr("y1", (t) => grid.scale(t)).attr("y2", (t) => grid.scale(t))
-            .attr("stroke", theme.gridline).attr("stroke-width", options.gridlines.width)
+            .attr("stroke", scene.ink.gridline).attr("stroke-width", options.gridlines.width)
             .attr("stroke-dasharray", dashArray(options.gridlines.style, options.gridlines.width));
     }
 
     // Value axes, pinned in the gutters.
-    const axisText = (g: GSelection, labels: string[], ticks: number[], scale: (v: number) => number, x: number, anchor: string, fontSize: number) => {
+    const axisText = (g: GSelection, labels: string[], ticks: number[], scale: (v: number) => number, x: number, anchor: string, fontSize: number, color: string) => {
         g.selectAll("text").data(ticks).join("text")
             .attr("x", x).attr("y", (t) => scale(t)).attr("dy", "0.32em")
-            .attr("text-anchor", anchor).attr("fill", theme.secondaryText).style("font-size", `${ptToPx(fontSize)}px`)
+            .attr("text-anchor", anchor).attr("fill", color).style("font-size", `${ptToPx(fontSize)}px`)
             .text((_, i) => labels[i]);
     };
     if (yLeft && scene.left?.labels.length) {
-        axisText(svg.append("g").attr("class", "s-curve__axis-left"), scene.left.labels, scene.left.ticks, yLeft, geometry.plotLeft - 6, "end", options.leftAxis.fontSize);
+        axisText(svg.append("g").attr("class", "s-curve__axis-left"), scene.left.labels, scene.left.ticks, yLeft, geometry.plotLeft - 6, "end", options.leftAxis.fontSize, scene.ink.leftLabels);
     }
     if (yRight && scene.right?.labels.length) {
-        axisText(svg.append("g").attr("class", "s-curve__axis-right"), scene.right.labels, scene.right.ticks, yRight, plotRight + 6, "start", options.rightAxis.fontSize);
+        axisText(svg.append("g").attr("class", "s-curve__axis-right"), scene.right.labels, scene.right.ticks, yRight, plotRight + 6, "start", options.rightAxis.fontSize, scene.ink.rightLabels);
+    }
+
+    // Axis titles: rotated in the outer edge of each gutter; the x title centred under the plot (pinned, not scrolled).
+    const plotMiddle = (layout.plotTop + layout.plotBottom) / 2;
+    const titleText = (role: string, text: string, x: number, y: number, rotate: number, fontSize: number, color: string) => svg.append("text")
+        .attr("data-role", role)
+        .attr("transform", `translate(${x},${y}) rotate(${rotate})`)
+        .attr("text-anchor", "middle").attr("dy", "0.35em")
+        .attr("fill", color).style("font-size", `${ptToPx(fontSize)}px`).style("font-weight", "600")
+        .text(truncate(text, Math.max(0, rotate ? layout.plotBottom - layout.plotTop : geometry.plotWidth), (t) => scene.measure(t, fontSize, true)));
+    if (scene.titles.left) {
+        titleText("axis-title-left", scene.titles.left, ptToPx(options.leftAxis.title.fontSize) * 0.75, plotMiddle, -90, options.leftAxis.title.fontSize, scene.ink.leftTitle);
+    }
+    if (scene.titles.right) {
+        titleText("axis-title-right", scene.titles.right, width - ptToPx(options.rightAxis.title.fontSize) * 0.75, plotMiddle, 90, options.rightAxis.title.fontSize, scene.ink.rightTitle);
+    }
+    if (scene.titles.x) {
+        const xTitleSize = options.xAxis.fontSize + 1;
+        titleText("axis-title-x", scene.titles.x, geometry.plotLeft + geometry.plotWidth / 2, height - ptToPx(xTitleSize) * 0.75, 0, xTitleSize, scene.ink.xTitle);
     }
 
     // Columns. With highlights from another visual, the full bar is drawn faded and the highlighted part solid
@@ -178,7 +198,7 @@ export function drawChart(svg: SvgSelection, scene: Scene, clipId: string, scrol
                     linesGroup.append("text")
                         .attr("data-role", "line-label").attr("data-bucket", p.i).attr("data-measure", line.measureKey)
                         .attr("x", x).attr("y", y).attr("text-anchor", anchor)
-                        .attr("fill", color).style("font-size", `${labelFont}px`)
+                        .attr("fill", scene.ink.lineLabels ?? color).style("font-size", `${labelFont}px`)
                         .text(text);
                 }
             }
@@ -206,13 +226,12 @@ export function drawChart(svg: SvgSelection, scene: Scene, clipId: string, scrol
             const inside = options.dataLabels.columns.position === "insideEnd";
             const y = stack.extreme >= 0 ? (inside ? yEdge + columnFont + 2 : yEdge - 4) : (inside ? yEdge - 4 : yEdge + columnFont + 2);
             const box = { x0: x - textWidth / 2, x1: x + textWidth / 2, y0: y - columnFont, y1: y };
-            if (textWidth > slot.width + 4 && scene.bars.slotCount > 1) continue;
             if (box.y0 < 0 || box.y1 > layout.plotBottom || overlaps(box, placedLabels)) continue;
             placedLabels.push(box);
             labels.append("text")
                 .attr("data-role", "column-label").attr("data-bucket", stack.bucket)
                 .attr("x", x).attr("y", y).attr("text-anchor", "middle")
-                .attr("fill", theme.text).style("font-size", `${columnFont}px`)
+                .attr("fill", scene.ink.columnLabels ?? theme.text).style("font-size", `${columnFont}px`)
                 .text(text);
         }
     }
@@ -228,7 +247,7 @@ export function drawChart(svg: SvgSelection, scene: Scene, clipId: string, scrol
             .attr("x", (b) => b.center)
             .attr("y", layout.plotBottom + 4 + ptToPx(fontSize))
             .attr("text-anchor", "middle")
-            .attr("fill", theme.secondaryText)
+            .attr("fill", scene.ink.xLabels)
             .style("font-size", `${ptToPx(fontSize)}px`)
             .style("visibility", (b) => (b.index % step === 0 ? null : "hidden"))
             .text((b) => scene.bucketLabels[b.index]);

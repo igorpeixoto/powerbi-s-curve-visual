@@ -5,7 +5,8 @@ import { bucketLabel } from "../model/labels";
 import { buildMatrixRows, type MatrixRow } from "../model/matrix";
 import { columnExtent, lineExtent, niceDomain, percentDomain, type NiceDomain } from "../model/scales";
 import type { MeasureInfo, SCurveModel } from "../model/types";
-import { DataColors, themeColors, type PaletteLike, type ThemeColors } from "./colors";
+import { THEME_LIGHT_TINT } from "../format/presets";
+import { DataColors, mix, themeColors, type PaletteLike, type ThemeColors } from "./colors";
 import type { Formatters, NumberFormatter } from "./format";
 import { computeLayout, type Layout } from "./layout";
 import { truncate, type TextMeasurer } from "./measure";
@@ -16,6 +17,32 @@ export interface AxisScene {
     domain: [number, number];
     ticks: number[];
     labels: string[];
+}
+
+/** Resolved text and line colours: an explicit Format pane colour, else the theme (always the theme in high contrast). */
+export interface Ink {
+    leftLabels: string;
+    rightLabels: string;
+    xLabels: string;
+    leftTitle: string;
+    rightTitle: string;
+    xTitle: string;
+    gridline: string;
+    /** null = the theme text colour. */
+    columnLabels: string | null;
+    /** null = each line's own colour. */
+    lineLabels: string | null;
+    legend: string;
+    matrixText: string;
+    matrixHeader: string;
+    matrixBorder: string;
+}
+
+export interface Titles {
+    left: string | null;
+    right: string | null;
+    x: string | null;
+    legend: string | null;
 }
 
 export interface LegendItem {
@@ -32,6 +59,8 @@ export interface Scene {
     options: RenderOptions;
     layout: Layout;
     theme: ThemeColors;
+    ink: Ink;
+    titles: Titles;
     colors: DataColors;
     measure: TextMeasurer;
     strings: Strings;
@@ -93,7 +122,28 @@ export function buildScene(input: SceneInput): Scene {
         lineMeasures: lineMeasures.map((m) => ({ key: m.key, queryName: m.queryName })),
         seriesKeys: model.series.map((s) => s.key),
         hasSeries: model.hasSeries,
+        columnOverrides: options.columns.colors,
+        lineOverrides: options.lines.colors,
     });
+    const theme = themeColors(input.palette);
+    const highContrast = Boolean(input.palette.isHighContrast);
+    const pick = (override: string | null, fallback: string) => (highContrast ? fallback : override ?? fallback);
+    const gridlineOverride = options.gridlines.color === THEME_LIGHT_TINT ? mix(theme.gridline, theme.background, 0.6) : options.gridlines.color;
+    const ink: Ink = {
+        leftLabels: pick(options.leftAxis.labelColor, theme.secondaryText),
+        rightLabels: pick(options.rightAxis.labelColor, theme.secondaryText),
+        xLabels: pick(options.xAxis.labelColor, theme.secondaryText),
+        leftTitle: pick(options.leftAxis.title.color, theme.text),
+        rightTitle: pick(options.rightAxis.title.color, theme.text),
+        xTitle: pick(null, theme.text),
+        gridline: pick(gridlineOverride, theme.gridline),
+        columnLabels: highContrast ? theme.text : options.dataLabels.columns.color,
+        lineLabels: highContrast ? theme.text : options.dataLabels.lines.color,
+        legend: pick(options.legend.color, theme.text),
+        matrixText: pick(options.matrix.fontColor, theme.text),
+        matrixHeader: pick(options.matrix.headerColor, theme.text),
+        matrixBorder: pick(options.matrix.borderColor, theme.border),
+    };
 
     // Scales and axis labels (SPEC §5.3, §6.4).
     const bars = buildBarLayout(
@@ -153,7 +203,6 @@ export function buildScene(input: SceneInput): Scene {
 
     // Legend items: one per drawn mark (SPEC §5.5).
     // High contrast tells lines apart by dash style rather than colour (SPEC §7.4).
-    const highContrast = Boolean(input.palette.isHighContrast);
     const lineOrder = new Map(lineMeasures.map((m, i) => [m.key, i]));
     const lineStyle = (measureKey: string): LineStyle => {
         if (highContrast) return HIGH_CONTRAST_LINE_STYLES[(lineOrder.get(measureKey) ?? 0) % HIGH_CONTRAST_LINE_STYLES.length];
@@ -182,20 +231,34 @@ export function buildScene(input: SceneInput): Scene {
             measureKey: line.measureKey, seriesIndex: line.seriesIndex,
         });
     }
+    // Titles: an empty title text falls back to the field's name.
+    const firstLineName = lineMeasures[0] ? `${lineMeasures[0].displayName}${model.lineDetails[lineMeasures[0].key]?.total.accumulated ? cumulativeSuffix : ""}` : null;
+    const titles: Titles = {
+        left: options.leftAxis.show && options.leftAxis.title.show && columnMeasures.length ? options.leftAxis.title.text || columnMeasures[0].displayName : null,
+        right: options.rightAxis.show && options.rightAxis.title.show && lines.length ? options.rightAxis.title.text || firstLineName : null,
+        x: options.xAxis.show && options.xAxis.title.show ? options.xAxis.title.text || model.bucketFieldName : null,
+        legend: options.legend.showTitle ? options.legend.titleText || model.seriesFieldName : null,
+    };
+
     const legendFont = options.legend.fontSize;
-    const itemWidths = legendItems.map((item) => LEGEND_SWATCH + LEGEND_SWATCH_GAP + Math.min(measure(item.label, legendFont), 220));
+    const legendTitleWidth = titles.legend ? Math.min(measure(titles.legend, legendFont, true), 220) : 0;
+    const itemWidths = [
+        ...(titles.legend ? [legendTitleWidth] : []),
+        ...legendItems.map((item) => LEGEND_SWATCH + LEGEND_SWATCH_GAP + Math.min(measure(item.label, legendFont), 220)),
+    ];
 
     const axisWidth = (axis: AxisScene | null, fontSize: number) =>
         axis && axis.labels.length ? Math.max(...axis.labels.map((l) => measure(l, fontSize))) + AXIS_LABEL_PADDING : 0;
+    const titleBand = (title: string | null, fontSize: number) => (title ? Math.ceil(ptToPx(fontSize) * 1.5) : 0);
 
     const layout = computeLayout({
         width: input.viewport.width,
         height: input.viewport.height,
         legend: { show: options.legend.show, position: options.legend.position, itemWidths, itemHeight: Math.ceil(ptToPx(legendFont) * 1.6) },
         axes: {
-            leftWidth: axisWidth(left, options.leftAxis.fontSize),
-            rightWidth: axisWidth(right, options.rightAxis.fontSize),
-            xLabelHeight: options.xAxis.show ? Math.ceil(ptToPx(options.xAxis.fontSize) * 1.3) + 6 : 4,
+            leftWidth: axisWidth(left, options.leftAxis.fontSize) + titleBand(titles.left, options.leftAxis.title.fontSize),
+            rightWidth: axisWidth(right, options.rightAxis.fontSize) + titleBand(titles.right, options.rightAxis.title.fontSize),
+            xLabelHeight: (options.xAxis.show ? Math.ceil(ptToPx(options.xAxis.fontSize) * 1.3) + 6 : 4) + titleBand(titles.x, options.xAxis.fontSize + 1),
         },
         matrix: {
             show: options.matrix.show,
@@ -215,19 +278,21 @@ export function buildScene(input: SceneInput): Scene {
         if (percent) return formatters.percent();
         const m = measuresByKey.get(measureKey);
         const extent = rightScale ? Math.max(...rightScale.domain.map(Math.abs)) : 0;
-        return formatters.number(m?.format, { displayUnits: 0, reference: extent });
+        return formatters.number(m?.format, { displayUnits: options.dataLabels.lines.displayUnits, precision: options.dataLabels.lines.precision, reference: extent });
     };
     const columnLabel = (measureKey: string): NumberFormatter => {
         const m = measuresByKey.get(measureKey);
         const extent = leftScale ? Math.max(...leftScale.domain.map(Math.abs)) : 0;
-        return formatters.number(m?.format, { displayUnits: 0, reference: extent });
+        return formatters.number(m?.format, { displayUnits: options.dataLabels.columns.displayUnits, precision: options.dataLabels.columns.precision, reference: extent });
     };
 
     return {
         model,
         options,
         layout,
-        theme: themeColors(input.palette),
+        theme,
+        ink,
+        titles,
         colors,
         measure,
         strings,
@@ -256,7 +321,10 @@ export function buildScene(input: SceneInput): Scene {
             if (value instanceof Date) return formatters.shortDate(value);
             return String(value);
         },
-        legendItems: legendItems.map((item, i) => ({ ...item, label: truncate(item.label, itemWidths[i] - LEGEND_SWATCH - LEGEND_SWATCH_GAP, (t) => measure(t, legendFont)) })),
+        legendItems: legendItems.map((item, i) => {
+            const width = itemWidths[i + (titles.legend ? 1 : 0)];
+            return { ...item, label: truncate(item.label, width - LEGEND_SWATCH - LEGEND_SWATCH_GAP, (t) => measure(t, legendFont)) };
+        }),
     };
 }
 

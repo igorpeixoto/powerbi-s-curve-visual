@@ -26,6 +26,9 @@ export function progressDataView({
     reduced = false,
     actualAllNull = false,
     highlights = false,
+    objects = undefined,
+    seriesObjects = {},
+    columnObjects = {},
 } = {}) {
     const dates = Array.from({ length: weeks }, (_, i) => new Date(2026, 0, 5 + 7 * i));
     const dateSource = { displayName: "WeekStart", queryName: "progress.WeekStart", roles: { categoryDate: true }, index: 0 };
@@ -47,19 +50,20 @@ export function progressDataView({
         if (highlights) {
             for (const column of values) column.highlights = column.values.map((v) => (g === 0 ? v : null));
         }
-        return { name, identity: name ? { key: `series:${name}` } : undefined, values };
+        return { name, identity: name ? { key: `series:${name}` } : undefined, values, objects: seriesObjects[g] };
     });
 
     const flat = groups.flatMap((g) => g.values);
     flat.grouped = () => groups;
-    const columns = [dateSource, planned, actual, ...tables];
+    // Per-measure formatting (selector { metadata: queryName }) arrives on the metadata column.
+    const columns = [dateSource, planned, actual, ...tables].map((c) => (columnObjects[c.queryName] ? { ...c, objects: columnObjects[c.queryName] } : c));
     if (series) {
         flat.source = { displayName: "Discipline", queryName: "progress.Discipline", roles: { series: true } };
         columns.push(flat.source);
     }
 
     return {
-        metadata: { columns, ...(reduced ? { segment: {} } : {}) },
+        metadata: { columns, ...(reduced ? { segment: {} } : {}), ...(objects ? { objects } : {}) },
         categorical: {
             categories: [{ source: dateSource, values: dates, identity: dates.map((_, i) => ({ key: `row:${i}` })) }],
             values: flat,

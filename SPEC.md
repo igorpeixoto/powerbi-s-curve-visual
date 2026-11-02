@@ -157,7 +157,7 @@ Per line measure (and per series in `perSeries` mode):
 
 ### 6.3 Percent display
 
-Physical progress is usually read as a percentage. **Display as** `value` (default) or `percentOfBaseline`, where the baseline is the **grand total of the line measure marked *Use as % baseline*** (normally the plan). If none is marked, the first line measure as delivered is used (see §4: well order isn't recoverable for measures bound to two wells, so authors should mark the baseline explicitly). In percent mode every line and its matrix rows show `cumulative ÷ baseline`, and the right axis runs from 0 % to 100 % (it extends above 100 % if values exceed the baseline). Column values and the left axis are unaffected.
+Physical progress is usually read as a percentage. **Display as** `value` (default) or `percentOfBaseline`, where the baseline is the **grand total of the line measure marked *Use as % baseline*** (normally the plan). If none is marked, the first line measure as delivered is used (see §4: well order isn't recoverable for measures bound to two wells, so authors should mark the baseline explicitly). If several are marked, the first marked one, in delivered order, wins. In percent mode every line and its matrix rows show `cumulative ÷ baseline`, and the right axis runs from 0 % to 100 % (it extends above 100 % if values exceed the baseline). Column values and the left axis are unaffected.
 
 ### 6.4 Scales and domains
 
@@ -261,12 +261,12 @@ Types: T toggle, N number, % percent number, C colour, D dropdown, X text, F fon
 
 **Columns** (`columns`), card toggle `showColumns` T
 - *Options* (`options`): `seriesLayout` D (stacked | clustered), `clusterGap` % (10), `columnOpacity` % (100), `cornerRadius` N (0)
-- *Colors* (`colors`): `columnFill` C, Inst.
+- *Colors* (`colors`): `columnFill` C, Inst. (one per series when Series is bound, otherwise one per column measure)
 
 **Lines** (`lines`), card toggle `showLines` T
 - *Options* (`options`): `lineSeriesMode` D (total | perSeries), `strokeWidth` N (2), `lineOpacity` % (100), `interpolation` D (linear | monotone), `showMarkers` T (off), `markerSize` N (4)
 - *Values* (`values`): `valueMode` D (runningTotal | asProvided), Inst.; `lineEnd` D (lastValue | lastBucket), Inst.; `percentBaseline` T (off), Inst.; `displayAs` D (value | percentOfBaseline); `cumulativeSuffix` X (" (cumulative)")
-- *Colors and style* (`colors`): `lineColor` C, Inst.; `lineStyle` D (solid | dashed | dotted), Inst.
+- *Colors and style* (`colors`): `lineColor` C, Inst.; `lineStyle` D (solid | dashed | dotted), Inst. `lineColor` applies to total-across-series lines; in `perSeries` mode each line takes its series colour (`columnFill`), tinted per measure.
 
 **Y-axis (columns)** (`leftAxis`), card toggle `showLeftAxis` T
 - *Range* (`range`): `leftMin` N, `leftMax` N (auto)

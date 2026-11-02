@@ -6,6 +6,7 @@ import {
     progressDataView,
     zeroRowsDataView,
 } from "./data.mjs";
+import { runFormatChecks } from "./format.mjs";
 import { runInteractionChecks } from "./interaction.mjs";
 
 const lines = [];
@@ -176,7 +177,8 @@ async function run() {
     check("reports reduced data through the warning icon", calls.warnings.some((w) => /reduced/i.test(w.detailedText)), JSON.stringify(calls.warnings));
 
     const interactionCalls = runInteractionChecks(plugin, check);
-    const failures = [calls, ...interactionCalls].flatMap((c) => c.renderingFailed);
+    const formatCalls = runFormatChecks(plugin, check);
+    const failures = [calls, ...interactionCalls, ...formatCalls].flatMap((c) => c.renderingFailed);
     check("never reports renderingFailed", failures.length === 0, failures.join("; "));
     check("signals renderingFinished for every update", calls.renderingFinished === calls.renderingStarted, JSON.stringify(calls));
 }

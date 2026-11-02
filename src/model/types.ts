@@ -50,6 +50,8 @@ export interface MeasureInfo {
 
 export interface ParsedDataView {
     bucketRole: BucketRole | null;
+    /** Display name of the field in the Category or Date well, for the x-axis title. */
+    bucketFieldName: string | null;
     buckets: Bucket[];
     series: SeriesInfo[];
     hasSeries: boolean;

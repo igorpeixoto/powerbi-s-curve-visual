@@ -80,6 +80,10 @@ export interface DataColorInput {
     lineMeasures: { key: string; queryName: string }[];
     seriesKeys: string[];
     hasSeries: boolean;
+    /** Explicit fills from the Format pane: by series key with series, else by measure queryName. */
+    columnOverrides?: Record<string, string>;
+    /** Explicit colours of total-across-series lines, by measure queryName. */
+    lineOverrides?: Record<string, string>;
 }
 
 /**
@@ -94,6 +98,9 @@ export class DataColors {
     private readonly queryNames: Map<string, string>;
     private readonly highContrast: string | null;
     private readonly background: string;
+    private readonly columnOverrides: Record<string, string>;
+    private readonly lineOverrides: Record<string, string>;
+    private readonly seriesKeys: string[];
 
     constructor(palette: PaletteLike, input: DataColorInput) {
         this.highContrast = palette.isHighContrast ? palette.foreground?.value ?? "currentColor" : null;
@@ -102,6 +109,9 @@ export class DataColors {
         for (const m of [...input.columnMeasures, ...input.lineMeasures]) {
             if (!this.measureColors.has(m.queryName)) this.measureColors.set(m.queryName, palette.getColor(m.queryName).value);
         }
+        this.columnOverrides = input.columnOverrides ?? {};
+        this.lineOverrides = input.lineOverrides ?? {};
+        this.seriesKeys = input.seriesKeys;
         input.columnMeasures.forEach((m, i) => this.columnIndex.set(m.key, i));
         input.lineMeasures.forEach((m, i) => this.lineIndex.set(m.key, i));
         this.queryNames = new Map([...input.columnMeasures, ...input.lineMeasures].map((m) => [m.key, m.queryName]));
@@ -111,15 +121,25 @@ export class DataColors {
         return mix(base, this.background, TINTS[Math.min(index, TINTS.length - 1)]);
     }
 
-    bar(measureKey: string, seriesIndex: number | null): string {
-        if (this.highContrast) return this.highContrast;
-        if (seriesIndex === null) return this.measureColors.get(this.queryNames.get(measureKey) ?? "") ?? "currentColor";
-        return this.tinted(this.seriesColors[seriesIndex], this.columnIndex.get(measureKey) ?? 0);
+    private measureColor(measureKey: string, overrides: Record<string, string>): string {
+        const queryName = this.queryNames.get(measureKey) ?? "";
+        return overrides[queryName] ?? this.measureColors.get(queryName) ?? "currentColor";
     }
 
+    private seriesColor(seriesIndex: number): string {
+        return this.columnOverrides[this.seriesKeys[seriesIndex]] ?? this.seriesColors[seriesIndex];
+    }
+
+    bar(measureKey: string, seriesIndex: number | null): string {
+        if (this.highContrast) return this.highContrast;
+        if (seriesIndex === null) return this.measureColor(measureKey, this.columnOverrides);
+        return this.tinted(this.seriesColor(seriesIndex), this.columnIndex.get(measureKey) ?? 0);
+    }
+
+    /** A per-measure line colour applies to total-across-series lines; per-series lines use the series colour. */
     line(measureKey: string, seriesIndex: number | null): string {
         if (this.highContrast) return this.highContrast;
-        if (seriesIndex === null) return this.measureColors.get(this.queryNames.get(measureKey) ?? "") ?? "currentColor";
-        return this.tinted(this.seriesColors[seriesIndex], this.lineIndex.get(measureKey) ?? 0);
+        if (seriesIndex === null) return this.measureColor(measureKey, this.lineOverrides);
+        return this.tinted(this.seriesColor(seriesIndex), this.lineIndex.get(measureKey) ?? 0);
     }
 }

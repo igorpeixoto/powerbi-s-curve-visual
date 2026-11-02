@@ -10,7 +10,8 @@ import IVisual = powerbi.extensibility.visual.IVisual;
 import IVisualEventService = powerbi.extensibility.IVisualEventService;
 
 import { Interactivity } from "./behaviour/interactivity";
-import { defaultRenderOptions } from "./render/options";
+import { applySettings, readInstances } from "./format/applySettings";
+import { toRenderOptions } from "./format/toRenderOptions";
 import { Renderer } from "./render/renderer";
 import { VisualFormattingSettingsModel } from "./settings";
 
@@ -19,7 +20,8 @@ export class Visual implements IVisual {
     private readonly renderer: Renderer;
     private readonly interactivity: Interactivity;
     private readonly formattingSettingsService: FormattingSettingsService;
-    private formattingSettings: VisualFormattingSettingsModel = new VisualFormattingSettingsModel();
+    private readonly host: powerbi.extensibility.visual.IVisualHost;
+    private formattingSettings: VisualFormattingSettingsModel;
 
     // The generated plugin wrapper declares options as optional, so the constructor must accept that.
     constructor(options?: VisualConstructorOptions) {
@@ -27,6 +29,7 @@ export class Visual implements IVisual {
             throw new Error("Visual constructor options are required");
         }
         const host = options.host;
+        this.host = host;
         this.events = host.eventService;
         this.formattingSettingsService = new FormattingSettingsService();
         this.renderer = new Renderer(options.element, {
@@ -44,23 +47,33 @@ export class Visual implements IVisual {
             },
             this.renderer,
         );
+        // The Format pane must render before the first update and with nothing bound.
+        this.formattingSettings = applySettings(undefined, { palette: host.colorPalette, measures: [], series: [] }).model;
     }
 
     public update(options: VisualUpdateOptions): void {
         this.events.renderingStarted(options);
         try {
             const dataView = options.dataViews?.[0];
-            this.formattingSettings = this.formattingSettingsService.populateFormattingSettingsModel(
-                VisualFormattingSettingsModel,
-                dataView,
-            );
-            // Phase 5 resolves these from the Format pane and the style preset; until then, the Base defaults.
-            const scene = this.renderer.render(dataView, options.viewport, defaultRenderOptions);
+            const applied = applySettings(dataView, {
+                palette: this.host.colorPalette,
+                ...readInstances(dataView, (groupIndex) => this.seriesSelector(dataView, groupIndex)),
+            });
+            this.formattingSettings = applied.model;
+            const scene = this.renderer.render(dataView, options.viewport, toRenderOptions(applied));
             this.interactivity.update(scene, dataView);
             this.events.renderingFinished(options);
         } catch (error) {
             this.events.renderingFailed(options, String(error));
         }
+    }
+
+    /** Selector of one series group, for per-series Format pane settings. */
+    private seriesSelector(dataView: powerbi.DataView | undefined, groupIndex: number): powerbi.data.Selector | null {
+        const values = dataView?.categorical?.values;
+        const group = values?.grouped()[groupIndex];
+        if (!values || !group) return null;
+        return this.host.createSelectionIdBuilder().withSeries(values, group).createSelectionId().getSelector();
     }
 
     public getFormattingModel(): powerbi.visuals.FormattingModel {
