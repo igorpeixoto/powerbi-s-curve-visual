@@ -99,7 +99,7 @@ export interface RenderOptions {
         measureAggregations: Record<string, TotalAggregation>;
         rowPositions: Record<string, number>;
         rowLineWidths: Record<string, number>;
-        /** Width of the line under the header row; null = the grid default. */
+        /** Width of the line under the header row; null = matrixGridLineWidth. */
         headerLineWidth: number | null;
         displayUnits: number;
         precision?: number;
@@ -107,6 +107,11 @@ export interface RenderOptions {
         headerColor: ColorOverride;
         borderColor: ColorOverride;
     };
+}
+
+/** Width of a row or header line the author hasn't set. */
+export function matrixGridLineWidth(showBorders: boolean): number {
+    return showBorders ? 1 : 0;
 }
 
 export const defaultRenderOptions: RenderOptions = {

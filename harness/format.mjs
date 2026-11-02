@@ -141,16 +141,28 @@ export function runFormatChecks(plugin, check) {
     const panePositions = ["columnRowPosition", "lineRowPosition", "tableRowPosition"].flatMap((p) => paneSlices(rowModel, p).map((s) => s.value));
     check("the Format pane shows each row's effective position", JSON.stringify(panePositions) === JSON.stringify([2, 3, 5, 4, 1]), JSON.stringify(panePositions));
     check("per-row position slices are per-measure", paneSlices(rowModel, "lineRowPosition").every((s) => s.descriptor.selector?.metadata));
+    const paneLimits = (property) => {
+        const slice = paneSlices(rowModel, property)[0];
+        return [slice?.options?.minValue?.value, slice?.options?.maxValue?.value, slice?.value];
+    };
+    check("the pane limits a row position from 1 to the number of rows", paneLimits("tableRowPosition").slice(0, 2).join() === "1,5", paneLimits("tableRowPosition").join());
+    check("the pane limits a line from 0 to 6 and shows the default of 1", paneLimits("lineRowLineWidth").join() === "0,6,1", paneLimits("lineRowLineWidth").join());
+    check("the pane limits the header line and shows the default of 1", paneLimits("headerLineWidth").join() === "0,6,1", paneLimits("headerLineWidth").join());
 
     render(visual, container, progressDataView({ reportedWeeks: 20, series: true, objects: { matrix: { expandSeries: true } }, columnObjects: { [TABLE]: { matrix: { tableRowPosition: 1, tableRowLineWidth: 3 } } } }));
     const expanded = headersText();
     check("with one row per series, a moved measure keeps its series rows above its total",
         expanded[4] === "Table measure 1" && expanded.slice(0, 4).join() === "Civil,Electrical,Instrumentation,Mechanical", JSON.stringify(expanded.slice(0, 6)));
-    check("the line below a block sits under its total row", rowLine(4)?.getAttribute("stroke-width") === "3" && rowLine(3)?.getAttribute("stroke-width") === "0.5");
+    check("the line below a block sits under its total row", rowLine(4)?.getAttribute("stroke-width") === "3" && rowLine(3)?.getAttribute("stroke-width") === "1");
 
     render(visual, container, progressDataView({ reportedWeeks: 20, objects: { matrix: { headerLineWidth: 2 } }, columnObjects: { [PLANNED]: { matrix: { columnRowLineWidth: 4, lineRowLineWidth: 0 } } } }));
-    check("a saved row line uses its width and the others keep the default", rowLine(0)?.getAttribute("stroke-width") === "4" && rowLine(1)?.getAttribute("stroke-width") === "0.5");
+    check("a saved row line uses its width and the others keep the default", rowLine(0)?.getAttribute("stroke-width") === "4" && rowLine(1)?.getAttribute("stroke-width") === "1");
     check("a saved 0 removes that row's line", rowLine(2) === null && rowLine(3) !== null);
+    render(visual, container, progressDataView({ reportedWeeks: 20 }));
+    const defaultLineY = rowLine(0).getAttribute("y1");
+    render(visual, container, progressDataView({ reportedWeeks: 20, columnObjects: { [PLANNED]: { matrix: { columnRowLineWidth: 1 } } } }));
+    check("typing the default width draws the same line as no setting", rowLine(0).getAttribute("stroke-width") === "1" && rowLine(0).getAttribute("y1") === defaultLineY);
+    render(visual, container, progressDataView({ reportedWeeks: 20, objects: { matrix: { headerLineWidth: 2 } }, columnObjects: { [PLANNED]: { matrix: { columnRowLineWidth: 4, lineRowLineWidth: 0 } } } }));
     check("a saved header line uses its width", q('[data-role="header-line"]')?.getAttribute("stroke-width") === "2");
     check("cells draw no horizontal edges of their own", qa('[data-role="cell"]').every((c) => c.getAttribute("stroke") === null) && qa('[data-role="column-line"]').length === 21);
     check("a wide line straddles the row boundary without moving the rows",

@@ -126,7 +126,7 @@ describe("toRenderOptions", () => {
         const slices = applied.model.matrix.rows.slices as { name: string; displayName: string; value: unknown }[];
         expect(slices.map((s) => [s.name, s.displayName, s.value])).toEqual([
             ["columnRowPosition", "Planned (column) · Position", 2],
-            ["columnRowLineWidth", "Planned (column) · Line below (px)", undefined],
+            ["columnRowLineWidth", "Planned (column) · Line below (px)", 1],
             ["lineRowPosition", "Planned (line) · Position", 1],
             ["lineRowLineWidth", "Planned (line) · Line below (px)", 2],
             ["tableRowPosition", "Crew · Position", 3],
@@ -140,9 +140,27 @@ describe("toRenderOptions", () => {
     it("hides the row group without measures, and maps the header line, empty by default", () => {
         const applied = applySettings(undefined, context());
         expect(applied.model.matrix.rows.visible).toBe(false);
+        expect(applied.model.matrix.grid.headerLineWidth.value).toBe(1);
         expect(toRenderOptions(applied).matrix.headerLineWidth).toBeNull();
         expect(toRenderOptions(applySettings(view({ matrix: { headerLineWidth: 0 } }), context())).matrix.headerLineWidth).toBe(0);
         expect(toRenderOptions(applySettings(view({ matrix: { headerLineWidth: 40 } }), context())).matrix.headerLineWidth).toBe(6);
+    });
+
+    it("shows 0 for unset lines with Borders off, and limits both numbers in the pane", () => {
+        const applied = applySettings(view({ matrix: { showBorders: false } }), context({
+            measures: [
+                { queryName: "A", displayName: "A", role: "columnValues", objects: undefined },
+                { queryName: "B", displayName: "B", role: "tableOnlyValues", objects: { matrix: { tableRowLineWidth: 2 } } },
+            ],
+        }));
+        const slices = applied.model.matrix.rows.slices as { name: string; value: unknown; options?: { minValue?: { value: number }; maxValue?: { value: number } } }[];
+        const byName = (name: string) => slices.find((s) => s.name === name);
+        expect(applied.model.matrix.grid.headerLineWidth.value).toBe(0);
+        expect(toRenderOptions(applied).matrix.headerLineWidth).toBeNull();
+        expect(byName("columnRowLineWidth")?.value).toBe(0);
+        expect(byName("tableRowLineWidth")?.value).toBe(2);
+        expect(byName("columnRowPosition")?.options).toMatchObject({ minValue: { value: 1 }, maxValue: { value: 2 } });
+        expect(byName("columnRowLineWidth")?.options).toMatchObject({ minValue: { value: 0 }, maxValue: { value: 6 } });
     });
 
     it("maps the optional second x-axis label line, off by default", () => {

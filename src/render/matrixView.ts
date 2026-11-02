@@ -2,7 +2,7 @@
 // Cells are absolutely positioned from the shared geometry, never laid out by a table algorithm.
 import type { Selection } from "d3";
 
-import { ptToPx } from "./options";
+import { matrixGridLineWidth, ptToPx } from "./options";
 import type { Scene } from "./scene";
 import { truncate } from "./measure";
 
@@ -45,7 +45,8 @@ export function drawMatrix(container: DivSelection, scene: Scene, clipId: string
             .style("font-size", `${fontPx}px`).style("font-weight", options.matrix.headerBold ? "600" : "normal")
             .text(truncate(scene.totalsLabel, totalsWidth - 8, (t) => scene.measure(t, fontPt, options.matrix.headerBold)));
     }
-    const headerLine = options.matrix.headerLineWidth ?? (options.matrix.showBorders ? 1 : 0);
+    const gridLine = matrixGridLineWidth(options.matrix.showBorders);
+    const headerLine = options.matrix.headerLineWidth ?? gridLine;
     if (headerLine > 0) {
         header.append("line")
             .attr("data-role", "header-line")
@@ -127,7 +128,7 @@ export function drawMatrix(container: DivSelection, scene: Scene, clipId: string
 
     // Row lines. A saved width draws even with Borders off, so a matrix can have group separators and no grid; a saved 0 removes the line.
     const rowLines = rows
-        .map((row, index) => ({ index, width: row.lineBelow ?? (options.matrix.showBorders ? 0.5 : 0) }))
+        .map((row, index) => ({ index, width: row.lineBelow ?? gridLine }))
         .filter((line) => line.width > 0);
     // Wide lines straddle the row boundary, except the last, which would be clipped by the bottom of the matrix.
     const rowLineY = (line: { index: number; width: number }): number => {

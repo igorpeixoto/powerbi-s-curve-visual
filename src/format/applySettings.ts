@@ -7,6 +7,7 @@ import { formattingSettings } from "powerbi-visuals-utils-formattingmodel";
 import { orderByPosition } from "../model/matrix";
 import { roleIndexOf } from "../model/parseDataView";
 import { mix, themeColors, type PaletteLike } from "../render/colors";
+import { matrixGridLineWidth } from "../render/options";
 import { item, VisualFormattingSettingsModel, type InstanceSpec } from "../settings";
 import { presetOverrides, THEME_LIGHT_TINT, type StylePreset } from "./presets";
 import { isExplicit, presetOf, type ObjectsLike } from "./resolve";
@@ -174,7 +175,10 @@ export function applySettings(dataView: powerbi.DataView | undefined, context: A
         return { kind, spec: { displayName: `${m.displayName} · ${kind === "line" ? "Cumulative total" : "Total"}`, selector: measureSelector(m.queryName), value } };
     }));
 
-    // Row order and lines, per matrix row. The pane shows each row's effective position, so it always reads 1, 2, 3...
+    // Row order and lines, per matrix row. The pane shows effective values: positions always read 1, 2, 3... and a
+    // line the author hasn't set shows the grid's width, so typing that width is the way back to the default.
+    const gridLine = matrixGridLineWidth(model.matrix.grid.showBorders.value !== false);
+    if (!explicit.has("matrix.headerLineWidth")) model.matrix.grid.headerLineWidth.value = gridLine;
     const rowTargets = aggregationTargets.map(({ m, kind }) => {
         const key = `${kind}:${m.queryName}`;
         const position = savedNumber(m.objects, "matrix", `${kind}RowPosition`);
@@ -190,7 +194,7 @@ export function applySettings(dataView: powerbi.DataView | undefined, context: A
         return {
             kind,
             position: { displayName: `${row} · Position`, selector, value: rowOrder.indexOf(key) + 1 },
-            lineWidth: { displayName: `${row} · Line below (px)`, selector, value: lineWidth },
+            lineWidth: { displayName: `${row} · Line below (px)`, selector, value: lineWidth ?? gridLine },
         };
     }));
 

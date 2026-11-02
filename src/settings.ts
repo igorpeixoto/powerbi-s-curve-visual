@@ -23,6 +23,17 @@ export interface InstanceSpec<T> {
 /** "Auto" for optional numbers: no value until the author types one. */
 const AUTO = undefined as unknown as number;
 const THEME_COLOR = { value: "" };
+
+/** Matrix lines wider than this would cover the text of a row at the minimum row height (SPEC §5.6). */
+export const MAX_MATRIX_LINE_WIDTH = 6;
+
+/** Limits the Format pane enforces on a number. The numbers are ValidatorType.Min and .Max: a const enum, which the unit tests' transpiler can't inline. */
+function range(min: number, max: number): powerbi.visuals.NumUpDownFormat {
+    return {
+        minValue: { type: 0 as powerbi.visuals.ValidatorType.Min, value: min },
+        maxValue: { type: 1 as powerbi.visuals.ValidatorType.Max, value: max },
+    };
+}
 const DEFAULT_FONT = "'Segoe UI', wf_segoe-ui_normal, helvetica, arial, sans-serif";
 
 function items(entries: [string, string][]): powerbi.IEnumMember[] {
@@ -456,9 +467,12 @@ class MatrixRowsGroup extends Group {
     }
 
     /** Per measure and row kind: where its row goes and how wide the line below it is. */
-    setInstances(instances: { kind: "column" | "line" | "table"; position: InstanceSpec<number>; lineWidth: InstanceSpec<number | undefined> }[]): void {
-        this.slices = instances.flatMap(({ kind, position, lineWidth }) => {
-            const width = { ...lineWidth, value: lineWidth.value ?? AUTO };
+    setInstances(instances: { kind: "column" | "line" | "table"; position: InstanceSpec<number>; lineWidth: InstanceSpec<number> }[]): void {
+        const positionRange = range(1, Math.max(1, instances.length));
+        const widthRange = range(0, MAX_MATRIX_LINE_WIDTH);
+        this.slices = instances.flatMap(({ kind, position: spec, lineWidth }) => {
+            const position = { ...spec, options: positionRange };
+            const width = { ...lineWidth, options: widthRange };
             switch (kind) {
                 case "column":
                     return [new formattingSettings.NumUpDown({ name: "columnRowPosition", ...position }), new formattingSettings.NumUpDown({ name: "columnRowLineWidth", ...width })];
@@ -488,7 +502,7 @@ class MatrixGridGroup extends Group {
     rowHeight = new formattingSettings.NumUpDown({ name: "rowHeight", displayName: "Row height (px)", value: 20 });
     showBorders = new formattingSettings.ToggleSwitch({ name: "showBorders", displayName: "Borders", value: true });
     borderColor = new formattingSettings.ColorPicker({ name: "borderColor", displayName: "Border color", value: THEME_COLOR });
-    headerLineWidth = new formattingSettings.NumUpDown({ name: "headerLineWidth", displayName: "Line below header (px)", value: AUTO });
+    headerLineWidth = new formattingSettings.NumUpDown({ name: "headerLineWidth", displayName: "Line below header (px)", value: 1, options: range(0, MAX_MATRIX_LINE_WIDTH) });
     banding = new formattingSettings.ToggleSwitch({ name: "banding", displayName: "Banded rows", value: false });
     maxHeightPercent = new formattingSettings.NumUpDown({ name: "maxHeightPercent", displayName: "Maximum height (% of visual)", value: 50 });
 

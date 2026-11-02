@@ -6,6 +6,7 @@ import type { DisplayAs, LineEnd, LineSeriesMode, TotalAggregation, ValueMode, W
 import type { WeekLabelFormat } from "../model/labels";
 import type { SeriesLayout } from "../model/columns";
 import { defaultRenderOptions, type GridlineStyle, type LegendPosition, type LineStyle, type RenderOptions } from "../render/options";
+import { MAX_MATRIX_LINE_WIDTH } from "../settings";
 import type { AppliedSettings } from "./applySettings";
 import { THEME_LIGHT_TINT } from "./presets";
 
@@ -22,9 +23,6 @@ function precision(value: unknown): number | undefined {
     const n = finite(value);
     return n === undefined ? undefined : Math.min(9, Math.max(0, Math.round(n)));
 }
-
-/** Wider than this, a line would cover the text of a row at the minimum row height (SPEC §5.6). */
-const MAX_MATRIX_LINE_WIDTH = 6;
 
 function oneOf<T extends string>(value: unknown, allowed: readonly T[], fallback: T): T {
     return (allowed as readonly unknown[]).includes(value) ? (value as T) : fallback;
@@ -48,7 +46,6 @@ export function toRenderOptions(applied: AppliedSettings): RenderOptions {
 
     const rowLineWidths: Record<string, number> = {};
     for (const [key, width] of Object.entries(instances.rowLineWidths)) rowLineWidths[key] = clamp(width, 0, MAX_MATRIX_LINE_WIDTH, 0);
-    const headerLineWidth = finite(m.matrix.grid.headerLineWidth.value);
 
     const general = m.general;
     const columns = m.columns;
@@ -183,7 +180,7 @@ export function toRenderOptions(applied: AppliedSettings): RenderOptions {
             measureAggregations: aggregations,
             rowPositions: { ...instances.rowPositions },
             rowLineWidths,
-            headerLineWidth: headerLineWidth === undefined ? null : clamp(headerLineWidth, 0, MAX_MATRIX_LINE_WIDTH, 0),
+            headerLineWidth: explicit.has("matrix.headerLineWidth") ? clamp(matrix.grid.headerLineWidth.value, 0, MAX_MATRIX_LINE_WIDTH, 0) : null,
             displayUnits: finite(matrix.values.matrixDisplayUnits.value) ?? 0,
             precision: precision(matrix.values.matrixPrecision.value),
             fontColor: color("matrix", matrix.text.matrixFontColor),
