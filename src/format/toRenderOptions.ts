@@ -23,6 +23,9 @@ function precision(value: unknown): number | undefined {
     return n === undefined ? undefined : Math.min(9, Math.max(0, Math.round(n)));
 }
 
+/** Wider than this, a line would cover the text of a row at the minimum row height (SPEC §5.6). */
+const MAX_MATRIX_LINE_WIDTH = 6;
+
 function oneOf<T extends string>(value: unknown, allowed: readonly T[], fallback: T): T {
     return (allowed as readonly unknown[]).includes(value) ? (value as T) : fallback;
 }
@@ -42,6 +45,10 @@ export function toRenderOptions(applied: AppliedSettings): RenderOptions {
     for (const [queryName, end] of Object.entries(instances.lineEnds)) lineEnds[queryName] = oneOf(end, ["lastValue", "lastBucket"], "lastValue");
     const aggregations: Record<string, TotalAggregation> = {};
     for (const [key, value] of Object.entries(instances.aggregations)) aggregations[key] = oneOf(value, ["sum", "last", "average", "none"], "sum");
+
+    const rowLineWidths: Record<string, number> = {};
+    for (const [key, width] of Object.entries(instances.rowLineWidths)) rowLineWidths[key] = clamp(width, 0, MAX_MATRIX_LINE_WIDTH, 0);
+    const headerLineWidth = finite(m.matrix.grid.headerLineWidth.value);
 
     const general = m.general;
     const columns = m.columns;
@@ -174,6 +181,9 @@ export function toRenderOptions(applied: AppliedSettings): RenderOptions {
             maxHeightPercent: clamp(matrix.grid.maxHeightPercent.value, 10, 90, 50),
             aggregations: base.matrix.aggregations,
             measureAggregations: aggregations,
+            rowPositions: { ...instances.rowPositions },
+            rowLineWidths,
+            headerLineWidth: headerLineWidth === undefined ? null : clamp(headerLineWidth, 0, MAX_MATRIX_LINE_WIDTH, 0),
             displayUnits: finite(matrix.values.matrixDisplayUnits.value) ?? 0,
             precision: precision(matrix.values.matrixPrecision.value),
             fontColor: color("matrix", matrix.text.matrixFontColor),

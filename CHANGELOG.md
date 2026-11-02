@@ -9,6 +9,7 @@ Every version heading must match `pbiviz.json`'s `visual.version` and a `vX.Y.Z`
 
 ## [Unreleased]
 
+- Matrix: custom row order and a width for the line below any measure row or the header, so rows can be grouped and separated
 - X-axis: optional second label line for weeks (e.g. date above, ISO or project week below)
 - Format pane: nine grouped cards (86 controls plus per-measure and per-series colours, styles, value modes and totals) and three style presets (Classic S-curve, Weekly progress, Minimal) resolved as explicit value, then preset, then base default; axis titles, legend title, label colours, units and precision
 - Interaction: selection and cross-filtering from bars, line points, axis labels, matrix cells, row headers and legend entries (Ctrl/Cmd for multi-select, background click clears), highlights from other visuals, tooltips including report-page tooltips, context menu, keyboard navigation with a focus ring and announcements, high-contrast styling, bookmark restore

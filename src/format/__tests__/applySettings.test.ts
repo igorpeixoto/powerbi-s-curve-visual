@@ -19,7 +19,7 @@ describe("Format pane model", () => {
     it("gives every group a name unique across all cards (the library builds group uids from the name alone)", () => {
         const { model } = applySettings(undefined, context());
         const names = model.cards.flatMap((card) => ("groups" in card ? card.groups.map((g) => g.name) : []));
-        expect(names.length).toBe(25);
+        expect(names.length).toBe(26);
         expect(new Set(names).size).toBe(names.length);
     });
 });
@@ -113,6 +113,36 @@ describe("toRenderOptions", () => {
         expect(weekly).toMatchObject({ bucketGap: 0.1, lines: { strokeWidth: 1, opacity: 0.5 }, matrix: { show: false }, dataLabels: { columns: { show: true }, lines: { show: false } } });
         const minimal = toRenderOptions(applySettings(view({ general: { stylePreset: "minimal" } }), context()));
         expect(minimal).toMatchObject({ columns: { show: false }, matrix: { show: false }, legend: { position: "bottom" }, gridlines: { style: "solid" } });
+    });
+
+    it("offers position and line width per matrix row, showing effective positions", () => {
+        const applied = applySettings(undefined, context({
+            measures: [
+                { queryName: "Planned", displayName: "Planned", role: "columnValues", objects: undefined },
+                { queryName: "Planned", displayName: "Planned", role: "lineValues", objects: { matrix: { lineRowPosition: 1, lineRowLineWidth: 2 } } },
+                { queryName: "Crew", displayName: "Crew", role: "tableOnlyValues", objects: { matrix: { tableRowLineWidth: 99, tableRowPosition: "first" } } },
+            ],
+        }));
+        const slices = applied.model.matrix.rows.slices as { name: string; displayName: string; value: unknown }[];
+        expect(slices.map((s) => [s.name, s.displayName, s.value])).toEqual([
+            ["columnRowPosition", "Planned (column) · Position", 2],
+            ["columnRowLineWidth", "Planned (column) · Line below (px)", undefined],
+            ["lineRowPosition", "Planned (line) · Position", 1],
+            ["lineRowLineWidth", "Planned (line) · Line below (px)", 2],
+            ["tableRowPosition", "Crew · Position", 3],
+            ["tableRowLineWidth", "Crew · Line below (px)", 99],
+        ]);
+        const options = toRenderOptions(applied);
+        expect(options.matrix.rowPositions).toEqual({ "line:Planned": 1 });
+        expect(options.matrix.rowLineWidths).toEqual({ "line:Planned": 2, "table:Crew": 6 });
+    });
+
+    it("hides the row group without measures, and maps the header line, empty by default", () => {
+        const applied = applySettings(undefined, context());
+        expect(applied.model.matrix.rows.visible).toBe(false);
+        expect(toRenderOptions(applied).matrix.headerLineWidth).toBeNull();
+        expect(toRenderOptions(applySettings(view({ matrix: { headerLineWidth: 0 } }), context())).matrix.headerLineWidth).toBe(0);
+        expect(toRenderOptions(applySettings(view({ matrix: { headerLineWidth: 40 } }), context())).matrix.headerLineWidth).toBe(6);
     });
 
     it("maps the optional second x-axis label line, off by default", () => {

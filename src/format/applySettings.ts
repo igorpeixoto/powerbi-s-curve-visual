@@ -4,6 +4,8 @@
 import type powerbi from "powerbi-visuals-api";
 import { formattingSettings } from "powerbi-visuals-utils-formattingmodel";
 
+import { orderByPosition } from "../model/matrix";
+import { roleIndexOf } from "../model/parseDataView";
 import { mix, themeColors, type PaletteLike } from "../render/colors";
 import { item, VisualFormattingSettingsModel, type InstanceSpec } from "../settings";
 import { presetOverrides, THEME_LIGHT_TINT, type StylePreset } from "./presets";
@@ -35,6 +37,9 @@ export interface InstanceValues {
     lineEnds: Record<string, string>;
     percentBaselines: string[];
     aggregations: Record<string, string>;
+    /** Keyed like aggregations: `${kind}:${queryName}`. Only rows the author set. */
+    rowPositions: Record<string, number>;
+    rowLineWidths: Record<string, number>;
 }
 
 export interface AppliedSettings {
@@ -61,6 +66,11 @@ function savedColor(objects: ObjectsLike, card: string, property: string): strin
 
 function savedValue(objects: ObjectsLike, card: string, property: string): unknown {
     return isExplicit(objects, card, property) ? objects?.[card]?.[property] : undefined;
+}
+
+function savedNumber(objects: ObjectsLike, card: string, property: string): number | undefined {
+    const value = savedValue(objects, card, property);
+    return typeof value === "number" && Number.isFinite(value) ? value : undefined;
 }
 
 function staticSlices(card: formattingSettings.CompositeCard): AnySlice[] {
@@ -112,7 +122,7 @@ export function applySettings(dataView: powerbi.DataView | undefined, context: A
     }
 
     // Per-instance slices, created fresh on this model so they never accumulate across updates.
-    const instances: InstanceValues = { columnFills: {}, lineColors: {}, lineStyles: {}, valueModes: {}, lineEnds: {}, percentBaselines: [], aggregations: {} };
+    const instances: InstanceValues = { columnFills: {}, lineColors: {}, lineStyles: {}, valueModes: {}, lineEnds: {}, percentBaselines: [], aggregations: {}, rowPositions: {}, rowLineWidths: {} };
     const byRole = (role: MeasureInstance["role"]) => context.measures.filter((m) => m.role === role);
     const columnMeasures = byRole("columnValues");
     const lineMeasures = byRole("lineValues");
@@ -164,12 +174,33 @@ export function applySettings(dataView: powerbi.DataView | undefined, context: A
         return { kind, spec: { displayName: `${m.displayName} · ${kind === "line" ? "Cumulative total" : "Total"}`, selector: measureSelector(m.queryName), value } };
     }));
 
+    // Row order and lines, per matrix row. The pane shows each row's effective position, so it always reads 1, 2, 3...
+    const rowTargets = aggregationTargets.map(({ m, kind }) => {
+        const key = `${kind}:${m.queryName}`;
+        const position = savedNumber(m.objects, "matrix", `${kind}RowPosition`);
+        const lineWidth = savedNumber(m.objects, "matrix", `${kind}RowLineWidth`);
+        if (position !== undefined) instances.rowPositions[key] = position;
+        if (lineWidth !== undefined) instances.rowLineWidths[key] = lineWidth;
+        return { m, kind, key, lineWidth };
+    });
+    const rowOrder = orderByPosition(rowTargets.map((t) => t.key), instances.rowPositions);
+    model.matrix.rows.setInstances(rowTargets.map(({ m, kind, key, lineWidth }) => {
+        const selector = measureSelector(m.queryName);
+        const row = kind === "table" ? m.displayName : `${m.displayName} (${kind})`;
+        return {
+            kind,
+            position: { displayName: `${row} · Position`, selector, value: rowOrder.indexOf(key) + 1 },
+            lineWidth: { displayName: `${row} · Line below (px)`, selector, value: lineWidth },
+        };
+    }));
+
     return { model, preset, explicit, fromPreset, instances };
 }
 
 /** Measures and series the Format pane offers per-instance settings for, read defensively from the dataView. */
 export function readInstances(dataView: powerbi.DataView | undefined, seriesSelector: (groupIndex: number) => Selector | null): Pick<ApplyContext, "measures" | "series"> {
     const measures: MeasureInstance[] = [];
+    const wellIndex = new Map<MeasureInstance, number>();
     const seen = new Set<string>();
     for (const column of dataView?.metadata?.columns ?? []) {
         for (const role of ["columnValues", "lineValues", "tableOnlyValues"] as const) {
@@ -177,9 +208,13 @@ export function readInstances(dataView: powerbi.DataView | undefined, seriesSele
             const key = `${role}|${column.queryName}`;
             if (seen.has(key)) continue;
             seen.add(key);
-            measures.push({ queryName: column.queryName, displayName: column.displayName, role, objects: column.objects as ObjectsLike });
+            const measure: MeasureInstance = { queryName: column.queryName, displayName: column.displayName, role, objects: column.objects as ObjectsLike };
+            wellIndex.set(measure, roleIndexOf(column, role) ?? measures.filter((m) => m.role === role).length);
+            measures.push(measure);
         }
     }
+    // The same order the matrix uses, so the positions shown in the pane match the rows.
+    measures.sort((a, b) => (a.role === b.role ? (wellIndex.get(a) ?? 0) - (wellIndex.get(b) ?? 0) : 0));
 
     const values = dataView?.categorical?.values;
     const series: SeriesInstance[] = [];

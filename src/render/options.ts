@@ -97,6 +97,10 @@ export interface RenderOptions {
         maxHeightPercent: number;
         aggregations: { column: TotalAggregation; line: TotalAggregation; table: TotalAggregation };
         measureAggregations: Record<string, TotalAggregation>;
+        rowPositions: Record<string, number>;
+        rowLineWidths: Record<string, number>;
+        /** Width of the line under the header row; null = the grid default. */
+        headerLineWidth: number | null;
         displayUnits: number;
         precision?: number;
         fontColor: ColorOverride;
@@ -144,6 +148,9 @@ export const defaultRenderOptions: RenderOptions = {
         maxHeightPercent: 50,
         aggregations: { column: "sum", line: "last", table: "sum" },
         measureAggregations: {},
+        rowPositions: {},
+        rowLineWidths: {},
+        headerLineWidth: null,
         displayUnits: 0,
         fontColor: null,
         headerColor: null,

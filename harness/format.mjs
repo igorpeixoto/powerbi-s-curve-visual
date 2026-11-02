@@ -114,6 +114,58 @@ export function runFormatChecks(plugin, check) {
     const plannedLine = q(`[data-role="line"][data-measure="${LINE_PLANNED}"]`);
     check("applies a saved per-measure line style", plannedLine?.getAttribute("stroke-dasharray") !== null);
 
+    // Matrix row order and lines (SPEC Decision 13).
+    const TABLE = "Sum(progress.Table1)";
+    const PLANNED = "Sum(progress.PlannedQty)";
+    const headersText = () => qa('[data-role="row-header"]').map((h) => h.textContent);
+    const rowLine = (row) => q(`[data-role="row-line"][data-row="${row}"]`);
+    render(visual, container, progressDataView({ reportedWeeks: 20 }));
+    const defaultHeaders = headersText();
+    const defaultTableCell = q('[data-role="cell-text"][data-bucket="4"][data-row="4"]').textContent;
+    const defaultTableTotal = q('[data-role="total"][data-row="4"]').textContent;
+    const defaultCumulativeTotal = q('[data-role="total"][data-row="2"]').textContent;
+    render(visual, container, progressDataView({ reportedWeeks: 20, columnObjects: { [TABLE]: { matrix: { tableRowPosition: 1 } }, [PLANNED]: { matrix: { lineRowPosition: 5 } } } }));
+    const moved = headersText();
+    check("moves matrix rows to their saved positions, per row kind",
+        moved.length === 5 && moved[0] === defaultHeaders[4] && moved[1] === defaultHeaders[0] && moved[2] === defaultHeaders[1] && moved[3] === defaultHeaders[3] && moved[4] === defaultHeaders[2],
+        JSON.stringify(moved));
+    check("a moved row keeps its own cells and total",
+        q('[data-role="cell-text"][data-bucket="4"][data-row="0"]').textContent === defaultTableCell
+            && q('[data-role="total"][data-row="0"]').textContent === defaultTableTotal
+            && q('[data-role="total"][data-row="4"]').textContent === defaultCumulativeTotal);
+    const movedYs = qa('[data-role="row-header"]').map((h) => Number(h.getAttribute("y")));
+    check("reordered rows keep the fixed row height", movedYs.every((y, i) => y === i * 20 + 10), JSON.stringify(movedYs));
+    const barsSpread = alignmentSpread(container, [0, 9, 19]);
+    check("alignment holds with reordered rows", barsSpread <= 0.5, `spread ${barsSpread}`);
+    const rowModel = visual.getFormattingModel();
+    const panePositions = ["columnRowPosition", "lineRowPosition", "tableRowPosition"].flatMap((p) => paneSlices(rowModel, p).map((s) => s.value));
+    check("the Format pane shows each row's effective position", JSON.stringify(panePositions) === JSON.stringify([2, 3, 5, 4, 1]), JSON.stringify(panePositions));
+    check("per-row position slices are per-measure", paneSlices(rowModel, "lineRowPosition").every((s) => s.descriptor.selector?.metadata));
+
+    render(visual, container, progressDataView({ reportedWeeks: 20, series: true, objects: { matrix: { expandSeries: true } }, columnObjects: { [TABLE]: { matrix: { tableRowPosition: 1, tableRowLineWidth: 3 } } } }));
+    const expanded = headersText();
+    check("with one row per series, a moved measure keeps its series rows above its total",
+        expanded[4] === "Table measure 1" && expanded.slice(0, 4).join() === "Civil,Electrical,Instrumentation,Mechanical", JSON.stringify(expanded.slice(0, 6)));
+    check("the line below a block sits under its total row", rowLine(4)?.getAttribute("stroke-width") === "3" && rowLine(3)?.getAttribute("stroke-width") === "0.5");
+
+    render(visual, container, progressDataView({ reportedWeeks: 20, objects: { matrix: { headerLineWidth: 2 } }, columnObjects: { [PLANNED]: { matrix: { columnRowLineWidth: 4, lineRowLineWidth: 0 } } } }));
+    check("a saved row line uses its width and the others keep the default", rowLine(0)?.getAttribute("stroke-width") === "4" && rowLine(1)?.getAttribute("stroke-width") === "0.5");
+    check("a saved 0 removes that row's line", rowLine(2) === null && rowLine(3) !== null);
+    check("a saved header line uses its width", q('[data-role="header-line"]')?.getAttribute("stroke-width") === "2");
+    check("cells draw no horizontal edges of their own", qa('[data-role="cell"]').every((c) => c.getAttribute("stroke") === null) && qa('[data-role="column-line"]').length === 21);
+    check("a wide line straddles the row boundary without moving the rows",
+        Number(rowLine(0).getAttribute("y1")) === 20 && Number(q('[data-role="row-header"][data-row="1"]').getAttribute("y")) === 30, rowLine(0).getAttribute("y1"));
+
+    render(visual, container, progressDataView({ reportedWeeks: 20, objects: { matrix: { showBorders: false, headerLineWidth: 1 } }, columnObjects: { [TABLE]: { matrix: { tableRowLineWidth: 3 } } } }));
+    check("with Borders off, only saved lines draw",
+        qa('[data-role="row-line"]').length === 1 && rowLine(4) !== null && q('[data-role="header-line"]') !== null && qa('[data-role="column-line"]').length === 0);
+    const lastLine = rowLine(4);
+    const matrixBottom = q(".s-curve__matrix-body").getBoundingClientRect().bottom;
+    check("the last row's line stays inside the matrix", lastLine.getBoundingClientRect().bottom <= matrixBottom + 0.5 && Number(lastLine.getAttribute("y1")) === 100 - 1.5, `y ${lastLine.getAttribute("y1")}`);
+
+    render(visual, container, progressDataView({ reportedWeeks: 20, objects: { matrix: { showBorders: false } } }));
+    check("with Borders off and nothing saved, no lines draw", qa('[data-role="row-line"]').length === 0 && q('[data-role="header-line"]') === null);
+
     // Two-line x-axis labels (SPEC Decision 12): date above, ISO week below, still aligned with the marks.
     render(visual, container, progressDataView({ reportedWeeks: 20 }));
     const oneLineY = Number(q('[data-role="x-label"][data-bucket="0"]').getAttribute("y"));

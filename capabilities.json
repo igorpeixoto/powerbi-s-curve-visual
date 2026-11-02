@@ -609,6 +609,36 @@
                         "integer": true
                     }
                 },
+                "columnRowPosition": {
+                    "type": {
+                        "integer": true
+                    }
+                },
+                "columnRowLineWidth": {
+                    "type": {
+                        "numeric": true
+                    }
+                },
+                "lineRowPosition": {
+                    "type": {
+                        "integer": true
+                    }
+                },
+                "lineRowLineWidth": {
+                    "type": {
+                        "numeric": true
+                    }
+                },
+                "tableRowPosition": {
+                    "type": {
+                        "integer": true
+                    }
+                },
+                "tableRowLineWidth": {
+                    "type": {
+                        "numeric": true
+                    }
+                },
                 "matrixFontSize": {
                     "type": {
                         "formatting": {
@@ -656,6 +686,11 @@
                                 "color": true
                             }
                         }
+                    }
+                },
+                "headerLineWidth": {
+                    "type": {
+                        "numeric": true
                     }
                 },
                 "banding": {

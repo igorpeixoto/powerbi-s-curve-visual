@@ -58,7 +58,7 @@ describe("tooltipItems", () => {
 
     it("shows a matrix cell's row label and value", () => {
         const ctx = context();
-        const rows = buildMatrixRows(ctx.model, { expandSeries: false, cumulativeSuffix: " (cumulative)", aggregations: { column: "sum", line: "last", table: "sum" }, measureAggregations: {} });
+        const rows = buildMatrixRows(ctx.model, { expandSeries: false, cumulativeSuffix: " (cumulative)", aggregations: { column: "sum", line: "last", table: "sum" }, measureAggregations: {}, rowPositions: {}, rowLineWidths: {} });
         const items = tooltipItems(ctx, { kind: "cell", bucket: 0, row: rows[1] });
         expect(items[0]).toMatchObject({ header: "Week 1", displayName: "Planned (cumulative)", value: "15" });
     });

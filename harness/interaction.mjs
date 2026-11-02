@@ -186,6 +186,30 @@ export function runInteractionChecks(plugin, check) {
     check("the tooltip shows both the full and the highlighted value",
         (calls.tooltip.show.at(-1)?.dataItems ?? []).some((i) => i.displayName.endsWith("(highlighted)")));
 
+    // Reordered matrix rows: clicks, tooltips and the keyboard follow the row, not its default position (SPEC Decision 13).
+    const rowsContainer = newContainer();
+    const rowsHost = createMockHost();
+    const rowsVisual = plugin.create({ element: rowsContainer, host: rowsHost.host });
+    const TABLE = "Sum(progress.Table1)";
+    render(rowsVisual, rowsContainer, progressDataView({ reportedWeeks: 20, columnObjects: { [TABLE]: { matrix: { tableRowPosition: 1, tableRowLineWidth: 6 } } } }));
+    const movedCell = rowsContainer.querySelector('[data-role="cell"][data-bucket="6"][data-row="0"]');
+    check("a real click reaches a cell next to a saved row line", pointerAt(movedCell) === movedCell);
+    const cellBox = movedCell.getBoundingClientRect();
+    const onLine = document.elementFromPoint(cellBox.left + cellBox.width / 2, cellBox.bottom);
+    check("a wide row line doesn't block the cells under it", onLine?.getAttribute("data-role") === "cell", onLine?.getAttribute("data-role"));
+    check("clicking a cell in a moved row selects that row's measure", rowsHost.calls.select.at(-1)?.keys[0] === `c:progress.WeekStart:6|m:${TABLE}`, JSON.stringify(rowsHost.calls.select.at(-1)?.keys));
+    pointerAt(movedCell, "mousemove");
+    check("the tooltip of a moved row names its measure", (rowsHost.calls.tooltip.show.at(-1)?.dataItems ?? []).some((i) => i.displayName === "Table measure 1"), JSON.stringify(rowsHost.calls.tooltip.show.at(-1)?.dataItems));
+    const rowsRoot = rowsContainer.querySelector(".s-curve");
+    const rowsRing = rowsContainer.querySelector(".s-curve__focus-ring");
+    const matrixTop = rowsContainer.querySelector(".s-curve__matrix-body").getBoundingClientRect().top;
+    const ringMiddle = () => center(rowsRing).y;
+    for (let i = 0; i < 30 && ringMiddle() < matrixTop; i++) key(rowsRoot, "ArrowDown");
+    check("↓ enters the matrix at the moved row",
+        Math.abs(ringMiddle() - center(movedCell).y) < 1 && rowsContainer.querySelector(".s-curve__live").textContent.includes("Table measure 1"),
+        `ring ${ringMiddle()}, row ${center(movedCell).y}, "${rowsContainer.querySelector(".s-curve__live").textContent}"`);
+    rowsContainer.remove();
+
     // No interactions when the host disallows them (e.g. a dashboard tile).
     const lockedContainer = newContainer();
     const locked = createMockHost({ allowInteractions: false });
@@ -215,5 +239,5 @@ export function runInteractionChecks(plugin, check) {
     check("tells lines apart by dash style in high contrast", new Set(hcLines).size === hcLines.length, JSON.stringify(hcLines));
 
     for (const c of [container, lockedContainer, hcContainer]) c.remove();
-    return [calls, locked.calls, hc.calls];
+    return [calls, rowsHost.calls, locked.calls, hc.calls];
 }

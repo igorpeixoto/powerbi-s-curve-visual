@@ -448,6 +448,30 @@ class MatrixValuesGroup extends Group {
     }
 }
 
+class MatrixRowsGroup extends Group {
+    constructor() {
+        super({ name: "matrixRows", displayName: "Row order and lines" });
+        this.slices = [];
+        this.visible = false;
+    }
+
+    /** Per measure and row kind: where its row goes and how wide the line below it is. */
+    setInstances(instances: { kind: "column" | "line" | "table"; position: InstanceSpec<number>; lineWidth: InstanceSpec<number | undefined> }[]): void {
+        this.slices = instances.flatMap(({ kind, position, lineWidth }) => {
+            const width = { ...lineWidth, value: lineWidth.value ?? AUTO };
+            switch (kind) {
+                case "column":
+                    return [new formattingSettings.NumUpDown({ name: "columnRowPosition", ...position }), new formattingSettings.NumUpDown({ name: "columnRowLineWidth", ...width })];
+                case "line":
+                    return [new formattingSettings.NumUpDown({ name: "lineRowPosition", ...position }), new formattingSettings.NumUpDown({ name: "lineRowLineWidth", ...width })];
+                case "table":
+                    return [new formattingSettings.NumUpDown({ name: "tableRowPosition", ...position }), new formattingSettings.NumUpDown({ name: "tableRowLineWidth", ...width })];
+            }
+        });
+        this.visible = this.slices.length > 0;
+    }
+}
+
 class MatrixTextGroup extends Group {
     matrixFontSize = new formattingSettings.NumUpDown({ name: "matrixFontSize", displayName: "Text size", value: 9 });
     matrixFontColor = new formattingSettings.ColorPicker({ name: "matrixFontColor", displayName: "Color", value: THEME_COLOR });
@@ -464,12 +488,13 @@ class MatrixGridGroup extends Group {
     rowHeight = new formattingSettings.NumUpDown({ name: "rowHeight", displayName: "Row height (px)", value: 20 });
     showBorders = new formattingSettings.ToggleSwitch({ name: "showBorders", displayName: "Borders", value: true });
     borderColor = new formattingSettings.ColorPicker({ name: "borderColor", displayName: "Border color", value: THEME_COLOR });
+    headerLineWidth = new formattingSettings.NumUpDown({ name: "headerLineWidth", displayName: "Line below header (px)", value: AUTO });
     banding = new formattingSettings.ToggleSwitch({ name: "banding", displayName: "Banded rows", value: false });
     maxHeightPercent = new formattingSettings.NumUpDown({ name: "maxHeightPercent", displayName: "Maximum height (% of visual)", value: 50 });
 
     constructor() {
         super({ name: "matrixGrid", displayName: "Grid" });
-        this.slices = [this.rowHeight, this.showBorders, this.borderColor, this.banding, this.maxHeightPercent];
+        this.slices = [this.rowHeight, this.showBorders, this.borderColor, this.headerLineWidth, this.banding, this.maxHeightPercent];
     }
 }
 
@@ -479,9 +504,10 @@ class MatrixCard extends Card {
     topLevelSlice = new formattingSettings.ToggleSwitch({ name: "showMatrix", displayName: "Show matrix", value: true });
     options = new MatrixOptionsGroup();
     values = new MatrixValuesGroup();
+    rows = new MatrixRowsGroup();
     text = new MatrixTextGroup();
     grid = new MatrixGridGroup();
-    groups = [this.options, this.values, this.text, this.grid];
+    groups = [this.options, this.values, this.rows, this.text, this.grid];
 }
 
 export class VisualFormattingSettingsModel extends Model {

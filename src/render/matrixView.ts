@@ -45,9 +45,12 @@ export function drawMatrix(container: DivSelection, scene: Scene, clipId: string
             .style("font-size", `${fontPx}px`).style("font-weight", options.matrix.headerBold ? "600" : "normal")
             .text(truncate(scene.totalsLabel, totalsWidth - 8, (t) => scene.measure(t, fontPt, options.matrix.headerBold)));
     }
-    if (options.matrix.showBorders) {
-        header.append("line").attr("x1", 0).attr("x2", bodyWidth).attr("y1", matrix.headerHeight - 0.5).attr("y2", matrix.headerHeight - 0.5)
-            .attr("stroke", scene.ink.matrixBorder).attr("stroke-width", 1);
+    const headerLine = options.matrix.headerLineWidth ?? (options.matrix.showBorders ? 1 : 0);
+    if (headerLine > 0) {
+        header.append("line")
+            .attr("data-role", "header-line")
+            .attr("x1", 0).attr("x2", bodyWidth).attr("y1", matrix.headerHeight - headerLine / 2).attr("y2", matrix.headerHeight - headerLine / 2)
+            .attr("stroke", scene.ink.matrixBorder).attr("stroke-width", headerLine);
     }
 
     const body = container.append("div").attr("class", "s-curve__matrix-body")
@@ -87,9 +90,7 @@ export function drawMatrix(container: DivSelection, scene: Scene, clipId: string
             .attr("data-row", rowIndex)
             .attr("x", (b) => b.x0).attr("width", (b) => b.x1 - b.x0)
             .attr("y", y).attr("height", rowHeight)
-            .attr("fill", "transparent")
-            .attr("stroke", options.matrix.showBorders ? scene.ink.matrixBorder : null)
-            .attr("stroke-width", options.matrix.showBorders ? 0.5 : null);
+            .attr("fill", "transparent");
         group.selectAll("text").data(geometry.buckets).join("text")
             .attr("data-role", "cell-text")
             .attr("data-bucket", (b) => b.index)
@@ -100,6 +101,16 @@ export function drawMatrix(container: DivSelection, scene: Scene, clipId: string
             .style("font-size", `${fontPx}px`)
             .text((b) => scene.cellText(row, row.values[b.index] ?? null, b.x1 - b.x0 - 4));
     });
+
+    // Column lines only: the rows' horizontal lines are drawn below, because each one can have its own width.
+    if (options.matrix.showBorders) {
+        const edges = geometry.buckets.length ? [...geometry.buckets.map((b) => b.x0), geometry.buckets[geometry.buckets.length - 1].x1] : [];
+        cells.append("g").selectAll("line").data(edges).join("line")
+            .attr("data-role", "column-line")
+            .attr("x1", (x) => x).attr("x2", (x) => x)
+            .attr("y1", 0).attr("y2", matrix.contentHeight)
+            .attr("stroke", scene.ink.matrixBorder).attr("stroke-width", 0.5);
+    }
 
     // Totals column, pinned in the right gutter.
     if (options.matrix.showTotals && totalsWidth > 0) {
@@ -113,12 +124,23 @@ export function drawMatrix(container: DivSelection, scene: Scene, clipId: string
             .style("font-weight", (r) => (options.matrix.headerBold && r.level === 0 ? 600 : null))
             .text((r) => scene.cellText(r, r.total, totalsWidth - 8));
     }
-    if (options.matrix.showBorders) {
-        svg.append("g").selectAll("line").data(rows).join("line")
-            .attr("x1", 0).attr("x2", bodyWidth)
-            .attr("y1", (_, i) => (i + 1) * rowHeight - 0.5).attr("y2", (_, i) => (i + 1) * rowHeight - 0.5)
-            .attr("stroke", scene.ink.matrixBorder).attr("stroke-width", 0.5);
-    }
+
+    // Row lines. A saved width draws even with Borders off, so a matrix can have group separators and no grid; a saved 0 removes the line.
+    const rowLines = rows
+        .map((row, index) => ({ index, width: row.lineBelow ?? (options.matrix.showBorders ? 0.5 : 0) }))
+        .filter((line) => line.width > 0);
+    // Wide lines straddle the row boundary, except the last, which would be clipped by the bottom of the matrix.
+    const rowLineY = (line: { index: number; width: number }): number => {
+        const boundary = (line.index + 1) * rowHeight;
+        if (line.width <= 1) return boundary - 0.5;
+        return line.index === rows.length - 1 ? boundary - line.width / 2 : boundary;
+    };
+    svg.append("g").selectAll("line").data(rowLines).join("line")
+        .attr("data-role", "row-line")
+        .attr("data-row", (line) => line.index)
+        .attr("x1", 0).attr("x2", bodyWidth)
+        .attr("y1", rowLineY).attr("y2", rowLineY)
+        .attr("stroke", scene.ink.matrixBorder).attr("stroke-width", (line) => line.width);
 
     return { scrolled: [cells] };
 }

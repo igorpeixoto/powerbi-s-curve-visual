@@ -188,7 +188,14 @@ export function buildScene(input: SceneInput): Scene {
     // Matrix rows and their text widths, which feed the gutters.
     const cumulativeSuffix = options.lines.cumulativeSuffix ?? strings("cumulativeSuffix");
     const matrixRows = options.matrix.show
-        ? buildMatrixRows(model, { expandSeries: options.matrix.expandSeries, cumulativeSuffix, aggregations: options.matrix.aggregations, measureAggregations: options.matrix.measureAggregations })
+        ? buildMatrixRows(model, {
+            expandSeries: options.matrix.expandSeries,
+            cumulativeSuffix,
+            aggregations: options.matrix.aggregations,
+            measureAggregations: options.matrix.measureAggregations,
+            rowPositions: options.matrix.rowPositions,
+            rowLineWidths: options.matrix.rowLineWidths,
+        })
         : [];
     const fontPt = options.matrix.fontSize;
     const fullFormat = (row: MatrixRow): NumberFormatter =>

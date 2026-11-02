@@ -36,7 +36,7 @@ export function valueGroups(values: powerbi.DataViewValueColumns | undefined): p
  * (Oct 2026) doesn't send it, so it's read defensively; otherwise column order is the well order, which is
  * wrong in the second well of a measure bound to two wells (SPEC §4).
  */
-function roleIndexOf(source: powerbi.DataViewMetadataColumn, role: ValueRole): number | undefined {
+export function roleIndexOf(source: powerbi.DataViewMetadataColumn, role: ValueRole): number | undefined {
     const rolesIndex = (source as { rolesIndex?: Record<string, number[] | undefined> }).rolesIndex;
     const index = rolesIndex?.[role]?.[0];
     return typeof index === "number" ? index : undefined;

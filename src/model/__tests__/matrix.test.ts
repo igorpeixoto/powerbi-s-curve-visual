@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { buildModel } from "../buildModel";
-import { buildMatrixRows, type MatrixOptions } from "../matrix";
+import { buildMatrixRows, orderByPosition, type MatrixOptions } from "../matrix";
 import { makeDataView } from "./fixtures";
 
 const options: MatrixOptions = {
@@ -9,6 +9,8 @@ const options: MatrixOptions = {
     cumulativeSuffix: " (cumulative)",
     aggregations: { column: "sum", line: "last", table: "sum" },
     measureAggregations: {},
+    rowPositions: {},
+    rowLineWidths: {},
 };
 
 const dataView = () => makeDataView({
@@ -23,7 +25,56 @@ const dataView = () => makeDataView({
     ],
 });
 
+describe("orderByPosition", () => {
+    const keys = ["A", "B", "C", "D"];
+
+    it("keeps the default order when nothing is set", () => {
+        expect(orderByPosition(keys, {})).toEqual(keys);
+    });
+
+    it("puts a row exactly in the slot the author typed", () => {
+        expect(orderByPosition(keys, { D: 1 })).toEqual(["D", "A", "B", "C"]);
+        expect(orderByPosition(keys, { A: 3 })).toEqual(["B", "C", "A", "D"]);
+        expect(orderByPosition(keys, { A: 4, B: 3, C: 2, D: 1 })).toEqual(["D", "C", "B", "A"]);
+    });
+
+    it("resolves ties by default order, and sends positions past the end to the end", () => {
+        expect(orderByPosition(keys, { C: 1, D: 1 })).toEqual(["C", "D", "A", "B"]);
+        expect(orderByPosition(keys, { A: 99 })).toEqual(["B", "C", "D", "A"]);
+    });
+
+    it("tolerates fractional, zero, negative and non-finite positions", () => {
+        expect(orderByPosition(keys, { D: 0 })).toEqual(["D", "A", "B", "C"]);
+        expect(orderByPosition(keys, { D: -3 })).toEqual(["D", "A", "B", "C"]);
+        expect(orderByPosition(keys, { A: 1.6 })).toEqual(["B", "A", "C", "D"]);
+        expect(orderByPosition(keys, { A: Number.NaN })).toEqual(keys);
+    });
+});
+
 describe("buildMatrixRows", () => {
+    it("moves a row to the position set for its kind, leaving the same measure's other row alone", () => {
+        const rows = buildMatrixRows(buildModel(dataView(), { lineSeriesMode: "perSeries" }), {
+            ...options,
+            rowPositions: { "table:Sum(Progress.Manpower)": 1, "line:Sum(Progress.Planned)": 4 },
+        });
+        expect(rows.map((r) => r.label)).toEqual(["Manpower", "Planned", "Actual (cumulative)", "Planned (cumulative)"]);
+    });
+
+    it("moves a measure's series rows and total as one block, and puts its line below the total", () => {
+        const rows = buildMatrixRows(buildModel(dataView(), { lineSeriesMode: "perSeries" }), {
+            ...options,
+            expandSeries: true,
+            rowPositions: { "table:Sum(Progress.Manpower)": 1 },
+            rowLineWidths: { "table:Sum(Progress.Manpower)": 3 },
+        });
+        expect(rows.slice(0, 3).map((r) => [r.label, r.level, r.lineBelow])).toEqual([
+            ["Civil", 1, null],
+            ["Electrical", 1, null],
+            ["Manpower", 0, 3],
+        ]);
+        expect(rows.slice(3).every((r) => r.lineBelow === null)).toBe(true);
+    });
+
     it("lists column, line and table-only rows in that order, without tooltips", () => {
         const rows = buildMatrixRows(buildModel(dataView(), { lineSeriesMode: "perSeries" }), options);
         expect(rows.map((r) => [r.kind, r.label])).toEqual([

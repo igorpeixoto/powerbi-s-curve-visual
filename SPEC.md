@@ -129,7 +129,9 @@ If Power BI reduces the data (more than 1000 categories or 30 series), the visua
 
 ### 5.6 Matrix
 
-- **Rows**, in this order: column measures, then line measures, then table-only measures, each in well order. With **Expand series** on, each measure becomes a group: one row per series, then a measure total row.
+- **Rows**, by default in this order: column measures, then line measures, then table-only measures, each in well order. With **Expand series** on, each measure becomes a group: one row per series, then a measure total row.
+- **Row order** (Decision 13): the author can give any measure row a position, counted from 1. Rows with a position land in that slot; the others keep their relative order and fill the free slots. On a tie the earlier row goes first; a position past the end means last. The setting is per measure **and per row kind**, so a measure's weekly and cumulative rows move separately. With Expand series on, a measure's series rows and total move as one block, and positions count blocks; series rows inside a block follow the series order the model sends.
+- **Lines** (Decision 13): the author can set the width of the line below any measure row (below its total row when series are expanded), and of the line below the header, from 0 to 6 px. Empty means the grid default (0.5 px, 1 px under the header, none with Borders off). A saved width draws even with Borders off, so a matrix can have group separators without a grid; a saved 0 removes that line. Lines straddle the row boundary, so they never move rows or change the matrix height.
 - **Row labels**: the field's display name (which authors can rename in the well). Line rows whose values the visual accumulates get the **cumulative suffix** (`lines.cumulativeSuffix`, localised default " (cumulative)"), so that a measure bound to both columns and lines reads as two distinct rows. The legend uses the same suffix.
 - **Cells** show exactly what the chart shows: per-bucket values for column and table-only rows, the plotted cumulative value for line rows. Formatting uses each measure's own format string and the matrix display units.
 - **Totals column** (optional, default on): per row, `sum`, `last`, `average` or `none`. The setting is per measure **and per row kind**, so a measure shown as both a weekly row and a cumulative row can total each one differently: column rows default to `sum`, line rows to `last` (the final cumulative value), table-only rows to `sum`.
@@ -224,7 +226,7 @@ When another visual highlights a subset, the highlighted part is shown solid and
 - Every card is a `CompositeCard` split into named groups. Property names are unique across their card (they are flattened into one `capabilities.json` object per card).
 - Card and property `name`s below are **final** once SPEC.md is approved; they are stored in reports. `displayName`s are localised.
 - Group names are never stored, but the formatting library derives each group's uid from its name alone, so they must be unique across all cards. The code prefixes each group with its card (`columnsColors`, `linesColors`, …); the short group names below are the SPEC's labels for them. (Found in the Phase 5 Desktop check, where groups with the same name collided across cards.)
-- v1 has **87 static controls** (86 at approval, plus the x-axis second line from Decision 12), plus per-instance controls (colours, line styles, value modes, totals) repeated once per measure or series. All of them stay in v1 (Decision 7).
+- v1 has **88 static controls** (86 at approval, plus the x-axis second line from Decision 12 and the matrix header line from Decision 13), plus per-instance controls (colours, line styles, value modes, totals, matrix row positions and lines) repeated once per measure or series. All of them stay in v1 (Decision 7).
 
 ### 9.2 Style presets and the resolution rule
 
@@ -297,8 +299,9 @@ Types: T toggle, N number, % percent number, C colour, D dropdown, X text, F fon
 **Matrix** (`matrix`), card toggle `showMatrix` T
 - *Options* (`options`): `showTotals` T (on), `totalsLabel` X ("Total"), `expandSeries` T (off)
 - *Values* (`values`): `columnTotalAggregation`, `lineTotalAggregation`, `tableTotalAggregation` D (sum | last | average | none), each Inst. per measure; `matrixDisplayUnits` D (auto), `matrixPrecision` N (auto)
+- *Row order and lines* (`rows`): `columnRowPosition`, `lineRowPosition`, `tableRowPosition` N, each Inst. per measure (shows the row's effective position); `columnRowLineWidth`, `lineRowLineWidth`, `tableRowLineWidth` N (auto), each Inst. per measure
 - *Text* (`text`): `matrixFontSize` N (9), `matrixFontColor` C, `headerFontColor` C, `headerBold` T (on)
-- *Grid* (`grid`): `rowHeight` N (20), `showBorders` T (on), `borderColor` C, `banding` T (off), `maxHeightPercent` % (50)
+- *Grid* (`grid`): `rowHeight` N (20), `showBorders` T (on), `borderColor` C, `headerLineWidth` N (auto), `banding` T (off), `maxHeightPercent` % (50)
 
 All colour defaults come from the theme (foreground, secondary foreground, or `getColor` for data colours).
 
@@ -356,3 +359,4 @@ Settled in the SPEC review on 2026-11-01 (all as proposed in the draft):
 10. **Date hierarchy in the Date well (§8)**: decided after the Desktop check. Power BI sends Year/Quarter/Month/Day columns instead of dates; the visual detects it and shows a specific message rather than rebuilding dates from localised level values.
 11. **Keyboard exit (§7.4)**: decided at the start of Phase 4. The host reserves Esc to move focus out of a custom visual, so Esc no longer clears the selection; Enter on the only selected mark (or a background click) clears it, as in built-in visuals.
 12. **Two-line x-axis labels (§6.1, §9.3)**: requested after the Phase 5 Desktop review. A new `xAxis.weekLabelSecondLine` dropdown adds an optional second label line for week buckets (none by default), so authors can show, for example, the date and the ISO or project week together. Tooltip headers and keyboard announcements show both lines.
+13. **Matrix row order and lines (§5.6, §9.3)**: requested after the Phase 5 Desktop review, so authors can group rows by type or discipline and separate the groups visually. Per measure and row kind, a position and the width of the line below; a static width for the line below the header. Series rows inside an expanded measure don't get their own settings: they move with the measure and follow the series order the model sends.
