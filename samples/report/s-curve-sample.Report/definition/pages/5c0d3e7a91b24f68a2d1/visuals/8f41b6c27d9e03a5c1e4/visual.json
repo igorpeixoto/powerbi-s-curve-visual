@@ -1,0 +1,185 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
+  "name": "8f41b6c27d9e03a5c1e4",
+  "position": {
+    "x": 20,
+    "y": 20,
+    "z": 0,
+    "height": 680,
+    "width": 1240,
+    "tabOrder": 0
+  },
+  "visual": {
+    "visualType": "physicalProgressSCurve1B810340E9DD4AE2BAA9AA4BF0E2FB5C",
+    "query": {
+      "queryState": {
+        "categoryDate": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "progress"
+                    }
+                  },
+                  "Property": "WeekStart"
+                }
+              },
+              "queryRef": "progress.WeekStart",
+              "nativeQueryRef": "WeekStart",
+              "active": true
+            }
+          ]
+        },
+        "series": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "progress"
+                    }
+                  },
+                  "Property": "Discipline"
+                }
+              },
+              "queryRef": "progress.Discipline",
+              "nativeQueryRef": "Discipline",
+              "active": true
+            }
+          ]
+        },
+        "columnValues": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "progress"
+                    }
+                  },
+                  "Property": "Plan"
+                }
+              },
+              "queryRef": "progress.Plan",
+              "nativeQueryRef": "Plan"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "progress"
+                    }
+                  },
+                  "Property": "Actual"
+                }
+              },
+              "queryRef": "progress.Actual",
+              "nativeQueryRef": "Actual"
+            }
+          ]
+        },
+        "lineValues": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "progress"
+                    }
+                  },
+                  "Property": "Plan"
+                }
+              },
+              "queryRef": "progress.Plan",
+              "nativeQueryRef": "Plan"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "progress"
+                    }
+                  },
+                  "Property": "Actual"
+                }
+              },
+              "queryRef": "progress.Actual",
+              "nativeQueryRef": "Actual"
+            }
+          ]
+        }
+      }
+    },
+    "objects": {
+      "general": [
+        {
+          "properties": {
+            "stylePreset": {
+              "expr": {
+                "Literal": {
+                  "Value": "'classic'"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "lines": [
+        {
+          "properties": {
+            "cumulativeSuffix": {
+              "expr": {
+                "Literal": {
+                  "Value": "' (cum.)'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Physical progress: fictional EPC project (man-hours)'"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "subTitle": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

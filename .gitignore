@@ -43,3 +43,10 @@ docs/REBUILD_PLAN.md
 
 # Sync conflict copies
 *conflicted copy*
+
+# Python bytecode from tools/
+__pycache__/
+
+# Power BI Desktop's per-machine state and data cache for the sample report
+**/.pbi/localSettings.json
+**/.pbi/cache.abf

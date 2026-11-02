@@ -1,0 +1,6 @@
+/// Full path of samples/data/epc_progress.csv on this machine. Change it to your clone's path before refreshing.
+expression SampleDataFile = "C:\oss-dev\powerbi-s-curve-visual\samples\data\epc_progress.csv" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
+	lineageTag: 207eea83-db8d-4666-b177-7d74e440bbe3
+
+	annotation PBI_ResultType = Text
+

@@ -9,6 +9,7 @@ Every version heading must match `pbiviz.json`'s `visual.version` and a `vX.Y.Z`
 
 ## [Unreleased]
 
+- Samples: `tools/generate_sample_data.py` (fictional EPC project, seeded) and a sample report in `samples/report` with the Classic preset
 - Localization: every Format pane and on-visual string in `stringResources/en-US` and `stringResources/pt-BR`, with number and date formats for those and 20 more locales (their text stays in English)
 - Format pane: number boxes enforce their valid range (text sizes, widths, percentages, decimal places, row height); axis minimum and maximum stay open because negative values are valid
 - Matrix: custom row order and a width for the line below any measure row or the header, so rows can be grouped and separated

@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Report",
+    "displayName": "s-curve-sample"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "3ef6890b-a5a8-45a8-83d2-0764a540c81a"
+  }
+}

@@ -1,0 +1,66 @@
+/// One row per week and discipline, from tools/generate_sample_data.py. All data is fictional.
+table progress
+	lineageTag: 7080bb92-8cde-41b7-93a2-3df29a3782d5
+
+	/// Total planned man-hours in the current filter context. The visual accumulates it for the planned line.
+	measure Plan = SUM(progress[PlannedHours])
+		formatString: #,0
+		lineageTag: b05990f4-1a5b-4f2a-a8ea-3ea858a34bea
+
+	/// Total actual man-hours in the current filter context. Blank for weeks not reported yet, so the actual line stops there.
+	measure Actual = SUM(progress[ActualHours])
+		formatString: #,0
+		lineageTag: f99c011b-b973-4caa-af5e-68d60a70d7c6
+
+	column WeekStart
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: a5a0aac3-0796-41e7-91e8-cc7106f4102e
+		summarizeBy: none
+		sourceColumn: WeekStart
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column Discipline
+		dataType: string
+		lineageTag: 37b32122-d230-4d8e-b128-416a6a7c182d
+		summarizeBy: none
+		sourceColumn: Discipline
+
+		annotation SummarizationSetBy = Automatic
+
+	column PlannedHours
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 538c7785-fd35-49c8-a9ce-36251c92a7eb
+		summarizeBy: none
+		sourceColumn: PlannedHours
+
+		annotation SummarizationSetBy = User
+
+	column ActualHours
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 1639749c-82cb-4871-b952-5a1d7e874dc1
+		summarizeBy: none
+		sourceColumn: ActualHours
+
+		annotation SummarizationSetBy = User
+
+	partition progress = m
+		mode: import
+		source =
+				let
+				    Source = Csv.Document(File.Contents(SampleDataFile), [Delimiter = ",", Columns = 4, Encoding = 65001, QuoteStyle = QuoteStyle.None]),
+				    #"Promoted headers" = Table.PromoteHeaders(Source, [PromoteAllScalars = true]),
+				    // Empty ActualHours become null: those weeks aren't reported yet.
+				    #"Changed column type" = Table.TransformColumnTypes(#"Promoted headers", {{"WeekStart", type date}, {"Discipline", type text}, {"PlannedHours", Int64.Type}, {"ActualHours", Int64.Type}}, "en-US")
+				in
+				    #"Changed column type"
+
+	annotation PBI_ResultType = Table
+

@@ -21,9 +21,11 @@
     "package": "pbiviz package",
     "lint": "eslint . && tsc -p tsconfig.typecheck.json",
     "check:capabilities": "node tools/check-capabilities.mjs",
+    "check:sample": "node tools/check-sample.mjs",
+    "sample:sync": "node tools/sync-sample-visual.mjs",
     "test:unit": "vitest run",
     "test:harness": "pbiviz package --resources && node tools/run-harness.mjs",
-    "test": "npm run lint && npm run check:capabilities && npm run test:unit && npm run test:harness"
+    "test": "npm run lint && npm run check:capabilities && npm run check:sample && npm run test:unit && npm run test:harness"
   },
   "dependencies": {
     "d3": "7.9.0",

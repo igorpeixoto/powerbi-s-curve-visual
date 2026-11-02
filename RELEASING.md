@@ -20,6 +20,10 @@ npm ci && npm test
 #    - CHANGELOG.md → rename [Unreleased] to ## [X.Y.Z] - YYYY-MM-DD, open a fresh one above
 git add package.json pbiviz.json CHANGELOG.md && git commit -m "Release vX.Y.Z"
 
+#    Then update the visual embedded in the sample report, and test again:
+#      npx pbiviz package --resources && npm run sample:sync && npm test
+#    With the report open in Desktop, re-export the sample .pbix if the release includes one.
+#
 # 3. Tag and push (only with the maintainer's explicit approval):
 git tag -a vX.Y.Z -m "Short release summary"
 git push origin main vX.Y.Z

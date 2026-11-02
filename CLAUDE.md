@@ -48,7 +48,8 @@ style/visual.less            ← styles
 stringResources/             ← <locale>/resources.resjson; en-US must match defaultStrings in src/render/strings.ts
 assets/icon.png              ← 20x20 pane icon
 harness/                     ← headless harness page, mock host and synthetic data
-tools/                       ← run-harness.mjs (Puppeteer), check-capabilities.mjs
+tools/                       ← run-harness.mjs (Puppeteer), check-capabilities.mjs, check-sample.mjs, sync-sample-visual.mjs, generate_sample_data.py
+samples/                     ← data/epc_progress.csv (generated) and report/ (PBIP with the visual embedded)
 .github/workflows/           ← ci.yml (push/PR), release.yml (v* tags)
 dist/                        ← build output (gitignored — see Hard Rule #13)
 docs/BUILD_LOG.md            ← per-session log of what the AI and the maintainer did
@@ -143,4 +144,5 @@ The consumer of this repo is a **report author who has already bound fields and 
 - **Governance block:** the section between the `power-bi-visual-skills` markers was adapted and sanitized from the maintainer's personal starter kit. Do not overwrite it from the kit; reconcile by hand.
 - **Strings:** a new user-facing string goes in `defaultStrings` (`src/render/strings.ts`) and in both `stringResources` files, with the key `Visual_<key>`; unit tests fail if they differ or if a string is unused. Slices use `displayNameKey: resourceKey("...")`. The formatting library doesn't translate dropdown items or placeholders, so those hold a string key in `settings.ts` until `applySettings` translates them.
 - **Locale formats ship per folder:** the packager keeps number and date formats only for en-US and for locales with a `stringResources/<locale>` folder, so 20 locales have an empty `{}` resource file just for that (SPEC Decision 14). Don't delete them as unused.
+- **Sample report:** `samples/report` embeds a copy of the packaged visual, because a report can't open without it; it's the one build output in git, and it only moves at releases or on purpose (`npm run sample:sync`, after a clean `npm test`). `npm run check:sample` fails if its version differs from `pbiviz.json`, or if the report and the CSV disagree. Close the report in Desktop before editing its files: Desktop overwrites them when it saves.
 - **Build log:** append an entry to `docs/BUILD_LOG.md` at the end of every working session.
