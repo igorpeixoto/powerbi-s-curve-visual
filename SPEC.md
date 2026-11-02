@@ -145,6 +145,7 @@ If Power BI reduces the data (more than 1000 categories or 30 series), the visua
 - If the bound date column is already weekly (one date per week), no combining happens. The documentation will recommend binding a week-start column from a date table.
 - Null dates, and values in the Date well that aren't dates, are excluded and counted; if any were excluded, the warning icon says how many.
 - **Week label format**: `weekStart` (the week's start date, short date in the report locale; default), `isoWeek` (e.g. `2026-W05`), or `projectWeek` (`W1`, `W2`, … counted from the first bucket).
+- **Second line** (optional, default none): a second label line under each week in any of the same formats, e.g. the date above and the ISO or project week below (Decision 12). Text buckets always use one line.
 
 ### 6.2 Cumulative values
 
@@ -223,7 +224,7 @@ When another visual highlights a subset, the highlighted part is shown solid and
 - Every card is a `CompositeCard` split into named groups. Property names are unique across their card (they are flattened into one `capabilities.json` object per card).
 - Card and property `name`s below are **final** once SPEC.md is approved; they are stored in reports. `displayName`s are localised.
 - Group names are never stored, but the formatting library derives each group's uid from its name alone, so they must be unique across all cards. The code prefixes each group with its card (`columnsColors`, `linesColors`, …); the short group names below are the SPEC's labels for them. (Found in the Phase 5 Desktop check, where groups with the same name collided across cards.)
-- v1 has **86 static controls**, plus per-instance controls (colours, line styles, value modes, totals) repeated once per measure or series. All of them stay in v1 (Decision 7).
+- v1 has **87 static controls** (86 at approval, plus the x-axis second line from Decision 12), plus per-instance controls (colours, line styles, value modes, totals) repeated once per measure or series. All of them stay in v1 (Decision 7).
 
 ### 9.2 Style presets and the resolution rule
 
@@ -282,7 +283,7 @@ Types: T toggle, N number, % percent number, C colour, D dropdown, X text, F fon
 - *Gridlines*: `rightGridlinesShow` T (off)
 
 **X-axis** (`xAxis`), card toggle `showXAxis` T
-- *Labels* (`labels`): `xLabelFontSize` N (9), `xLabelColor` C, `weekLabelFormat` D (weekStart | isoWeek | projectWeek), `weekStartDay` D (monday | sunday), `showEmptyWeeks` T (on)
+- *Labels* (`labels`): `xLabelFontSize` N (9), `xLabelColor` C, `weekLabelFormat` D (weekStart | isoWeek | projectWeek), `weekLabelSecondLine` D (none | weekStart | isoWeek | projectWeek), `weekStartDay` D (monday | sunday), `showEmptyWeeks` T (on)
 - *Title* (`title`): `xTitleShow` T (off), `xTitleText` X
 
 **Data labels** (`dataLabels`)
@@ -354,3 +355,4 @@ Settled in the SPEC review on 2026-11-01 (all as proposed in the draft):
 9. **Category and Date (§4)**: mutually exclusive in v1, enforced by `conditions`. Allowing both (date for ordering, text for labels) would be an additive change later.
 10. **Date hierarchy in the Date well (§8)**: decided after the Desktop check. Power BI sends Year/Quarter/Month/Day columns instead of dates; the visual detects it and shows a specific message rather than rebuilding dates from localised level values.
 11. **Keyboard exit (§7.4)**: decided at the start of Phase 4. The host reserves Esc to move focus out of a custom visual, so Esc no longer clears the selection; Enter on the only selected mark (or a background click) clears it, as in built-in visuals.
+12. **Two-line x-axis labels (§6.1, §9.3)**: requested after the Phase 5 Desktop review. A new `xAxis.weekLabelSecondLine` dropdown adds an optional second label line for week buckets (none by default), so authors can show, for example, the date and the ISO or project week together. Tooltip headers and keyboard announcements show both lines.

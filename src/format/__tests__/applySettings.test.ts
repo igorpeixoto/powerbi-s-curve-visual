@@ -115,6 +115,13 @@ describe("toRenderOptions", () => {
         expect(minimal).toMatchObject({ columns: { show: false }, matrix: { show: false }, legend: { position: "bottom" }, gridlines: { style: "solid" } });
     });
 
+    it("maps the optional second x-axis label line, off by default", () => {
+        expect(toRenderOptions(applySettings(undefined, context())).xAxis.secondLine).toBeNull();
+        const options = toRenderOptions(applySettings(view({ xAxis: { weekLabelFormat: "weekStart", weekLabelSecondLine: "isoWeek" } }), context()));
+        expect(options.xAxis).toMatchObject({ weekLabelFormat: "weekStart", secondLine: "isoWeek" });
+        expect(toRenderOptions(applySettings(view({ xAxis: { weekLabelSecondLine: "retired" } }), context())).xAxis.secondLine).toBeNull();
+    });
+
     it("uses the first measure marked as % baseline", () => {
         const options = toRenderOptions(applySettings(undefined, context({
             measures: [

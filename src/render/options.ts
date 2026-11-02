@@ -75,7 +75,8 @@ export interface RenderOptions {
     rightAxis: AxisOptions;
     /** color: explicit, the "themeLightTint" preset token, or null for the theme's gridline colour. */
     gridlines: { style: GridlineStyle; width: number; color: ColorOverride };
-    xAxis: { show: boolean; fontSize: number; weekLabelFormat: WeekLabelFormat; labelColor: ColorOverride; title: { show: boolean; text: string } };
+    /** secondLine: an optional second label line for week buckets (SPEC Decision 12); null = one line. */
+    xAxis: { show: boolean; fontSize: number; weekLabelFormat: WeekLabelFormat; secondLine: WeekLabelFormat | null; labelColor: ColorOverride; title: { show: boolean; text: string } };
     dataLabels: {
         columns: LabelOptions & { show: boolean; position: "outsideEnd" | "insideEnd" };
         lines: LabelOptions & { show: boolean; points: "last" | "all" };
@@ -124,7 +125,7 @@ export const defaultRenderOptions: RenderOptions = {
     leftAxis: { show: true, fontSize: 9, displayUnits: 0, gridlines: true, labelColor: null, title: { show: false, text: "", fontSize: 11, color: null } },
     rightAxis: { show: true, fontSize: 9, displayUnits: 0, gridlines: false, labelColor: null, title: { show: false, text: "", fontSize: 11, color: null } },
     gridlines: { style: "dashed", width: 1, color: null },
-    xAxis: { show: true, fontSize: 9, weekLabelFormat: "weekStart", labelColor: null, title: { show: false, text: "" } },
+    xAxis: { show: true, fontSize: 9, weekLabelFormat: "weekStart", secondLine: null, labelColor: null, title: { show: false, text: "" } },
     dataLabels: {
         columns: { show: false, position: "outsideEnd", fontSize: 9, color: null, displayUnits: 0 },
         lines: { show: true, points: "last", fontSize: 9, color: null, displayUnits: 0 },

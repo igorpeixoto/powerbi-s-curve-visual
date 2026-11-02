@@ -65,6 +65,10 @@ export interface Scene {
     measure: TextMeasurer;
     strings: Strings;
     bucketLabels: string[];
+    /** Second x-axis label line per bucket; null when off or the buckets aren't weeks. */
+    bucketSecondLabels: string[] | null;
+    /** Both label lines, for tooltip headers and announcements. */
+    bucketTitles: string[];
     columnMeasures: MeasureInfo[];
     bars: BarLayout;
     /** Highlighted subset as bars, when another visual highlights; drawn solid over the faded full bars. */
@@ -175,6 +179,11 @@ export function buildScene(input: SceneInput): Scene {
 
     const labelContext = { formatDate: (date: Date) => formatters.shortDate(date), weekPrefix: strings("weekPrefix"), blankLabel: strings("blank") };
     const bucketLabels = model.buckets.map((b, i) => bucketLabel(b, i, options.xAxis.weekLabelFormat, labelContext));
+    const secondLine = options.xAxis.secondLine;
+    const bucketSecondLabels = secondLine && model.bucketRole === "categoryDate"
+        ? model.buckets.map((b, i) => bucketLabel(b, i, secondLine, labelContext))
+        : null;
+    const bucketTitles = bucketLabels.map((label, i) => (bucketSecondLabels ? `${label} · ${bucketSecondLabels[i]}` : label));
 
     // Matrix rows and their text widths, which feed the gutters.
     const cumulativeSuffix = options.lines.cumulativeSuffix ?? strings("cumulativeSuffix");
@@ -258,7 +267,7 @@ export function buildScene(input: SceneInput): Scene {
         axes: {
             leftWidth: axisWidth(left, options.leftAxis.fontSize) + titleBand(titles.left, options.leftAxis.title.fontSize),
             rightWidth: axisWidth(right, options.rightAxis.fontSize) + titleBand(titles.right, options.rightAxis.title.fontSize),
-            xLabelHeight: (options.xAxis.show ? Math.ceil(ptToPx(options.xAxis.fontSize) * 1.3) + 6 : 4) + titleBand(titles.x, options.xAxis.fontSize + 1),
+            xLabelHeight: (options.xAxis.show ? Math.ceil(ptToPx(options.xAxis.fontSize) * 1.3 * (bucketSecondLabels ? 2 : 1)) + 6 : 4) + titleBand(titles.x, options.xAxis.fontSize + 1),
         },
         matrix: {
             show: options.matrix.show,
@@ -297,6 +306,8 @@ export function buildScene(input: SceneInput): Scene {
         measure,
         strings,
         bucketLabels,
+        bucketSecondLabels,
+        bucketTitles,
         columnMeasures,
         bars,
         barsHighlight,

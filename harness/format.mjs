@@ -114,6 +114,23 @@ export function runFormatChecks(plugin, check) {
     const plannedLine = q(`[data-role="line"][data-measure="${LINE_PLANNED}"]`);
     check("applies a saved per-measure line style", plannedLine?.getAttribute("stroke-dasharray") !== null);
 
+    // Two-line x-axis labels (SPEC Decision 12): date above, ISO week below, still aligned with the marks.
+    render(visual, container, progressDataView({ reportedWeeks: 20 }));
+    const oneLineY = Number(q('[data-role="x-label"][data-bucket="0"]').getAttribute("y"));
+    render(visual, container, progressDataView({ reportedWeeks: 20, objects: { xAxis: { weekLabelSecondLine: "isoWeek" } } }));
+    const label0 = q('[data-role="x-label"][data-bucket="0"]');
+    const lines = [...(label0?.querySelectorAll("tspan") ?? [])].map((t) => t.textContent);
+    check("shows a second x-axis label line with the chosen format", lines.length === 2 && lines[0] === "1/5/2026" && lines[1] === "2026-W02", JSON.stringify(lines));
+    const twoLineY = Number(label0.getAttribute("y"));
+    const labelBottom = label0.getBoundingClientRect().bottom;
+    const chartBottom = q(".s-curve__chart").getBoundingClientRect().bottom;
+    check("makes room for the second label line inside the chart",
+        twoLineY < oneLineY && labelBottom <= chartBottom + 0.5, `label y ${twoLineY} vs ${oneLineY}; label bottom ${labelBottom.toFixed(1)} vs chart bottom ${chartBottom.toFixed(1)}`);
+    check("keeps two-line labels aligned with the marks", alignmentSpread(container, [0, 9, 19]) <= 0.5);
+    q('[data-role="bar"][data-bucket="0"]').dispatchEvent(new MouseEvent("mousemove", { bubbles: true, clientX: 10, clientY: 10 }));
+    const header = calls.tooltip.show.at(-1)?.dataItems?.[0]?.header;
+    check("shows both label lines in the tooltip header", header === "1/5/2026 · 2026-W02", header);
+
     // Horizontal scroll (the Phase 3 deferral): alignment holds at first/middle/last while scrolled.
     const scrollCase = (tableOnly, label) => {
         render(visual, container, progressDataView({ reportedWeeks: 20, tableOnly, objects: { general: { minBucketWidth: 70 } } }));

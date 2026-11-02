@@ -202,7 +202,7 @@ export class Interactivity {
         const scene = this.scene as Scene;
         return {
             model: scene.model,
-            bucketLabels: scene.bucketLabels,
+            bucketLabels: scene.bucketTitles,
             cumulativeSuffix: scene.cumulativeSuffix,
             highlightedSuffix: scene.strings("highlightedSuffix"),
             blankLabel: scene.strings("blank"),
@@ -465,6 +465,6 @@ export class Interactivity {
 
     private announce(): void {
         const element = this.focusedElement();
-        this.live.textContent = element?.getAttribute("aria-label") ?? this.scene?.bucketLabels[this.focus?.bucket ?? 0] ?? "";
+        this.live.textContent = element?.getAttribute("aria-label") ?? this.scene?.bucketTitles[this.focus?.bucket ?? 0] ?? "";
     }
 }

@@ -239,9 +239,10 @@ export function drawChart(svg: SvgSelection, scene: Scene, clipId: string, scrol
     // X-axis labels: one per bucket, thinned with visibility (they stay measurable).
     if (options.xAxis.show) {
         const fontSize = options.xAxis.fontSize;
-        const widest = Math.max(0, ...scene.bucketLabels.map((l) => scene.measure(l, fontSize)));
+        const second = scene.bucketSecondLabels;
+        const widest = Math.max(0, ...[...scene.bucketLabels, ...(second ?? [])].map((l) => scene.measure(l, fontSize)));
         const step = labelStep(geometry.bucketWidth, widest);
-        content.append("g").attr("class", "s-curve__x-labels").selectAll("text").data(geometry.buckets).join("text")
+        const labels = content.append("g").attr("class", "s-curve__x-labels").selectAll("text").data(geometry.buckets).join("text")
             .attr("data-role", "x-label")
             .attr("data-bucket", (b) => b.index)
             .attr("x", (b) => b.center)
@@ -249,8 +250,14 @@ export function drawChart(svg: SvgSelection, scene: Scene, clipId: string, scrol
             .attr("text-anchor", "middle")
             .attr("fill", scene.ink.xLabels)
             .style("font-size", `${ptToPx(fontSize)}px`)
-            .style("visibility", (b) => (b.index % step === 0 ? null : "hidden"))
-            .text((b) => scene.bucketLabels[b.index]);
+            .style("visibility", (b) => (b.index % step === 0 ? null : "hidden"));
+        if (second) {
+            // Two lines, both centred on the bucket (SPEC Decision 12).
+            labels.append("tspan").attr("data-line", 1).attr("x", (b) => b.center).text((b) => scene.bucketLabels[b.index]);
+            labels.append("tspan").attr("data-line", 2).attr("x", (b) => b.center).attr("dy", "1.3em").text((b) => second[b.index]);
+        } else {
+            labels.text((b) => scene.bucketLabels[b.index]);
+        }
     }
 
     return { scrolled: [content] };

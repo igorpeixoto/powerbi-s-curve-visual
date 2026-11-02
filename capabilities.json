@@ -413,6 +413,11 @@
                         "enumeration": []
                     }
                 },
+                "weekLabelSecondLine": {
+                    "type": {
+                        "enumeration": []
+                    }
+                },
                 "weekStartDay": {
                     "type": {
                         "enumeration": []

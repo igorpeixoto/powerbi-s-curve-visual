@@ -72,3 +72,9 @@ How this visual was built, session by session: what the AI (Claude Code) did and
   - Presets and the resolution rule: Minimal moved the legend to the bottom and made gridlines solid; a saved `showMatrix: true` kept the matrix on under Minimal; Matrix > Reset to default removed it, so the preset's "off" applied. Observed.
   - Not checked: reopening the report after save (the saved PBIR above is what a reopen reads), theme switch.
 - Process slip: after the mutation check the package in `dist/` still held the mutated build, and it was nearly copied into the testbed; caught because the new group name was missing from the package. CLAUDE.md now says to rebuild after any mutation check before using `dist/`.
+
+## 2026-11-02: Two-line x-axis labels (after the Phase 5 review)
+- Time: TODO(igor) h
+- I did: asked for an x-axis option with two label lines, so the date can sit on one line and a week variant on the other.
+- AI did: added `xAxis.weekLabelSecondLine` (none | week start date | ISO week | project week, default none) as SPEC Decision 12; the Format pane contract grows to 87 static controls (96 properties with the per-instance ones). Week buckets render both lines centred on the bucket; label thinning measures the wider line; the plot shrinks to make room; tooltip headers and keyboard announcements show both lines. Text buckets keep one line.
+- Tests: 143 unit, 85 harness (second line content, room inside the chart, alignment with two-line labels, tooltip header), all green.

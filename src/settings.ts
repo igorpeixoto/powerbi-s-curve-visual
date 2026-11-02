@@ -39,6 +39,7 @@ export const ITEMS = {
     displayAs: items([["value", "Values"], ["percentOfBaseline", "% of baseline"]]),
     lineStyle: items([["solid", "Solid"], ["dashed", "Dashed"], ["dotted", "Dotted"]]),
     weekLabelFormat: items([["weekStart", "Week start date"], ["isoWeek", "ISO week"], ["projectWeek", "Project week"]]),
+    weekLabelSecondLine: items([["none", "None"], ["weekStart", "Week start date"], ["isoWeek", "ISO week"], ["projectWeek", "Project week"]]),
     weekStartDay: items([["monday", "Monday"], ["sunday", "Sunday"]]),
     labelPosition: items([["outsideEnd", "Outside end"], ["insideEnd", "Inside end"]]),
     labelPoints: items([["last", "Last point"], ["all", "All points"]]),
@@ -305,12 +306,13 @@ class XLabelsGroup extends Group {
     xLabelFontSize = new formattingSettings.NumUpDown({ name: "xLabelFontSize", displayName: "Text size", value: 9 });
     xLabelColor = new formattingSettings.ColorPicker({ name: "xLabelColor", displayName: "Color", value: THEME_COLOR });
     weekLabelFormat = new formattingSettings.ItemDropdown({ name: "weekLabelFormat", displayName: "Week labels", items: ITEMS.weekLabelFormat, value: ITEMS.weekLabelFormat[0] });
+    weekLabelSecondLine = new formattingSettings.ItemDropdown({ name: "weekLabelSecondLine", displayName: "Second line", items: ITEMS.weekLabelSecondLine, value: ITEMS.weekLabelSecondLine[0] });
     weekStartDay = new formattingSettings.ItemDropdown({ name: "weekStartDay", displayName: "Week starts on", items: ITEMS.weekStartDay, value: ITEMS.weekStartDay[0] });
     showEmptyWeeks = new formattingSettings.ToggleSwitch({ name: "showEmptyWeeks", displayName: "Show empty weeks", value: true });
 
     constructor() {
         super({ name: "xAxisLabels", displayName: "Labels" });
-        this.slices = [this.xLabelFontSize, this.xLabelColor, this.weekLabelFormat, this.weekStartDay, this.showEmptyWeeks];
+        this.slices = [this.xLabelFontSize, this.xLabelColor, this.weekLabelFormat, this.weekLabelSecondLine, this.weekStartDay, this.showEmptyWeeks];
     }
 }
 

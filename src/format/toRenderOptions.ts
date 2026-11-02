@@ -53,6 +53,7 @@ export function toRenderOptions(applied: AppliedSettings): RenderOptions {
     const legend = m.legend;
     const matrix = m.matrix;
     const fontSize = (value: unknown, fallback: number) => clamp(value, 6, 40, fallback);
+    const secondLine = oneOf<WeekLabelFormat | "none">(dropdown(x.labels.weekLabelSecondLine), ["none", "weekStart", "isoWeek", "projectWeek"], "none");
     const gridlineColor = color("leftAxis", left.gridlines.gridlineColor)
         ?? (fromPreset.get("leftAxis.gridlineColor") === THEME_LIGHT_TINT ? THEME_LIGHT_TINT : null);
 
@@ -130,6 +131,7 @@ export function toRenderOptions(applied: AppliedSettings): RenderOptions {
             show: x.topLevelSlice.value !== false,
             fontSize: fontSize(x.labels.xLabelFontSize.value, 9),
             weekLabelFormat: oneOf<WeekLabelFormat>(dropdown(x.labels.weekLabelFormat), ["weekStart", "isoWeek", "projectWeek"], "weekStart"),
+            secondLine: secondLine === "none" ? null : secondLine,
             labelColor: color("xAxis", x.labels.xLabelColor),
             title: { show: x.title.xTitleShow.value === true, text: String(x.title.xTitleText.value ?? "") },
         },
