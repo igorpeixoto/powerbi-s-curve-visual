@@ -156,6 +156,28 @@ describe("parseDataView", () => {
         expect(parsed.buckets).toEqual([]);
     });
 
+    it("combines a week's tooltip rows: numbers add up, text shows the latest", () => {
+        const parsed = parseDataView(makeDataView({
+            bucketRole: "categoryDate",
+            buckets: [d(2026, 2, 5), d(2026, 2, 3), d(2026, 2, 4), d(2026, 2, 16)],
+            measures: [
+                { name: "Crew", roles: ["tooltips"], values: [2, 3, null, null] },
+                { name: "Status", roles: ["tooltips"], values: ["late", "fine", "fair", null] },
+            ],
+        }), defaultModelOptions);
+        expect(parsed.tooltipValues["tooltips:Sum(Progress.Crew)"]).toEqual([[5, null, null]]);
+        expect(parsed.tooltipValues["tooltips:Sum(Progress.Status)"]).toEqual([["late", null, null]]);
+    });
+
+    it("takes an as-provided line's last value by date, not by delivery order", () => {
+        const parsed = parseDataView(makeDataView({
+            bucketRole: "categoryDate",
+            buckets: [d(2026, 2, 5), d(2026, 2, 3)],
+            measures: [{ name: "Cum", roles: ["lineValues"], values: [30, 10] }],
+        }), { ...defaultModelOptions, valueModes: { "Sum(Progress.Cum)": "asProvided" } });
+        expect(parsed.values["lineValues:Sum(Progress.Cum)"]).toEqual([[30]]);
+    });
+
     it("keeps raw tooltip values per bucket", () => {
         const parsed = parse(makeDataView({
             bucketRole: "category",

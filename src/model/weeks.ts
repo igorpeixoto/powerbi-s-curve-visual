@@ -73,6 +73,10 @@ export function buildWeekBuckets(
         bucket.rowIndices.push(rowIndex);
     });
 
+    // Rows arrive in the visual's sort order; "last in the week" must mean last by date (SPEC §6.1).
+    const time = (rowIndex: number) => (values[rowIndex] as Date).getTime();
+    for (const bucket of byKey.values()) bucket.rowIndices.sort((a, b) => time(a) - time(b));
+
     const sorted = [...byKey.values()].sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
     if (!options.showEmptyWeeks || sorted.length < 2) {
         return { buckets: sorted, excludedRows, emptyWeeksSkipped: false };

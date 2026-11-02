@@ -44,8 +44,24 @@ export function columnExtent(stacks: readonly Values[][], layout: "stacked" | "c
 
 /** Extent over every plotted line point, including zero. */
 export function lineExtent(lines: readonly Values[]): Extent | null {
-    const points = lines.flat().filter((v): v is number => v !== null);
-    return points.length === 0 ? null : [Math.min(0, ...points), Math.max(0, ...points)];
+    let min = 0;
+    let max = 0;
+    let any = false;
+    // A loop, not a spread: the capability limits allow more points than a call can take arguments.
+    for (const line of lines) {
+        for (const value of line) {
+            if (value === null) continue;
+            any = true;
+            min = Math.min(min, value);
+            max = Math.max(max, value);
+        }
+    }
+    return any ? [min, max] : null;
+}
+
+/** Whether a value lies inside an axis domain, which a fixed minimum and maximum can leave in either order. */
+export function inDomain(value: number, domain: Extent): boolean {
+    return value >= Math.min(domain[0], domain[1]) && value <= Math.max(domain[0], domain[1]);
 }
 
 /** Rounds an extent outward to nice ticks; fixed min/max replace either end. */

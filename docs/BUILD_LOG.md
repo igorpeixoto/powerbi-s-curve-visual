@@ -112,3 +112,22 @@ How this visual was built, session by session: what the AI (Claude Code) did and
 - Process gap, stated to the maintainer: the governance rules called for `/code-review medium src/` before every package, and it was never run during this build. It has to start in a fresh session, so it stays open for before the release.
 - I did: TODO(igor): review of the docs.
 
+## 2026-11-02: Fixes from the code review
+- Time: TODO(igor) h
+- I did: ran `/code-review medium src/` and asked for its findings to be fixed. Confirmed that numeric Tooltips fields add up over a week (SPEC Decision 15), and that these fixes get no changelog lines.
+- AI did: reproduced the 10 reported findings with new tests before changing the code (5 unit tests and 17 harness checks failed on the unfixed source, including the real `bandStart` TypeError and the `RangeError`), then fixed them:
+  - A filter that removed the focused bucket failed every later render; the focus is now clamped on each update.
+  - `lineExtent` overflowed the call stack at the capability limits; it now uses a loop.
+  - A week's rows are sorted by date, so "last in the week" no longer depends on the visual's sort order.
+  - Tooltips fields combine over a week's rows: numbers add up and text shows the latest value (SPEC Decision 15).
+  - Stacked highlights start at their own series' base instead of stacking from zero.
+  - Fixed axis ranges: bars stop at the plot's edge, lines are clipped there, and points and labels outside the range aren't drawn.
+  - A line point with no neighbour keeps a marker with markers off. This needed a change in `applyEmphasis` too, which would otherwise have hidden it on every update.
+  - A deselected bar gets its stroke back in high contrast.
+  - The keyboard no longer enters a matrix hidden for lack of space.
+  - Sunday-start weeks take their ISO number from their Monday.
+- Decided against the first idea for fixed ranges, one group clipped exactly to the plot: a line reaching exactly 100 % sits on the plot's top edge, and would have lost half its stroke and marker. Checked by eye in headless Chrome screenshots: fixed left minimum, fixed right maximum while scrolled, a line and markers at 100 %, stacked highlights, lone points.
+- Limit, stated to the maintainer: the `lineExtent` fix has a unit test but no harness check, against Hard Rule 15, because 180,000 points in the DOM wouldn't fit the harness's 30 s limit. The review's nine cut candidates aren't fixed.
+- Not checked in Desktop: all of the above. High contrast, real highlights and the real host's sort order remain on the manual list.
+- Noticed, not changed: at some widths the first x-axis label is cut by the plot's left edge (`1/5/2026` shows as `/5/2026`).
+- Tests: 185 unit, 172 harness, all green.

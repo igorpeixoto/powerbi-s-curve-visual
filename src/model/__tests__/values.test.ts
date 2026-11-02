@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { aggregateTotal, combine, sumAcross, toNumber } from "../values";
+import { aggregateTotal, combine, combineTooltip, isIsolated, sumAcross, toNumber } from "../values";
 
 describe("toNumber", () => {
     it("keeps finite numbers and maps everything else to null", () => {
@@ -52,5 +52,30 @@ describe("sumAcross (total across series)", () => {
 
     it("returns an empty row for no series", () => {
         expect(sumAcross([])).toEqual([]);
+    });
+});
+
+describe("combineTooltip", () => {
+    it("adds up numbers and ignores blanks", () => {
+        expect(combineTooltip([2, null, 3, undefined])).toBe(5);
+        expect(combineTooltip([0])).toBe(0);
+    });
+
+    it("shows the latest value of anything else", () => {
+        expect(combineTooltip(["fine", null, "late", null])).toBe("late");
+        expect(combineTooltip([1, "late", 2])).toBe(2);
+    });
+
+    it("is null with nothing to show", () => {
+        expect(combineTooltip([])).toBeNull();
+        expect(combineTooltip([null, undefined])).toBeNull();
+    });
+});
+
+describe("isIsolated", () => {
+    it("finds reported points with no reported neighbour", () => {
+        const values = [1, null, 2, 3, null, null, 4];
+        expect(values.map((_, i) => isIsolated(values, i))).toEqual([true, false, false, false, false, false, true]);
+        expect(isIsolated([5], 0)).toBe(true);
     });
 });

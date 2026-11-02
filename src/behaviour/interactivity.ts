@@ -7,7 +7,7 @@ import { buildIdentities, type Identities } from "../model/identity";
 import type { MatrixRow } from "../model/matrix";
 import { HIGHLIGHT_BACKGROUND_OPACITY } from "../render/chart";
 import type { Scene } from "../render/scene";
-import { buildFocusRows, moveFocus, type Focus, type FocusRow, type NavigationKey } from "./navigation";
+import { buildFocusRows, clampFocus, moveFocus, type Focus, type FocusRow, type NavigationKey } from "./navigation";
 import { emphasisOf, isLocalOnly, nextSelection, pruneSelection, selectorKey, type Emphasis, type Selector } from "./selectionState";
 import { tooltipItems, type TooltipMark } from "./tooltipItems";
 
@@ -132,8 +132,10 @@ export class Interactivity {
             seriesCount: model.series.length,
             hasSeries: model.hasSeries,
             lines: scene.options.lines.show ? model.lines : [],
-            matrixRowCount: scene.matrixRows.length,
+            // A matrix hidden for lack of space has rows but nothing on screen to focus.
+            matrixRowCount: scene.layout.matrix ? scene.matrixRows.length : 0,
         });
+        this.focus = clampFocus(this.focus, this.focusRows.length, model.buckets.length);
         this.applyAccessibleLabels();
         this.applyEmphasis();
         this.drawFocusRing();
@@ -292,13 +294,14 @@ export class Interactivity {
                 setOpacity(element, state);
                 if (scene.highContrast && element.getAttribute("data-role")?.startsWith("bar")) {
                     element.setAttribute("stroke-width", state === "selected" ? "3" : "1.5");
-                    if (state === "selected") element.setAttribute("stroke", scene.theme.selected);
+                    element.setAttribute("stroke", state === "selected" ? scene.theme.selected : element.getAttribute("data-stroke") ?? "");
                 }
             });
         this.root.querySelectorAll('[data-role="point"]').forEach((element) => {
             const state = emphasis(element);
             // With markers off, a selected point becomes visible so the selection can be seen on the line.
-            if (!markers) element.setAttribute("fill-opacity", state === "selected" && selected.length ? "1" : "0");
+            // A point with no line to show it is always visible.
+            if (!markers && !element.hasAttribute("data-isolated")) element.setAttribute("fill-opacity", state === "selected" && selected.length ? "1" : "0");
             else setOpacity(element, state);
             if (scene.highContrast) element.setAttribute("fill", state === "selected" ? scene.theme.selected : scene.theme.text);
         });

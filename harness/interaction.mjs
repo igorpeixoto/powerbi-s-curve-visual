@@ -2,7 +2,7 @@
 // high contrast. Clicks are dispatched on whatever document.elementFromPoint() returns at the mark's centre, so a
 // mark covered by a label or a hit target fails here exactly as it would for a real pointer.
 import { createMockHost } from "./mock-host.mjs";
-import { progressDataView } from "./data.mjs";
+import { dailyDescendingDataView, progressDataView } from "./data.mjs";
 
 const PLANNED = "Sum(progress.PlannedQty)";
 const COLUMN_PLANNED = `columnValues:${PLANNED}`;
@@ -186,6 +186,55 @@ export function runInteractionChecks(plugin, check) {
     check("the tooltip shows both the full and the highlighted value",
         (calls.tooltip.show.at(-1)?.dataItems ?? []).some((i) => i.displayName.endsWith("(highlighted)")));
 
+    // Another visual highlights part of every series: each solid part sits inside its own series' faded bar (SPEC §7.2).
+    render(visual, container, progressDataView({ reportedWeeks: 20, partialHighlights: true }));
+    const stackRect = (role, series) => q(`[data-role="${role}"][data-bucket="10"][data-measure="${COLUMN_PLANNED}"][data-series="${series}"]`).getBoundingClientRect();
+    const misplaced = [0, 1, 2, 3].filter((series) => {
+        const full = stackRect("bar", series);
+        const part = stackRect("bar-highlight", series);
+        return Math.abs(full.bottom - part.bottom) > 0.5 || part.top < full.top - 0.5;
+    });
+    check("draws each series' highlight inside its own stacked segment", misplaced.length === 0, `misplaced series: ${misplaced.join(", ")}`);
+
+    // Daily rows delivered newest first: the week still takes its last day, and Tooltips fields cover the whole week.
+    render(visual, container, dailyDescendingDataView());
+    pointerAt(q('[data-role="point"][data-bucket="0"]'), "mousemove");
+    const dailyItems = calls.tooltip.show.at(-1)?.dataItems ?? [];
+    const dailyValue = (name) => dailyItems.find((i) => i.displayName === name)?.value;
+    check("an as-provided line takes the week's last day whatever the sort order", dailyValue("Reported") === "9", JSON.stringify(dailyItems));
+    check("a numeric Tooltips field adds up the week's rows", dailyValue("Crew") === "10", JSON.stringify(dailyItems));
+    check("a text Tooltips field shows the week's latest value", dailyValue("Status") === "status 9", JSON.stringify(dailyItems));
+    container.querySelector(".s-curve").dispatchEvent(new MouseEvent("mouseleave"));
+
+    // The keyboard focus outlives a filter that removes its bucket.
+    const focusContainer = newContainer();
+    const focusHost = createMockHost();
+    const focusVisual = plugin.create({ element: focusContainer, host: focusHost.host });
+    render(focusVisual, focusContainer, progressDataView({ reportedWeeks: 20 }));
+    const focusRoot = focusContainer.querySelector(".s-curve");
+    key(focusRoot, "ArrowRight");
+    key(focusRoot, "End");
+    render(focusVisual, focusContainer, progressDataView({ reportedWeeks: 10, weeks: 10 }));
+    check("a filter that removes the focused bucket doesn't fail the render", focusHost.calls.renderingFailed.length === 0, focusHost.calls.renderingFailed.join("; "));
+    const focusRing = focusContainer.querySelector(".s-curve__focus-ring").getBoundingClientRect();
+    const lastBar = focusContainer.querySelector(`[data-role="bar"][data-bucket="9"][data-measure="${COLUMN_PLANNED}"][data-series="0"]`).getBoundingClientRect();
+    check("moves the focus ring to the last bucket left", Math.abs((focusRing.left + focusRing.right) / 2 - (lastBar.left + lastBar.right) / 2) < 1, `ring ${focusRing.left}-${focusRing.right}, bar ${lastBar.left}-${lastBar.right}`);
+    focusContainer.remove();
+
+    // A matrix hidden for lack of space isn't reachable from the keyboard (SPEC §3.3, §7.4).
+    const shortContainer = newContainer(800, 200);
+    const shortHost = createMockHost();
+    const shortVisual = plugin.create({ element: shortContainer, host: shortHost.host });
+    render(shortVisual, shortContainer, progressDataView({ reportedWeeks: 20 }), 800, 200);
+    check("a short visual hides its matrix", getComputedStyle(shortContainer.querySelector(".s-curve__note")).display !== "none" && !shortContainer.querySelector('[data-role="cell"]'));
+    const shortRoot = shortContainer.querySelector(".s-curve");
+    for (let i = 0; i < 30; i++) key(shortRoot, "ArrowDown");
+    const lastPoint = shortContainer.querySelector(`[data-role="point"][data-bucket="0"][data-measure="${LINE_ACTUAL}"]`);
+    check("↓ stops at the last chart row when the matrix is hidden", shortContainer.querySelector(".s-curve__live").textContent === lastPoint.getAttribute("aria-label"), shortContainer.querySelector(".s-curve__live").textContent);
+    key(shortRoot, "Enter");
+    check("Enter selects that chart row's mark, not a hidden matrix row", shortHost.calls.select.at(-1)?.keys[0] === "c:progress.WeekStart:0|m:Sum(progress.ActualQty)", JSON.stringify(shortHost.calls.select.at(-1)?.keys));
+    shortContainer.remove();
+
     // Reordered matrix rows: clicks, tooltips and the keyboard follow the row, not its default position (SPEC Decision 13).
     const rowsContainer = newContainer();
     const rowsHost = createMockHost();
@@ -224,7 +273,10 @@ export function runInteractionChecks(plugin, check) {
     const hc = createMockHost({ highContrast: true });
     const hcVisual = plugin.create({ element: hcContainer, host: hc.host });
     render(hcVisual, hcContainer, progressDataView({ reportedWeeks: 20 }));
-    pointerAt(hcContainer.querySelector(`[data-role="bar"][data-bucket="9"][data-measure="${COLUMN_PLANNED}"][data-series="0"]`));
+    const hcBar = (bucket) => hcContainer.querySelector(`[data-role="bar"][data-bucket="${bucket}"][data-measure="${COLUMN_PLANNED}"][data-series="0"]`);
+    const hcRestingStroke = hcBar(9).getAttribute("stroke");
+    pointerAt(hcBar(9));
+    check("a selected bar takes the selected colour in high contrast", hcBar(9).getAttribute("stroke") === "#00ffff", hcBar(9).getAttribute("stroke"));
     const allowed = new Set(["#ffff00", "#00ffff", "#000000", "none", "transparent", "currentcolor"]);
     const used = new Set();
     hcContainer.querySelectorAll("*").forEach((e) => {
@@ -237,7 +289,10 @@ export function runInteractionChecks(plugin, check) {
     check("uses only high-contrast colours", stray.length === 0, `stray: ${stray.join(", ")}`);
     const hcLines = [...hcContainer.querySelectorAll('[data-role="line"]')].map((l) => l.getAttribute("stroke-dasharray") ?? "solid");
     check("tells lines apart by dash style in high contrast", new Set(hcLines).size === hcLines.length, JSON.stringify(hcLines));
+    // Power BI doesn't call update() after the visual's own select(), so nothing redraws the bar.
+    pointerAt(hcBar(3));
+    check("a deselected bar gets its own stroke back in high contrast", hcBar(9).getAttribute("stroke") === hcRestingStroke && hcBar(9).getAttribute("stroke-width") === "1.5", hcBar(9).getAttribute("stroke"));
 
     for (const c of [container, lockedContainer, hcContainer]) c.remove();
-    return [calls, rowsHost.calls, locked.calls, hc.calls];
+    return [calls, focusHost.calls, shortHost.calls, rowsHost.calls, locked.calls, hc.calls];
 }

@@ -4,6 +4,8 @@ import { curveLinear, curveMonotoneX, line as d3line, scaleLinear, type Selectio
 
 import type { BarSegment } from "../model/columns";
 import { clusterSlots, labelStep } from "../model/geometry";
+import { inDomain } from "../model/scales";
+import { isIsolated } from "../model/values";
 import { truncate } from "./measure";
 import { ptToPx, type LineStyle } from "./options";
 import type { Scene } from "./scene";
@@ -54,8 +56,15 @@ export function drawChart(svg: SvgSelection, scene: Scene, clipId: string, scrol
     const yLeft = scene.left ? scaleLinear().domain(scene.left.domain).range([layout.plotBottom, layout.plotTop]) : null;
     const yRight = scene.right ? scaleLinear().domain(scene.right.domain).range([layout.plotBottom, layout.plotTop]) : null;
 
-    svg.append("defs").append("clipPath").attr("id", clipId)
+    const defs = svg.append("defs");
+    defs.append("clipPath").attr("id", clipId)
         .append("rect").attr("x", geometry.plotLeft).attr("y", 0).attr("width", geometry.plotWidth).attr("height", height);
+    // A fixed axis range can put line values outside the plot. The clip spans the content, in scrolled coordinates,
+    // and leaves half a stroke so a line running along the plot's edge keeps its full width.
+    const lineClipId = `${clipId}-lines`;
+    const halfStroke = options.lines.strokeWidth / 2;
+    defs.append("clipPath").attr("id", lineClipId)
+        .append("rect").attr("x", 0).attr("y", layout.plotTop - halfStroke).attr("width", geometry.contentWidth).attr("height", layout.plotBottom - layout.plotTop + 2 * halfStroke);
 
     const clipped = svg.append("g").attr("clip-path", `url(#${clipId})`);
     const content = clipped.append("g").attr("class", "s-curve__plot").attr("transform", `translate(${geometry.plotLeft - scrollX},0)`);
@@ -110,11 +119,14 @@ export function drawChart(svg: SvgSelection, scene: Scene, clipId: string, scrol
     const bars = content.append("g").attr("class", "s-curve__bars");
     if (yLeft) {
         const slotsByBucket = geometry.buckets.map((b) => clusterSlots(b, scene.bars.slotCount, options.columns.clusterGap));
+        // A fixed axis range cuts bars at the plot's edge, so they, and the focus ring around them, stay in the plot.
+        const yBar = yLeft.copy().clamp(true);
         const highContrast = scene.highContrast;
         const highlighted = scene.barsHighlight !== null;
         const drawBars = (segments: BarSegment[], role: "bar" | "bar-highlight") => {
             const background = role === "bar" && highlighted;
             const outlined = (s: BarSegment) => highContrast && (background || scene.columnIndex(s.measureKey) % 2 === 1);
+            const stroke = (s: BarSegment) => (highContrast ? (outlined(s) ? scene.colors.bar(s.measureKey, s.seriesIndex) : theme.background) : null);
             bars.append("g").selectAll("rect").data(segments).join("rect")
                 .attr("data-role", role)
                 .attr("data-bucket", (s) => s.bucketIndex)
@@ -123,11 +135,13 @@ export function drawChart(svg: SvgSelection, scene: Scene, clipId: string, scrol
                 .attr("data-value", (s) => s.value)
                 .attr("x", (s) => slotsByBucket[s.bucketIndex][s.slot].x)
                 .attr("width", (s) => slotsByBucket[s.bucketIndex][s.slot].width)
-                .attr("y", (s) => yLeft(Math.max(s.base, s.top)))
-                .attr("height", (s) => Math.abs(yLeft(s.base) - yLeft(s.top)))
+                .attr("y", (s) => yBar(Math.max(s.base, s.top)))
+                .attr("height", (s) => Math.abs(yBar(s.base) - yBar(s.top)))
                 .attr("rx", options.columns.cornerRadius)
                 .attr("fill", (s) => (outlined(s) ? theme.background : scene.colors.bar(s.measureKey, s.seriesIndex)))
-                .attr("stroke", (s) => (highContrast ? (outlined(s) ? scene.colors.bar(s.measureKey, s.seriesIndex) : theme.background) : null))
+                .attr("stroke", stroke)
+                // What a deselected bar goes back to: emphasis changes the stroke without a redraw.
+                .attr("data-stroke", stroke)
                 .attr("stroke-width", highContrast ? 1.5 : null)
                 .attr("fill-opacity", background && !highContrast ? options.columns.opacity * HIGHLIGHT_BACKGROUND_OPACITY : options.columns.opacity);
         };
@@ -138,7 +152,8 @@ export function drawChart(svg: SvgSelection, scene: Scene, clipId: string, scrol
     // Lines and their points (points exist even with markers off: they are measured, focused and selected).
     const placedLabels: Box[] = [];
     const labelFont = ptToPx(options.dataLabels.lines.fontSize);
-    if (yRight) {
+    if (yRight && scene.right) {
+        const rightDomain = scene.right.domain;
         const linesGroup = content.append("g").attr("class", "s-curve__lines");
         const path = d3line<number | null>()
             .defined((v) => v !== null)
@@ -154,6 +169,7 @@ export function drawChart(svg: SvgSelection, scene: Scene, clipId: string, scrol
                 .attr("data-role", role).attr("data-measure", line.measureKey)
                 .attr("data-series", line.seriesIndex === null ? null : line.seriesIndex)
                 .attr("d", path(values))
+                .attr("clip-path", `url(#${lineClipId})`)
                 .attr("fill", "none").attr("stroke", color)
                 .attr("stroke-width", faded && scene.highContrast ? 1 : options.lines.strokeWidth)
                 .attr("stroke-opacity", faded && !scene.highContrast ? options.lines.opacity * HIGHLIGHT_BACKGROUND_OPACITY : options.lines.opacity)
@@ -162,22 +178,28 @@ export function drawChart(svg: SvgSelection, scene: Scene, clipId: string, scrol
                 .attr("stroke-linejoin", "round");
             drawPath(line.values, "line", line.highlights !== null);
             if (line.highlights) drawPath(line.highlights, "line-highlight", false);
-            const points = line.values.map((v, i) => ({ v, i })).filter((p): p is { v: number; i: number } => p.v !== null);
+            const reported = line.values.map((v, i) => ({ v, i })).filter((p): p is { v: number; i: number } => p.v !== null);
+            const points = reported.filter((p) => inDomain(p.v, rightDomain));
+            const isolated = (p: { i: number }) => isIsolated(line.values, p.i);
+            const asMarker = (p: { i: number }) => markers || isolated(p);
             // Points double as hit targets: transparent and a little larger than the stroke when markers are off.
+            // A point with no neighbour has no line to show it, so it always draws as a marker (SPEC §8).
             linesGroup.append("g").selectAll("circle").data(points).join("circle")
                 .attr("data-role", "point")
                 .attr("data-bucket", (p) => p.i)
                 .attr("data-measure", line.measureKey)
                 .attr("data-series", line.seriesIndex === null ? null : line.seriesIndex)
+                .attr("data-isolated", (p) => (isolated(p) ? "" : null))
                 .attr("cx", (p) => geometry.buckets[p.i].center)
                 .attr("cy", (p) => yRight(p.v))
-                .attr("r", markers ? options.lines.markerSize : Math.max(POINT_HIT_RADIUS, options.lines.strokeWidth + 1))
+                .attr("r", (p) => (asMarker(p) ? options.lines.markerSize : Math.max(POINT_HIT_RADIUS, options.lines.strokeWidth + 1)))
                 .attr("fill", color)
-                .attr("fill-opacity", markers ? 1 : 0);
+                .attr("fill-opacity", (p) => (asMarker(p) ? 1 : 0));
 
             if (options.dataLabels.lines.show && points.length) {
                 const format = scene.lineLabel(line.measureKey);
-                const labelled = options.dataLabels.lines.points === "last" ? [points[points.length - 1]] : points;
+                // The line's real last point: when it's outside a fixed range, it has no label rather than another point's.
+                const labelled = options.dataLabels.lines.points === "last" ? points.filter((p) => p === reported[reported.length - 1]) : points;
                 for (const p of labelled) {
                     const text = format(p.v);
                     const textWidth = scene.measure(text, options.dataLabels.lines.fontSize);
@@ -218,6 +240,8 @@ export function drawChart(svg: SvgSelection, scene: Scene, clipId: string, scrol
         }
         const labels = content.append("g").attr("class", "s-curve__column-labels");
         for (const stack of stacks.values()) {
+            // A fixed axis range cuts off the stack's end, so its label would leave the plot (SPEC §5.4).
+            if (scene.left && !inDomain(stack.extreme, scene.left.domain)) continue;
             const slot = clusterSlots(geometry.buckets[stack.bucket], scene.bars.slotCount, options.columns.clusterGap)[stack.slot];
             const text = scene.columnLabel(stack.measureKey)(stack.total);
             const textWidth = scene.measure(text, options.dataLabels.columns.fontSize);

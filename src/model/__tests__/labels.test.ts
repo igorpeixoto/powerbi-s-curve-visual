@@ -21,6 +21,11 @@ describe("bucketLabel", () => {
         expect(bucketLabel(week(d(2026, 12, 28)), 0, "isoWeek", context)).toBe("2026-W53");
     });
 
+    it("takes a Sunday-start week's ISO number from its Monday", () => {
+        expect(bucketLabel(week(d(2026, 1, 4)), 0, "isoWeek", context)).toBe("2026-W02");
+        expect(bucketLabel(week(d(2025, 12, 28)), 0, "isoWeek", context)).toBe("2026-W01");
+    });
+
     it("formats week buckets as project weeks counted from the first bucket", () => {
         expect(bucketLabel(week(d(2026, 2, 2)), 0, "projectWeek", context)).toBe("W1");
         expect(bucketLabel(week(d(2026, 2, 23)), 3, "projectWeek", context)).toBe("W4");

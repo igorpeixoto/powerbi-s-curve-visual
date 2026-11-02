@@ -15,6 +15,18 @@ export function combine(values: Values, how: "sum" | "last"): number | null {
     return result;
 }
 
+/** Combines a Tooltips field over a bucket's rows, in date order: numbers add up like the bars, anything else shows the latest value. */
+export function combineTooltip(values: readonly unknown[]): unknown {
+    const present = values.filter((v) => v !== null && v !== undefined);
+    if (present.length === 0) return null;
+    return present.every((v) => typeof v === "number") ? (present as number[]).reduce((a, b) => a + b, 0) : present[present.length - 1];
+}
+
+/** Whether a reported point has no reported neighbour, so the line draws nothing for it. */
+export function isIsolated(values: Values, index: number): boolean {
+    return values[index] !== null && (values[index - 1] ?? null) === null && (values[index + 1] ?? null) === null;
+}
+
 export function aggregateTotal(values: Values, how: TotalAggregation): number | null {
     switch (how) {
         case "sum":

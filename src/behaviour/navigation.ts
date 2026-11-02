@@ -35,13 +35,19 @@ export function buildFocusRows(input: FocusRowInput): FocusRow[] {
 
 export type NavigationKey = "ArrowLeft" | "ArrowRight" | "ArrowUp" | "ArrowDown" | "Home" | "End";
 
+const clamp = (value: number, max: number) => Math.max(0, Math.min(max - 1, value));
+
+/** Keeps a focus on the grid after the data changed; null when there is nothing left to focus. */
+export function clampFocus(focus: Focus | null, rowCount: number, bucketCount: number): Focus | null {
+    if (!focus || rowCount === 0 || bucketCount === 0) return null;
+    return { row: clamp(focus.row, rowCount), bucket: clamp(focus.bucket, bucketCount) };
+}
+
 /** Moves the focus, clamped to the grid; the first key press lands on the first row and bucket. */
 export function moveFocus(focus: Focus | null, key: NavigationKey, rowCount: number, bucketCount: number): Focus | null {
     if (rowCount === 0 || bucketCount === 0) return null;
     if (!focus) return { row: 0, bucket: 0 };
-    const clamp = (value: number, max: number) => Math.max(0, Math.min(max - 1, value));
-    const row = clamp(focus.row, rowCount);
-    const bucket = clamp(focus.bucket, bucketCount);
+    const { row, bucket } = clampFocus(focus, rowCount, bucketCount) as Focus;
     switch (key) {
         case "ArrowLeft":
             return { row, bucket: clamp(bucket - 1, bucketCount) };

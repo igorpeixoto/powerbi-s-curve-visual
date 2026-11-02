@@ -1,6 +1,6 @@
 // Turns the model plus options into everything the drawers need: scales, labels, colours, matrix rows,
 // legend items and the layout. All positions derive from the one shared geometry in `layout.geometry`.
-import { buildBarLayout, type BarLayout } from "../model/columns";
+import { buildBarLayout, buildHighlightLayout, type BarLayout } from "../model/columns";
 import { bucketLabel } from "../model/labels";
 import { buildMatrixRows, type MatrixRow } from "../model/matrix";
 import { columnExtent, lineExtent, niceDomain, percentDomain, type NiceDomain } from "../model/scales";
@@ -157,12 +157,7 @@ export function buildScene(input: SceneInput): Scene {
         model.buckets.length,
     );
     const barsHighlight = model.highlights
-        ? buildBarLayout(
-            columnMeasures.map((m) => ({ measureKey: m.key, rows: model.highlights?.[m.key] ?? [] })),
-            model.hasSeries,
-            options.columns.layout,
-            model.buckets.length,
-        )
+        ? buildHighlightLayout(bars, columnMeasures.map((m) => ({ measureKey: m.key, rows: model.highlights?.[m.key] ?? [] })))
         : null;
     const leftDomain = niceDomain(columnExtent(columnMeasures.map((m) => model.values[m.key]), options.columns.layout), options.leftAxis);
     const lineValues = lines.map((l) => l.values);

@@ -2,6 +2,7 @@ import { createMockHost } from "./mock-host.mjs";
 import {
     bucketsOnlyDataView,
     dateHierarchyDataView,
+    isolatedPointsDataView,
     measuresOnlyDataView,
     progressDataView,
     zeroRowsDataView,
@@ -155,6 +156,14 @@ async function run() {
     check("renders the other measures when one measure is all null", q('[data-role="bar"]').length > 0 && messageState() === null);
     render(visual, progressDataView({ weeks: 1, reportedWeeks: 1 }));
     check("renders a single bucket", q('[data-role="bar"][data-bucket="0"]').length > 0 && q('[data-role="point"]').length === 2);
+    // With markers off (the default) a lone point has no line to show it, so it keeps a marker (SPEC §8).
+    const shownAsMarker = (point) => point.getAttribute("fill-opacity") === "1" && point.getAttribute("r") === "4";
+    const pointLooks = () => [...q('[data-role="point"]')].map((p) => `${p.getAttribute("fill-opacity")}/${p.getAttribute("r")}`).join(" ");
+    check("shows a single bucket's line points as markers", [...q('[data-role="point"]')].every(shownAsMarker), pointLooks());
+    render(visual, isolatedPointsDataView());
+    check("shows points between gaps as markers", q('[data-role="point"]').length === 2 && [...q('[data-role="point"]')].every(shownAsMarker), pointLooks());
+    render(visual, progressDataView({ reportedWeeks: 20 }));
+    check("keeps points on a continuous line hidden with markers off", [...q('[data-role="point"]')].every((p) => p.getAttribute("fill-opacity") === "0"), pointLooks());
 
     // Empty states render a clear message, not an error (SPEC §8).
     const emptyCases = [

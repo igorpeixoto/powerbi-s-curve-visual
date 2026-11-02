@@ -26,6 +26,7 @@ export function progressDataView({
     reduced = false,
     actualAllNull = false,
     highlights = false,
+    partialHighlights = false,
     objects = undefined,
     seriesObjects = {},
     columnObjects = {},
@@ -50,6 +51,10 @@ export function progressDataView({
         if (highlights) {
             for (const column of values) column.highlights = column.values.map((v) => (g === 0 ? v : null));
         }
+        // Another visual highlights part of every discipline.
+        if (partialHighlights) {
+            for (const column of values) column.highlights = column.values.map((v) => (v === null ? null : v / 2));
+        }
         return { name, identity: name ? { key: `series:${name}` } : undefined, values, objects: seriesObjects[g] };
     });
 
@@ -69,6 +74,40 @@ export function progressDataView({
             values: flat,
         },
     };
+}
+
+/** One line measure, already cumulative, and optional Tooltips fields; rows arrive in the order given. */
+function lineDataView(dates, lineValues, tooltips = []) {
+    const dateSource = { displayName: "Day", queryName: "progress.Day", roles: { categoryDate: true }, index: 0 };
+    const reported = column("Reported", "Reported", ["lineValues"], { format: "#,0", objects: { lines: { valueMode: "asProvided" } } });
+    const fields = tooltips.map((t) => column(t.name, t.name, ["tooltips"], { format: "#,0" }));
+    const values = [
+        { source: reported, values: lineValues },
+        ...tooltips.map((t, i) => ({ source: fields[i], values: t.values })),
+    ];
+    const flat = [...values];
+    flat.grouped = () => [{ values }];
+    return {
+        metadata: { columns: [dateSource, reported, ...fields] },
+        categorical: {
+            categories: [{ source: dateSource, values: dates, identity: dates.map((_, i) => ({ key: `row:${i}` })) }],
+            values: flat,
+        },
+    };
+}
+
+/** Eight days in two weeks, newest first, as a sort by date descending delivers them. The value of each is its day of the month. */
+export function dailyDescendingDataView() {
+    const days = [14, 13, 12, 9, 8, 7, 6, 5];
+    return lineDataView(days.map((day) => new Date(2026, 0, day)), days, [
+        { name: "Crew", values: days.map(() => 2) },
+        { name: "Status", values: days.map((day) => `status ${day}`) },
+    ]);
+}
+
+/** Weekly values with gaps, so every reported point has no neighbour to draw a line to. */
+export function isolatedPointsDataView() {
+    return lineDataView([5, 12, 19, 26].map((day) => new Date(2026, 0, day)), [10, null, 30, null]);
 }
 
 /** Measures bound, no Date/Category field. */

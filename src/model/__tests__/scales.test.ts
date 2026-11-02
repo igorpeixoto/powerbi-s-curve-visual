@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { columnExtent, lineExtent, niceDomain, percentDomain } from "../scales";
+import { columnExtent, inDomain, lineExtent, niceDomain, percentDomain } from "../scales";
 
 describe("columnExtent", () => {
     // measure → series → bucket
@@ -29,6 +29,21 @@ describe("lineExtent", () => {
     it("spans every plotted point and includes zero", () => {
         expect(lineExtent([[10, 30, null], [5, 60]])).toEqual([0, 60]);
         expect(lineExtent([[null]])).toBeNull();
+    });
+
+    it("copes with every point the capability limits allow (6 measures, 30 series, 1000 buckets)", () => {
+        const lines = Array.from({ length: 180 }, (_, line) => Array.from({ length: 1000 }, (_, bucket) => line + bucket));
+        expect(lineExtent(lines)).toEqual([0, 1178]);
+    });
+});
+
+describe("inDomain", () => {
+    it("includes both ends, in either order", () => {
+        expect(inDomain(1, [0, 1])).toBe(true);
+        expect(inDomain(0, [0, 1])).toBe(true);
+        expect(inDomain(1.5, [0, 1])).toBe(false);
+        expect(inDomain(-1, [0, 1])).toBe(false);
+        expect(inDomain(5, [10, 0])).toBe(true);
     });
 });
 

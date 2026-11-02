@@ -95,6 +95,41 @@ export function runFormatChecks(plugin, check) {
     render(visual, container, progressDataView({ reportedWeeks: 20, objects: preset("minimal", { matrix: { showMatrix: true } }) }));
     check("a saved value beats the preset (Minimal + matrix on)", q(".s-curve__matrix-body") !== null && qa('[data-role="bar"]').length === 0);
 
+    // A fixed axis range: marks stay in the plot, never over the x-axis labels or above the plot (SPEC §5.3).
+    const plotEdges = () => ({
+        top: Math.min(...qa(".s-curve__grid line").map((l) => l.getBoundingClientRect().top)),
+        labels: Math.min(...qa('[data-role="x-label"]').map((l) => l.getBoundingClientRect().top)),
+    });
+    render(visual, container, progressDataView({ reportedWeeks: 20, objects: { leftAxis: { leftMin: 50 } } }));
+    const lowest = qa('[data-role="bar"]').reduce((a, b) => (b.getBoundingClientRect().bottom > a.getBoundingClientRect().bottom ? b : a));
+    const lowestRect = lowest.getBoundingClientRect();
+    check("a fixed left minimum keeps bars above the x-axis labels", lowestRect.bottom <= plotEdges().labels + 0.5, `bars to ${lowestRect.bottom}, labels from ${plotEdges().labels}`);
+    const underPlot = document.elementFromPoint(lowestRect.left + lowestRect.width / 2, plotEdges().labels + 2);
+    check("nothing of a bar can be hit below the plot", underPlot?.getAttribute("data-role") !== "bar", underPlot?.getAttribute("data-role"));
+    render(visual, container, progressDataView({ reportedWeeks: 20, objects: { leftAxis: { leftMax: 100 } } }));
+    const barTop = Math.min(...qa('[data-role="bar"]').map((b) => b.getBoundingClientRect().top));
+    check("a fixed left maximum keeps bars inside the plot", barTop >= plotEdges().top - 0.5, `bars from ${barTop}, plot from ${plotEdges().top}`);
+    render(visual, container, progressDataView({ reportedWeeks: 20, objects: { rightAxis: { rightMax: 1000 } } }));
+    const rightTop = Math.min(...qa(".s-curve__axis-right text").map((t) => Number(t.getAttribute("y"))));
+    const pointCys = qa('[data-role="point"]').map((p) => Number(p.getAttribute("cy")));
+    check("a fixed right maximum leaves out line points above it", pointCys.length > 0 && pointCys.length < 40 && pointCys.every((cy) => cy >= rightTop - 0.5), `${pointCys.length} points, highest at ${Math.min(...pointCys)}, axis top ${rightTop}`);
+    const lineClip = q('[data-role="line"]').getAttribute("clip-path");
+    const clipRect = lineClip ? q(`${lineClip.slice(4, -1)} rect`) : null;
+    check("a fixed right maximum clips the line at the plot", clipRect !== null && Number(clipRect.getAttribute("y")) >= rightTop - 2, `clip ${lineClip}, y ${clipRect?.getAttribute("y")}, axis top ${rightTop}`);
+    const labelYs = qa('[data-role="line-label"]').map((l) => Number(l.getAttribute("y")));
+    check("a fixed right maximum hides labels of points outside the range", labelYs.every((y) => y > rightTop), JSON.stringify(labelYs));
+
+    // A line that reaches exactly 100 % sits on the plot's top edge: its marker stays.
+    render(visual, container, progressDataView({ reportedWeeks: 20, objects: { lines: { displayAs: "percentOfBaseline", showMarkers: true } } }));
+    const percentTop = Math.min(...qa(".s-curve__axis-right text").map((t) => Number(t.getAttribute("y"))));
+    const edgePoint = q(`[data-role="point"][data-bucket="19"][data-measure="${LINE_PLANNED}"]`);
+    check("keeps a marker on the plot's top edge", edgePoint !== null && Math.abs(Number(edgePoint.getAttribute("cy")) - percentTop) < 0.5, `point at ${edgePoint?.getAttribute("cy")}, axis top ${percentTop}`);
+
+    // ISO weeks come from the Monday of a Sunday-start week, the week its other six days belong to.
+    render(visual, container, progressDataView({ reportedWeeks: 20, objects: { xAxis: { weekStartDay: "sunday", weekLabelFormat: "isoWeek" } } }));
+    const isoLabel = q('[data-role="x-label"][data-bucket="0"]').textContent;
+    check("labels a Sunday-start week with the ISO week of its Monday", isoLabel === "2026-W02", isoLabel);
+
     // Per-instance settings: slices per series and per measure, with selectors; a saved series fill reaches the bars.
     render(visual, container, progressDataView({
         reportedWeeks: 20,

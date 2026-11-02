@@ -1,5 +1,5 @@
 import type { Bucket } from "./types";
-import { isoWeek } from "./weeks";
+import { addDays, isoWeek } from "./weeks";
 
 export type WeekLabelFormat = "weekStart" | "isoWeek" | "projectWeek";
 
@@ -20,7 +20,8 @@ export function bucketLabel(bucket: Bucket, index: number, format: WeekLabelForm
         case "weekStart":
             return context.formatDate(bucket.weekStart);
         case "isoWeek": {
-            const { year, week } = isoWeek(bucket.weekStart);
+            // The day after the week's start is always its Monday or Tuesday, so a Sunday-start week gets the ISO week of its other six days.
+            const { year, week } = isoWeek(addDays(bucket.weekStart, 1));
             return `${year}-W${String(week).padStart(2, "0")}`;
         }
         case "projectWeek":

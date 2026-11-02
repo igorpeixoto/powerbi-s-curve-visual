@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildFocusRows, moveFocus } from "../navigation";
+import { buildFocusRows, clampFocus, moveFocus } from "../navigation";
 
 describe("buildFocusRows", () => {
     it("orders bars (per series), then lines, then matrix rows", () => {
@@ -18,6 +18,19 @@ describe("buildFocusRows", () => {
             { kind: "cell", matrixRow: 0 },
             { kind: "cell", matrixRow: 1 },
         ]);
+    });
+});
+
+describe("clampFocus", () => {
+    it("keeps a focus that still fits and moves one that doesn't onto the grid", () => {
+        expect(clampFocus({ row: 1, bucket: 4 }, 3, 10)).toEqual({ row: 1, bucket: 4 });
+        expect(clampFocus({ row: 7, bucket: 40 }, 3, 10)).toEqual({ row: 2, bucket: 9 });
+    });
+
+    it("drops the focus when nothing is left to focus", () => {
+        expect(clampFocus(null, 3, 10)).toBeNull();
+        expect(clampFocus({ row: 1, bucket: 4 }, 0, 10)).toBeNull();
+        expect(clampFocus({ row: 1, bucket: 4 }, 3, 0)).toBeNull();
     });
 });
 

@@ -1,7 +1,7 @@
 import type powerbi from "powerbi-visuals-api";
 
 import type { Bucket, BucketRole, MeasureInfo, ModelOptions, ParsedDataView, SeriesInfo, ValueRole, Values } from "./types";
-import { combine, toNumber } from "./values";
+import { combine, combineTooltip, toNumber } from "./values";
 import { buildWeekBuckets, type WeekBucketing } from "./weeks";
 
 type DataView = powerbi.DataView;
@@ -140,7 +140,7 @@ export function parseDataView(dataView: DataView | undefined, options: ModelOpti
     for (const measure of parsed.measures) {
         const columns = groups.map((g) => g.values[measure.columnIndexInGroup]);
         if (measure.role === "tooltips") {
-            parsed.tooltipValues[measure.key] = columns.map((c) => parsed.buckets.map((b) => (b.rowIndices.length ? c.values[b.rowIndices[0]] : null)));
+            parsed.tooltipValues[measure.key] = columns.map((c) => parsed.buckets.map((b) => combineTooltip(b.rowIndices.map((row) => c.values[row]))));
             continue;
         }
         const how = combineHow(measure, options);

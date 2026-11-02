@@ -62,7 +62,7 @@ export interface ParsedDataView {
     values: Record<string, Values[]>;
     /** Same shape as values, present only when the host sent highlights. */
     highlights: Record<string, Values[]> | null;
-    /** Raw tooltip values per measure key, per series, per bucket (first row of the bucket). */
+    /** Tooltip values per measure key, per series, per bucket, combined over the bucket's rows (combineTooltip). */
     tooltipValues: Record<string, unknown[][]>;
     warnings: ModelWarnings;
 }

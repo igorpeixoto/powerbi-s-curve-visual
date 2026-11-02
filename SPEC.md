@@ -111,6 +111,7 @@ If Power BI reduces the data (more than 1000 categories or 30 series), the visua
 
 - **Left axis** (columns): auto range including zero, "nice" ticks; optional fixed min/max; labels formatted with the first column measure's format string and the chosen display units.
 - **Right axis** (lines): same rules, formatted from the first line measure (or as % in percent mode, §6.3).
+- A fixed range cuts what falls outside it: bars stop at the plot's edge, lines are clipped there, and line points outside the range aren't drawn (Decision 15).
 - Hidden automatically when their side has nothing to show (no column measures → no left axis).
 - **X axis**: one label per bucket (thinned as in §3.2). Date bucket labels per §6.1.
 - Gridlines follow the left axis by default; the right axis can show its own.
@@ -143,10 +144,10 @@ If Power BI reduces the data (more than 1000 categories or 30 series), the visua
 
 - Every date maps to the **week that contains it**, starting on **Week start day** (Monday by default, or Sunday). Dates use their local calendar date; time of day is ignored.
 - **Show empty weeks** (default on): weeks between the first and last bucket that have no rows are inserted as empty buckets, so the time axis stays continuous. Text buckets are never inferred. If the range spans more than 1000 weeks (typically one outlier date), empty weeks are not filled and the warning icon says so.
-- When several dates fall in one week, values are combined per role: column and table-only measures are **summed**; line measures in *as provided* mode take the **last non-null** value in the week (a cumulative measure must not be summed); line measures in *running total* mode are summed and then accumulated.
+- When several dates fall in one week, values are combined per role: column and table-only measures are **summed**; line measures in *as provided* mode take the **last non-null** value in the week by date, whatever order the rows arrive in (a cumulative measure must not be summed); line measures in *running total* mode are summed and then accumulated. *Tooltips* fields add up when numeric, and otherwise show the latest non-null value (Decision 15).
 - If the bound date column is already weekly (one date per week), no combining happens. The documentation will recommend binding a week-start column from a date table.
 - Null dates, and values in the Date well that aren't dates, are excluded and counted; if any were excluded, the warning icon says how many.
-- **Week label format**: `weekStart` (the week's start date, short date in the report locale; default), `isoWeek` (e.g. `2026-W05`), or `projectWeek` (`W1`, `W2`, … counted from the first bucket).
+- **Week label format**: `weekStart` (the week's start date, short date in the report locale; default), `isoWeek` (e.g. `2026-W05`; a Sunday-start week takes the number of its Monday), or `projectWeek` (`W1`, `W2`, … counted from the first bucket).
 - **Second line** (optional, default none): a second label line under each week in any of the same formats, e.g. the date above and the ISO or project week below (Decision 12). Text buckets always use one line.
 
 ### 6.2 Cumulative values
@@ -188,7 +189,7 @@ Physical progress is usually read as a percentage. **Display as** `value` (defau
 
 ### 7.2 Highlights from other visuals
 
-When another visual highlights a subset, the highlighted part is shown solid and the full value faded: bars draw the full bar faded with the highlighted portion solid; lines draw the cumulative of the highlighted values solid, with the full line faded behind it; matrix cells show the highlighted values (the tooltip shows both).
+When another visual highlights a subset, the highlighted part is shown solid and the full value faded: bars draw the full bar faded with the highlighted portion solid, inside its own series' segment when stacked; lines draw the cumulative of the highlighted values solid, with the full line faded behind it; matrix cells show the highlighted values (the tooltip shows both).
 
 ### 7.3 Tooltips and context menu
 
@@ -198,7 +199,7 @@ When another visual highlights a subset, the highlighted part is shown solid and
 
 ### 7.4 Keyboard and accessibility
 
-- Entering and leaving follow the host (Microsoft's keyboard rules for custom visuals): **Enter** on the visual container moves focus inside, **Esc** moves it back out to the container and keeps the selection; with keyboard focus enabled, Tab stays inside the visual until Esc. Inside, **←/→** move between buckets, **↑/↓** between measures (and series), **Enter/Space** selects the focused mark (or clears the selection when it is the only selected mark), and **Ctrl+Enter** adds or removes it. The matrix is reachable with the same keys (↓ past the last chart measure moves into the matrix rows).
+- Entering and leaving follow the host (Microsoft's keyboard rules for custom visuals): **Enter** on the visual container moves focus inside, **Esc** moves it back out to the container and keeps the selection; with keyboard focus enabled, Tab stays inside the visual until Esc. Inside, **←/→** move between buckets, **↑/↓** between measures (and series), **Enter/Space** selects the focused mark (or clears the selection when it is the only selected mark), and **Ctrl+Enter** adds or removes it. The matrix is reachable with the same keys (↓ past the last chart measure moves into the matrix rows), unless it's hidden for lack of space.
 - The focused mark has a visible focus ring. Every focusable mark has an `aria-label` such as "Week of 2 Feb 2026, Planned, 120".
 - **High-contrast mode** (`colorPalette.isHighContrast`): all marks use the foreground colour; measures are told apart by fill vs. outline (bars), dash style and markers (lines); selection uses `foregroundSelected`. No information is carried by colour alone.
 - **Theme colours** are the only source of default colours; nothing is hardcoded.
@@ -213,7 +214,7 @@ When another visual highlights a subset, the highlighted part is shown solid and
 | Date well holds a date hierarchy (Year/Quarter/Month/Day) instead of a date | "Use the date field itself, not its Date Hierarchy" (with how to switch it in the well). |
 | A measure whose values are all null | Its marks and matrix row stay empty; everything else renders. No error. |
 | No column measures / no line measures / no table-only measures | That part simply isn't drawn; its axis is hidden. Not an error. |
-| One bucket | Renders normally (one cluster, a single line point with a marker). |
+| One bucket | Renders normally (one cluster, a single line point with a marker). Any line point with no reported neighbour keeps a marker, even with markers off. |
 | Data reduced by Power BI, or null dates excluded | Host warning icon with a short explanation. |
 | Viewport too small for any chart | "Make the visual larger to see the chart." |
 
@@ -365,3 +366,4 @@ Settled in the SPEC review on 2026-11-01 (all as proposed in the draft):
 12. **Two-line x-axis labels (§6.1, §9.3)**: requested after the Phase 5 Desktop review. A new `xAxis.weekLabelSecondLine` dropdown adds an optional second label line for week buckets (none by default), so authors can show, for example, the date and the ISO or project week together. Tooltip headers and keyboard announcements show both lines.
 13. **Matrix row order and lines (§5.6, §9.3)**: requested after the Phase 5 Desktop review, so authors can group rows by type or discipline and separate the groups visually. Per measure and row kind, a position and the width of the line below; a static width for the line below the header. Series rows inside an expanded measure don't get their own settings: they move with the measure and follow the series order the model sends.
 14. **Locale formats (§10)**: found in Phase 6. Without a folder in `stringResources/`, a UK, German or Spanish report showed `1/5/2026` and `10,994`, because the packager drops those formats. All 352 locales would add about 470 KB and 352 folders, so v1 ships 20 major ones, with English text.
+15. **Week tooltips and fixed ranges (§5.3, §6.1)**: found by the code review before v1. A numeric *Tooltips* field adds up over a week's rows, as the bars do, so the tooltip and the bar describe the same days; text has no sum, so it shows the latest value. A non-additive measure, such as a percentage bound to a daily date, adds up too; binding a week-start column avoids that. Marks outside a fixed axis range are cut at the plot's edge, not drawn over the axis labels. Bars are shortened rather than clipped, so the keyboard focus ring stays in the plot too; a line point outside the range isn't drawn, so its focus falls back to the bucket's band.

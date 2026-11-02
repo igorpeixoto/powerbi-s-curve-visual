@@ -62,6 +62,11 @@ describe("buildWeekBuckets", () => {
         expect(buckets.every((b) => b.kind === "week" && !b.inserted)).toBe(true);
     });
 
+    it("keeps a week's rows in date order, whatever order they arrive in", () => {
+        const { buckets } = buildWeekBuckets([d(2026, 2, 6), d(2026, 2, 3), d(2026, 2, 5), d(2026, 2, 4)], options);
+        expect(buckets[0].rowIndices).toEqual([1, 3, 2, 0]);
+    });
+
     it("inserts empty weeks, across the DST change, only when enabled", () => {
         const dates = [d(2026, 3, 16), d(2026, 4, 6)];
         const filled = buildWeekBuckets(dates, options).buckets;
