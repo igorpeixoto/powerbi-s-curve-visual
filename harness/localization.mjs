@@ -1,4 +1,4 @@
-// Phase 6 checks (SPEC §10): the package ships both languages, and with the string resources in the package, the pane
+// Phase 6 checks (SPEC §10): the package ships both languages and the format-only locales, and with the string resources in the package, the pane
 // and the visual read in the host's language, with numbers and dates in its format. Stored values never translate.
 import { createMockHost } from "./mock-host.mjs";
 import { progressDataView } from "./data.mjs";
@@ -84,14 +84,39 @@ export function runLocalizationChecks(plugin, stringResources, check) {
     check("en-US reads the same as the built-in defaults", enPane.includes("Y-axis (columns)") && enPane.includes("Classic S-curve") && !enPane.includes("Visual_"));
     enContainer.remove();
 
-    // A language the package has no strings for: English text, never a key.
+    // Locales shipped for their number and date formats: an empty resource file, so the text stays in English.
+    const FORMATS = {
+        "en-GB": ["05/01/2026", "10,994"], "en-AU": ["5/01/2026", "10,994"], "en-CA": ["05/01/2026", "10,994"], "en-IE": ["05/01/2026", "10,994"],
+        "en-IN": ["05-01-2026", "10,994"], "en-ZA": ["2026/01/05", "10 994"], "de-DE": ["05.01.2026", "10.994"], "fr-FR": ["05/01/2026", "10 994"],
+        "fr-CA": ["2026-01-05", "10 994"], "es-ES": ["05/01/2026", "10.994"], "es-MX": ["05/01/2026", "10,994"], "es-AR": ["05/01/2026", "10.994"],
+        "es-CL": ["05-01-2026", "10.994"], "pt-PT": ["05-01-2026", "10.994"], "it-IT": ["05/01/2026", "10.994"], "nl-NL": ["5-1-2026", "10.994"],
+        "sv-SE": ["2026-01-05", "10 994"], "nb-NO": ["05.01.2026", "10 994"], "da-DK": ["05-01-2026", "10.994"], "pl-PL": ["2026-01-05", "10 994"],
+    };
+    const shipped = Object.keys(stringResources ?? {}).filter((locale) => locale !== "en-US" && locale !== "pt-BR").sort();
+    check("the package ships the format-only locales", shipped.join() === Object.keys(FORMATS).sort().join(), shipped.join());
+    const localeCalls = [];
+    for (const [locale, [date, number]] of Object.entries(FORMATS)) {
+        const localeContainer = newContainer();
+        const localeHost = createMockHost({ locale, strings: stringResources?.[locale] });
+        const localeVisual = plugin.create({ element: localeContainer, host: localeHost.host });
+        render(localeVisual, progressDataView({ reportedWeeks: 20 }));
+        const shownDate = localeContainer.querySelector('[data-role="x-label"][data-bucket="0"]')?.textContent;
+        // Some locales group digits with a no-break space.
+        const shownNumber = localeContainer.querySelector('[data-role="total"][data-row="0"]')?.textContent?.replace(/\s/g, " ");
+        const localePane = JSON.stringify(localeVisual.getFormattingModel());
+        check(`${locale} shows its own formats, with English text`, shownDate === date && shownNumber === number && localePane.includes("Y-axis (columns)") && !localePane.includes("Visual_"), `${shownDate} | ${shownNumber}`);
+        localeCalls.push(localeHost.calls);
+        localeContainer.remove();
+    }
+
+    // A locale the package has no folder for: en-US text and formats, never a key.
     const otherContainer = newContainer();
-    const other = createMockHost({ locale: "fr-FR" });
+    const other = createMockHost({ locale: "ja-JP" });
     const otherVisual = plugin.create({ element: otherContainer, host: other.host });
     render(otherVisual, progressDataView({ reportedWeeks: 20 }));
     const otherPane = JSON.stringify(otherVisual.getFormattingModel());
-    check("a language without translations falls back to English, never to keys", otherPane.includes("Y-axis (columns)") && !otherPane.includes("Visual_"));
+    check("a locale without a folder falls back to en-US, never to keys", otherPane.includes("Y-axis (columns)") && !otherPane.includes("Visual_") && otherContainer.querySelector('[data-role="x-label"][data-bucket="0"]')?.textContent === "1/5/2026");
     otherContainer.remove();
 
-    return [calls, english.calls, other.calls];
+    return [calls, english.calls, other.calls, ...localeCalls];
 }

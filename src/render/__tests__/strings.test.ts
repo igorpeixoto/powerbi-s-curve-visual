@@ -25,6 +25,12 @@ describe("stringResources", () => {
         }
     });
 
+    it("every other locale folder is empty: it exists only to ship that locale's number and date formats", () => {
+        const others = readdirSync(join(root, "stringResources")).filter((locale) => locale !== "en-US" && locale !== "pt-BR");
+        expect(others.length).toBe(20);
+        for (const locale of others) expect(readJson(`stringResources/${locale}/resources.resjson`), locale).toEqual({});
+    });
+
     it("keeps the leading space of suffixes in every language", () => {
         for (const key of ["Visual_cumulativeSuffix", "Visual_highlightedSuffix"]) {
             expect(ptBR[key].startsWith(" "), key).toBe(true);
