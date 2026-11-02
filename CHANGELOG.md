@@ -9,22 +9,22 @@ Every version heading must match `pbiviz.json`'s `visual.version` and a `vX.Y.Z`
 
 ## [Unreleased]
 
-- Samples: `tools/generate_sample_data.py` (fictional EPC project, seeded) and a sample report in `samples/report` with the Classic preset
-- Localization: every Format pane and on-visual string in `stringResources/en-US` and `stringResources/pt-BR`, with number and date formats for those and 20 more locales (their text stays in English)
-- Format pane: number boxes enforce their valid range (text sizes, widths, percentages, decimal places, row height); axis minimum and maximum stay open because negative values are valid
-- Matrix: custom row order and a width for the line below any measure row or the header, so rows can be grouped and separated
-- X-axis: optional second label line for weeks (e.g. date above, ISO or project week below)
-- Format pane: nine grouped cards (86 controls plus per-measure and per-series colours, styles, value modes and totals) and three style presets (Classic S-curve, Weekly progress, Minimal) resolved as explicit value, then preset, then base default; axis titles, legend title, label colours, units and precision
-- Interaction: selection and cross-filtering from bars, line points, axis labels, matrix cells, row headers and legend entries (Ctrl/Cmd for multi-select, background click clears), highlights from other visuals, tooltips including report-page tooltips, context menu, keyboard navigation with a focus ring and announcements, high-contrast styling, bookmark restore
-- Rendering: stacked or clustered columns, cumulative lines with end labels, value axes, weekly x-axis labels, legend, and the aligned matrix with totals, all positioned from the shared x geometry
+First release. Everything below is new.
+
+- Field wells: Date or Category, Series, Column values, Line values, Table-only values and Tooltips
+- Columns: per-week bars, stacked or clustered by series, on the left axis
+- Lines: cumulative lines on the right axis, with running totals computed by the visual, or as a percentage of a baseline measure
+- Matrix: aligned with the chart at any width and while scrolling, with totals, optional series rows, a custom row order and a width for the line below any measure row or the header
+- X-axis: weekly bucketing from a date field, labels as dates, ISO weeks or project weeks, with an optional second label line
+- Format pane: nine grouped cards, per-series and per-measure settings, enforced ranges on number boxes, and three style presets (Classic S-curve, Weekly progress, Minimal) resolved as explicit value, then preset, then base default
+- Interaction: selection and cross-filtering from bars, line points, axis labels, matrix cells, row headers and legend entries, highlights from other visuals, tooltips including report-page tooltips, context menu, keyboard navigation with a focus ring and announcements, high-contrast styling, bookmark restore
 - Empty states: landing page, missing wells, zero rows, date hierarchy in the Date well, viewport too small
-- Data roles per SPEC §4: Category or Date, Series, Column values, Line values, Table-only values, Tooltips
-- Model layer: weekly bucketing, running totals, percent of baseline, axis domains, shared x geometry, selection identities
-- Scaffold, strict TypeScript, ESLint, unit tests (Vitest), headless harness (Puppeteer), capability parity check, CI and tag-driven release workflow
+- Localization: all text in English and Brazilian Portuguese, with number and date formats for those and 20 more locales, whose text stays in English
+- Samples: a generator for a fictional EPC project (`tools/generate_sample_data.py`) and a sample report (`samples/report`)
 
 <!-- Release protocol: the human or Claude Code bumps pbiviz.json visual.version, renames
      [Unreleased] to ## [X.Y.Z] - YYYY-MM-DD (after the Visual Validation Gate passes) and
-     opens a fresh [Unreleased] above it. Claude Code creates the vX.Y.Z tag (CLAUDE.md §5). -->
+     opens a fresh [Unreleased] above it. The tag follows, with the maintainer's approval (RELEASING.md). -->
 
 ## Version Numbering (Visual-Adapted Semver)
 

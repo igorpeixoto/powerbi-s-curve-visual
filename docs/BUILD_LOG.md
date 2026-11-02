@@ -106,3 +106,9 @@ How this visual was built, session by session: what the AI (Claude Code) did and
 - Desktop check: the hand-written PBIP opened and refreshed; the wells show `WeekStart`, `Discipline`, `Plan` and `Actual`; the totals match the CSV (42,000 planned, 22,686 actual); actuals stop after week 14; the 10 legend entries fit on one row at the report's size. Observed in screenshots. This was also the first time Desktop loaded a package with the empty locale files. Still not checked: Portuguese or other locales in Desktop, since the host locale was en-US.
 - Tests: 16 generator tests, including that the committed CSV matches the generator; the sample check; 170 unit; 150 harness; all green. Mutation checks: a changed CSV value, a misnamed measure in the report, and a version bump without a sync each failed the sample check; restored.
 
+## 2026-11-02: Phase 8 (Docs)
+- Time: TODO(igor) h
+- AI did: wrote `README.md`, `ARCHITECTURE.md` (with a Mermaid diagram, checked by rendering it), `TESTING.md` (counts by area, and a manual checklist with what has and hasn't been seen in Desktop), `CONTRIBUTING.md` and a bug-report issue form. Rewrote `CLAUDE.md` fresh, describing this repo instead of the starter kit it began from, keeping the hard-rule numbers that code comments refer to. Added two repo skills, `add-format-setting` and `check-in-desktop`. Rewrote the changelog's `[Unreleased]` section as release notes; the `1.0.0` heading comes with the version bump in Phase 9, because the heading and the version move together. Removed the unused `docs/tasks/_TEMPLATE.md`.
+- Process gap, stated to the maintainer: the governance rules called for `/code-review medium src/` before every package, and it was never run during this build. It has to start in a fresh session, so it stays open for before the release.
+- I did: TODO(igor): review of the docs.
+

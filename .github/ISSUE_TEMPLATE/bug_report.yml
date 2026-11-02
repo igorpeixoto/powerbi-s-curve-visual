@@ -1,0 +1,54 @@
+name: Bug report
+description: Something in the visual doesn't work as expected
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Please don't include real project data or confidential screenshots. A small made-up example is enough.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you saw, and a screenshot if it helps.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Which fields are in which wells, and which Format pane settings matter.
+      placeholder: |
+        1. Date: WeekStart. Series: Discipline. Column values: Plan, Actual.
+        2. Set Format pane > Matrix > ...
+        3. ...
+    validations:
+      required: true
+  - type: input
+    id: visual-version
+    attributes:
+      label: Visual version
+      description: The version in the release you downloaded, for example 1.0.0.
+    validations:
+      required: true
+  - type: dropdown
+    id: host
+    attributes:
+      label: Where it happens
+      options:
+        - Power BI Desktop
+        - Power BI Service
+        - Both
+    validations:
+      required: true
+  - type: input
+    id: host-version
+    attributes:
+      label: Power BI Desktop version and language
+      description: From Help > About, and the language in File > Options > Regional Settings.
+      placeholder: 2.159, English (United States)
