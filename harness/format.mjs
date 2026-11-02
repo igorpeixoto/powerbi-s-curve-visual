@@ -87,6 +87,9 @@ export function runFormatChecks(plugin, check) {
     const showColumns = paneSlices(minimalModel, "showColumns")[0];
     check("the Format pane shows effective values (Minimal turns columns off)", showColumns?.value === false, JSON.stringify(showColumns?.value));
     check("the Format pane has the nine SPEC cards", minimalModel.cards.length === 9);
+    const groupUids = minimalModel.cards.flatMap((c) => c.groups.map((g) => g.uid));
+    check("every Format pane group has a unique uid (no group shows up under another card)", new Set(groupUids).size === groupUids.length,
+        groupUids.filter((u, i) => groupUids.indexOf(u) !== i).join(", "));
 
     // An explicit value beats the preset.
     render(visual, container, progressDataView({ reportedWeeks: 20, objects: preset("minimal", { matrix: { showMatrix: true } }) }));
@@ -101,6 +104,9 @@ export function runFormatChecks(plugin, check) {
     const model = visual.getFormattingModel();
     const fills = paneSlices(model, "columnFill");
     check("offers one column fill per series, with a selector", fills.length === 4 && fills.every((f) => f.descriptor.selector), `got ${fills.length}`);
+    const columnsCard = model.cards.find((c) => c.uid === "columns-card");
+    const fillsInColumnsCard = paneSlices(columnsCard, "columnFill").length;
+    check("the column fills sit in the Columns card", fillsInColumnsCard === 4, `got ${fillsInColumnsCard}`);
     check("offers per-measure line settings with measure selectors",
         paneSlices(model, "lineColor").length === 2 && paneSlices(model, "lineColor").every((s) => s.descriptor.selector?.metadata));
     const civilBar = q(`[data-role="bar"][data-measure="${COLUMN_PLANNED}"][data-series="0"]`);

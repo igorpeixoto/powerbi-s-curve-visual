@@ -15,6 +15,15 @@ const palette = {
 const context = (extra: Partial<ApplyContext> = {}): ApplyContext => ({ palette, measures: [], series: [], ...extra });
 const view = (objects: Record<string, Record<string, unknown>>) => ({ metadata: { columns: [], objects } }) as unknown as powerbi.DataView;
 
+describe("Format pane model", () => {
+    it("gives every group a name unique across all cards (the library builds group uids from the name alone)", () => {
+        const { model } = applySettings(undefined, context());
+        const names = model.cards.flatMap((card) => ("groups" in card ? card.groups.map((g) => g.name) : []));
+        expect(names.length).toBe(25);
+        expect(new Set(names).size).toBe(names.length);
+    });
+});
+
 describe("applySettings", () => {
     it("keeps the Base (Classic) defaults when nothing is saved", () => {
         const applied = applySettings(undefined, context());

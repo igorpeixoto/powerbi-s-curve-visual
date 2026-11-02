@@ -221,7 +221,8 @@ When another visual highlights a subset, the highlighted part is shown solid and
 ### 9.1 Principles
 
 - Every card is a `CompositeCard` split into named groups. Property names are unique across their card (they are flattened into one `capabilities.json` object per card).
-- Property, group and card `name`s below are **final** once SPEC.md is approved; `displayName`s are localised.
+- Card and property `name`s below are **final** once SPEC.md is approved; they are stored in reports. `displayName`s are localised.
+- Group names are never stored, but the formatting library derives each group's uid from its name alone, so they must be unique across all cards. The code prefixes each group with its card (`columnsColors`, `linesColors`, …); the short group names below are the SPEC's labels for them. (Found in the Phase 5 Desktop check, where groups with the same name collided across cards.)
 - v1 has **86 static controls**, plus per-instance controls (colours, line styles, value modes, totals) repeated once per measure or series. All of them stay in v1 (Decision 7).
 
 ### 9.2 Style presets and the resolution rule

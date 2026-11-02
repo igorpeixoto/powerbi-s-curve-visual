@@ -1,7 +1,8 @@
 "use strict";
 
-// The Format pane (SPEC §9.3). Card, group and property names are the public contract: they are stored in every
-// report that uses the visual, so they never change (CLAUDE.md Hard Rule #5). Defaults here are the Base (= Classic)
+// The Format pane (SPEC §9.3). Card and property names are the public contract: they are stored in every report
+// that uses the visual, so they never change (CLAUDE.md Hard Rule #5). Group names are never stored, but the
+// formatting library derives each group's uid from its name alone, so they must be unique across all cards. Defaults here are the Base (= Classic)
 // values; src/format/applySettings.ts resolves saved values and presets on top of them.
 import powerbi from "powerbi-visuals-api";
 import { formattingSettings } from "powerbi-visuals-utils-formattingmodel";
@@ -55,7 +56,7 @@ class PresetGroup extends Group {
     stylePreset = new formattingSettings.ItemDropdown({ name: "stylePreset", displayName: "Style preset", items: ITEMS.stylePreset, value: ITEMS.stylePreset[0] });
 
     constructor() {
-        super({ name: "preset", displayName: "Preset" });
+        super({ name: "generalPreset", displayName: "Preset" });
         this.slices = [this.stylePreset];
     }
 }
@@ -66,7 +67,7 @@ class LayoutGroup extends Group {
     fontFamily = new formattingSettings.FontPicker({ name: "fontFamily", displayName: "Font", value: DEFAULT_FONT });
 
     constructor() {
-        super({ name: "layout", displayName: "Layout" });
+        super({ name: "generalLayout", displayName: "Layout" });
         this.slices = [this.minBucketWidth, this.bucketGap, this.fontFamily];
     }
 }
@@ -88,14 +89,14 @@ class ColumnOptionsGroup extends Group {
     cornerRadius = new formattingSettings.NumUpDown({ name: "cornerRadius", displayName: "Corner radius (px)", value: 0 });
 
     constructor() {
-        super({ name: "options", displayName: "Options" });
+        super({ name: "columnsOptions", displayName: "Options" });
         this.slices = [this.seriesLayout, this.clusterGap, this.columnOpacity, this.cornerRadius];
     }
 }
 
 class ColumnColorsGroup extends Group {
     constructor() {
-        super({ name: "colors", displayName: "Colors" });
+        super({ name: "columnsColors", displayName: "Colors" });
         this.slices = [];
         this.visible = false;
     }
@@ -127,7 +128,7 @@ class LineOptionsGroup extends Group {
     markerSize = new formattingSettings.NumUpDown({ name: "markerSize", displayName: "Marker size (px)", value: 4 });
 
     constructor() {
-        super({ name: "options", displayName: "Options" });
+        super({ name: "linesOptions", displayName: "Options" });
         this.slices = [this.lineSeriesMode, this.strokeWidth, this.lineOpacity, this.interpolation, this.showMarkers, this.markerSize];
     }
 }
@@ -138,7 +139,7 @@ class LineValuesGroup extends Group {
     private readonly staticSlices = [this.displayAs, this.cumulativeSuffix];
 
     constructor() {
-        super({ name: "values", displayName: "Values" });
+        super({ name: "linesValues", displayName: "Values" });
         this.slices = [...this.staticSlices];
     }
 
@@ -155,7 +156,7 @@ class LineValuesGroup extends Group {
 
 class LineColorsGroup extends Group {
     constructor() {
-        super({ name: "colors", displayName: "Colors and style" });
+        super({ name: "linesColors", displayName: "Colors and style" });
         this.slices = [];
         this.visible = false;
     }
@@ -187,7 +188,7 @@ class LeftRangeGroup extends Group {
     leftMax = new formattingSettings.NumUpDown({ name: "leftMax", displayName: "Maximum", value: AUTO });
 
     constructor() {
-        super({ name: "range", displayName: "Range" });
+        super({ name: "leftAxisRange", displayName: "Range" });
         this.slices = [this.leftMin, this.leftMax];
     }
 }
@@ -199,7 +200,7 @@ class LeftLabelsGroup extends Group {
     leftPrecision = new formattingSettings.NumUpDown({ name: "leftPrecision", displayName: "Value decimal places", value: AUTO });
 
     constructor() {
-        super({ name: "labels", displayName: "Labels" });
+        super({ name: "leftAxisLabels", displayName: "Labels" });
         this.slices = [this.leftLabelFontSize, this.leftLabelColor, this.leftDisplayUnits, this.leftPrecision];
     }
 }
@@ -211,7 +212,7 @@ class LeftTitleGroup extends Group {
     leftTitleColor = new formattingSettings.ColorPicker({ name: "leftTitleColor", displayName: "Color", value: THEME_COLOR });
 
     constructor() {
-        super({ name: "title", displayName: "Title" });
+        super({ name: "leftAxisTitle", displayName: "Title" });
         this.topLevelSlice = this.leftTitleShow;
         this.slices = [this.leftTitleText, this.leftTitleFontSize, this.leftTitleColor];
     }
@@ -224,7 +225,7 @@ class LeftGridlinesGroup extends Group {
     gridlineStyle = new formattingSettings.ItemDropdown({ name: "gridlineStyle", displayName: "Style", items: ITEMS.lineStyle, value: item(ITEMS.lineStyle, "dashed") });
 
     constructor() {
-        super({ name: "gridlines", displayName: "Gridlines" });
+        super({ name: "leftAxisGridlines", displayName: "Gridlines" });
         this.topLevelSlice = this.gridlinesShow;
         this.slices = [this.gridlineColor, this.gridlineWidth, this.gridlineStyle];
     }
@@ -248,7 +249,7 @@ class RightRangeGroup extends Group {
     rightMax = new formattingSettings.NumUpDown({ name: "rightMax", displayName: "Maximum", value: AUTO });
 
     constructor() {
-        super({ name: "range", displayName: "Range" });
+        super({ name: "rightAxisRange", displayName: "Range" });
         this.slices = [this.rightMin, this.rightMax];
     }
 }
@@ -260,7 +261,7 @@ class RightLabelsGroup extends Group {
     rightPrecision = new formattingSettings.NumUpDown({ name: "rightPrecision", displayName: "Value decimal places", value: AUTO });
 
     constructor() {
-        super({ name: "labels", displayName: "Labels" });
+        super({ name: "rightAxisLabels", displayName: "Labels" });
         this.slices = [this.rightLabelFontSize, this.rightLabelColor, this.rightDisplayUnits, this.rightPrecision];
     }
 }
@@ -272,7 +273,7 @@ class RightTitleGroup extends Group {
     rightTitleColor = new formattingSettings.ColorPicker({ name: "rightTitleColor", displayName: "Color", value: THEME_COLOR });
 
     constructor() {
-        super({ name: "title", displayName: "Title" });
+        super({ name: "rightAxisTitle", displayName: "Title" });
         this.topLevelSlice = this.rightTitleShow;
         this.slices = [this.rightTitleText, this.rightTitleFontSize, this.rightTitleColor];
     }
@@ -282,7 +283,7 @@ class RightGridlinesGroup extends Group {
     rightGridlinesShow = new formattingSettings.ToggleSwitch({ name: "rightGridlinesShow", displayName: "Gridlines", value: false });
 
     constructor() {
-        super({ name: "gridlines", displayName: "Gridlines" });
+        super({ name: "rightAxisGridlines", displayName: "Gridlines" });
         this.slices = [this.rightGridlinesShow];
     }
 }
@@ -308,7 +309,7 @@ class XLabelsGroup extends Group {
     showEmptyWeeks = new formattingSettings.ToggleSwitch({ name: "showEmptyWeeks", displayName: "Show empty weeks", value: true });
 
     constructor() {
-        super({ name: "labels", displayName: "Labels" });
+        super({ name: "xAxisLabels", displayName: "Labels" });
         this.slices = [this.xLabelFontSize, this.xLabelColor, this.weekLabelFormat, this.weekStartDay, this.showEmptyWeeks];
     }
 }
@@ -318,7 +319,7 @@ class XTitleGroup extends Group {
     xTitleText = new formattingSettings.TextInput({ name: "xTitleText", displayName: "Title text", value: "", placeholder: "Field name" });
 
     constructor() {
-        super({ name: "title", displayName: "Title" });
+        super({ name: "xAxisTitle", displayName: "Title" });
         this.topLevelSlice = this.xTitleShow;
         this.slices = [this.xTitleText];
     }
@@ -344,7 +345,7 @@ class ColumnLabelsGroup extends Group {
     columnLabelPrecision = new formattingSettings.NumUpDown({ name: "columnLabelPrecision", displayName: "Value decimal places", value: AUTO });
 
     constructor() {
-        super({ name: "columnLabels", displayName: "Columns" });
+        super({ name: "dataLabelsColumns", displayName: "Columns" });
         this.topLevelSlice = this.columnLabelsShow;
         this.slices = [this.columnLabelPosition, this.columnLabelFontSize, this.columnLabelColor, this.columnLabelDisplayUnits, this.columnLabelPrecision];
     }
@@ -359,7 +360,7 @@ class LineLabelsGroup extends Group {
     lineLabelPrecision = new formattingSettings.NumUpDown({ name: "lineLabelPrecision", displayName: "Value decimal places", value: AUTO });
 
     constructor() {
-        super({ name: "lineLabels", displayName: "Lines" });
+        super({ name: "dataLabelsLines", displayName: "Lines" });
         this.topLevelSlice = this.lineLabelsShow;
         this.slices = [this.lineLabelPoints, this.lineLabelFontSize, this.lineLabelColor, this.lineLabelDisplayUnits, this.lineLabelPrecision];
     }
@@ -381,7 +382,7 @@ class LegendOptionsGroup extends Group {
     legendTitleText = new formattingSettings.TextInput({ name: "legendTitleText", displayName: "Title text", value: "", placeholder: "Series field name" });
 
     constructor() {
-        super({ name: "options", displayName: "Options" });
+        super({ name: "legendOptions", displayName: "Options" });
         this.slices = [this.legendPosition, this.legendShowTitle, this.legendTitleText];
     }
 }
@@ -391,7 +392,7 @@ class LegendTextGroup extends Group {
     legendColor = new formattingSettings.ColorPicker({ name: "legendColor", displayName: "Color", value: THEME_COLOR });
 
     constructor() {
-        super({ name: "text", displayName: "Text" });
+        super({ name: "legendText", displayName: "Text" });
         this.slices = [this.legendFontSize, this.legendColor];
     }
 }
@@ -413,7 +414,7 @@ class MatrixOptionsGroup extends Group {
     expandSeries = new formattingSettings.ToggleSwitch({ name: "expandSeries", displayName: "One row per series", value: false });
 
     constructor() {
-        super({ name: "options", displayName: "Options" });
+        super({ name: "matrixOptions", displayName: "Options" });
         this.slices = [this.showTotals, this.totalsLabel, this.expandSeries];
     }
 }
@@ -424,7 +425,7 @@ class MatrixValuesGroup extends Group {
     private readonly staticSlices = [this.matrixDisplayUnits, this.matrixPrecision];
 
     constructor() {
-        super({ name: "values", displayName: "Values" });
+        super({ name: "matrixValues", displayName: "Values" });
         this.slices = [...this.staticSlices];
     }
 
@@ -452,7 +453,7 @@ class MatrixTextGroup extends Group {
     headerBold = new formattingSettings.ToggleSwitch({ name: "headerBold", displayName: "Bold row headers", value: true });
 
     constructor() {
-        super({ name: "text", displayName: "Text" });
+        super({ name: "matrixText", displayName: "Text" });
         this.slices = [this.matrixFontSize, this.matrixFontColor, this.headerFontColor, this.headerBold];
     }
 }
@@ -465,7 +466,7 @@ class MatrixGridGroup extends Group {
     maxHeightPercent = new formattingSettings.NumUpDown({ name: "maxHeightPercent", displayName: "Maximum height (% of visual)", value: 50 });
 
     constructor() {
-        super({ name: "grid", displayName: "Grid" });
+        super({ name: "matrixGrid", displayName: "Grid" });
         this.slices = [this.rowHeight, this.showBorders, this.borderColor, this.banding, this.maxHeightPercent];
     }
 }
