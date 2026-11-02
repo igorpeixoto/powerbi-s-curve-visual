@@ -13,6 +13,37 @@
     }
 }
 
+// Text drawn over marks must not intercept clicks or hovers meant for the mark underneath.
+[data-role="line-label"],
+[data-role="column-label"],
+[data-role="cell-text"],
+[data-role="total"],
+[data-role="totals-header"],
+.s-curve__grid {
+    pointer-events: none;
+}
+
+.s-curve:focus {
+    outline: none;
+}
+
+.s-curve__focus-ring {
+    position: absolute;
+    pointer-events: none;
+    border: 2px solid currentColor;
+    border-radius: 2px;
+    box-sizing: border-box;
+}
+
+.s-curve__live {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
 .s-curve__legend,
 .s-curve__chart,
 .s-curve__matrix,

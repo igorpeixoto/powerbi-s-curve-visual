@@ -178,7 +178,7 @@ Physical progress is usually read as a percentage. **Display as** `value` (defau
 | Matrix row header, legend entry | series (series rows), or measure (measure rows) | series rows cross-filter by series; measure rows only emphasise that measure within the visual |
 
 - A **date bucket** spans several rows of the date column; selecting it selects all of their identities.
-- **Ctrl/Cmd-click** adds or removes from the selection. **Background click** or **Esc** clears it.
+- **Ctrl/Cmd-click** adds or removes from the selection. A **background click** clears it; clicking the only selected mark again also clears it.
 - Unselected marks dim (opacity 0.4); selected marks stay at full strength.
 - **Stale selections**: after a data update, identities that no longer exist are dropped; if none remain, the visual shows the unselected state. Selection restored by bookmarks is honoured through the selection callback.
 - When the host disallows interactions (`allowInteractions = false`), clicks do nothing and nothing dims.
@@ -195,7 +195,7 @@ When another visual highlights a subset, the highlighted part is shown solid and
 
 ### 7.4 Keyboard and accessibility
 
-- The visual is one tab stop. Inside it, **←/→** move between buckets, **↑/↓** between measures (and series), **Enter/Space** selects, **Ctrl+Enter** adds to the selection, **Esc** clears the selection, and **Tab** leaves the visual. The matrix is reachable with the same keys (↓ past the last chart measure moves into the matrix rows).
+- Entering and leaving follow the host (Microsoft's keyboard rules for custom visuals): **Enter** on the visual container moves focus inside, **Esc** moves it back out to the container and keeps the selection; with keyboard focus enabled, Tab stays inside the visual until Esc. Inside, **←/→** move between buckets, **↑/↓** between measures (and series), **Enter/Space** selects the focused mark (or clears the selection when it is the only selected mark), and **Ctrl+Enter** adds or removes it. The matrix is reachable with the same keys (↓ past the last chart measure moves into the matrix rows).
 - The focused mark has a visible focus ring. Every focusable mark has an `aria-label` such as "Week of 2 Feb 2026, Planned, 120".
 - **High-contrast mode** (`colorPalette.isHighContrast`): all marks use the foreground colour; measures are told apart by fill vs. outline (bars), dash style and markers (lines); selection uses `foregroundSelected`. No information is carried by colour alone.
 - **Theme colours** are the only source of default colours; nothing is hardcoded.
@@ -332,9 +332,9 @@ Unit (model layer, no DOM):
 Harness (packaged visual, mock host):
 - Alignment: bar, line point, axis label and matrix cell centres equal within 0.5 px at the first, middle and last bucket, at 400, 800, 1200 and 2000 px.
 - Every row of the §8 table renders its message or partial chart without `renderingFailed`.
-- Selection: each element in §7.1 calls `select` with the expected identities; Ctrl-click accumulates; background click and Esc clear; stale selections are dropped after an update; nothing happens when interactions are disallowed.
+- Selection: each element in §7.1 calls `select` with the expected identities; Ctrl-click accumulates; a background click clears; stale selections are dropped after an update; nothing happens when interactions are disallowed.
 - Highlights render the solid/faded split; the context menu opens with the mark's identity; tooltips carry the expected fields.
-- Keyboard: arrows move focus, Enter selects, Esc clears; focusable marks have aria-labels.
+- Keyboard: arrows move focus, Enter selects, Enter on the only selected mark clears; focusable marks have aria-labels.
 - High contrast: no data colour other than foreground/selected colours is used.
 - Each preset renders without errors; capability parity stays green.
 
@@ -352,3 +352,4 @@ Settled in the SPEC review on 2026-11-01 (all as proposed in the draft):
 8. **Limits (§4.1)**: 1000 distinct dates or categories before bucketing, 30 series, 6 column, 6 line and 10 table-only measures; the documentation recommends binding a week-start date column.
 9. **Category and Date (§4)**: mutually exclusive in v1, enforced by `conditions`. Allowing both (date for ordering, text for labels) would be an additive change later.
 10. **Date hierarchy in the Date well (§8)**: decided after the Desktop check. Power BI sends Year/Quarter/Month/Day columns instead of dates; the visual detects it and shows a specific message rather than rebuilding dates from localised level values.
+11. **Keyboard exit (§7.4)**: decided at the start of Phase 4. The host reserves Esc to move focus out of a custom visual, so Esc no longer clears the selection; Enter on the only selected mark (or a background click) clears it, as in built-in visuals.

@@ -20,6 +20,8 @@ export interface PaletteLike {
 
 export interface ThemeColors {
     text: string;
+    /** Colour of selected marks in high contrast. */
+    selected: string;
     secondaryText: string;
     gridline: string;
     border: string;
@@ -32,10 +34,19 @@ export function themeColors(palette: PaletteLike): ThemeColors {
     const foreground = palette.foreground?.value ?? "currentColor";
     const pick = (info: ColorInfo | undefined) => info?.value ?? foreground;
     if (palette.isHighContrast) {
-        return { text: foreground, secondaryText: foreground, gridline: foreground, border: foreground, background: palette.background?.value ?? "transparent", banding: "transparent" };
+        return {
+            text: foreground,
+            selected: palette.foregroundSelected?.value ?? foreground,
+            secondaryText: foreground,
+            gridline: foreground,
+            border: foreground,
+            background: palette.background?.value ?? "transparent",
+            banding: "transparent",
+        };
     }
     return {
         text: foreground,
+        selected: pick(palette.foregroundSelected),
         secondaryText: pick(palette.foregroundNeutralSecondary),
         gridline: pick(palette.foregroundNeutralTertiary),
         border: pick(palette.separator ?? palette.foregroundNeutralTertiary),

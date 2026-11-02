@@ -15,6 +15,7 @@ export function emptyParsedDataView(): ParsedDataView {
         buckets: [],
         series: [],
         hasSeries: false,
+        seriesFieldName: null,
         measures: [],
         values: {},
         highlights: null,
@@ -125,6 +126,7 @@ export function parseDataView(dataView: DataView | undefined, options: ModelOpti
     if (groups.length === 0) return parsed;
 
     parsed.hasSeries = Boolean(categorical?.values?.source);
+    parsed.seriesFieldName = categorical?.values?.source?.displayName ?? null;
     parsed.series = parsed.hasSeries
         ? groups.map((group, groupIndex): SeriesInfo => ({ key: String(group.name), value: group.name ?? null, groupIndex }))
         : [];

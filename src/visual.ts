@@ -9,6 +9,7 @@ import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import IVisual = powerbi.extensibility.visual.IVisual;
 import IVisualEventService = powerbi.extensibility.IVisualEventService;
 
+import { Interactivity } from "./behaviour/interactivity";
 import { defaultRenderOptions } from "./render/options";
 import { Renderer } from "./render/renderer";
 import { VisualFormattingSettingsModel } from "./settings";
@@ -16,6 +17,7 @@ import { VisualFormattingSettingsModel } from "./settings";
 export class Visual implements IVisual {
     private readonly events: IVisualEventService;
     private readonly renderer: Renderer;
+    private readonly interactivity: Interactivity;
     private readonly formattingSettingsService: FormattingSettingsService;
     private formattingSettings: VisualFormattingSettingsModel = new VisualFormattingSettingsModel();
 
@@ -33,6 +35,15 @@ export class Visual implements IVisual {
             localizationManager: host.createLocalizationManager?.(),
             displayWarningIcon: (hoverText, detailedText) => host.displayWarningIcon(hoverText, detailedText),
         });
+        this.interactivity = new Interactivity(
+            {
+                selectionManager: host.createSelectionManager(),
+                tooltipService: host.tooltipService,
+                createSelectionIdBuilder: () => host.createSelectionIdBuilder(),
+                allowInteractions: () => host.hostCapabilities?.allowInteractions !== false,
+            },
+            this.renderer,
+        );
     }
 
     public update(options: VisualUpdateOptions): void {
@@ -44,7 +55,8 @@ export class Visual implements IVisual {
                 dataView,
             );
             // Phase 5 resolves these from the Format pane and the style preset; until then, the Base defaults.
-            this.renderer.render(dataView, options.viewport, defaultRenderOptions);
+            const scene = this.renderer.render(dataView, options.viewport, defaultRenderOptions);
+            this.interactivity.update(scene, dataView);
             this.events.renderingFinished(options);
         } catch (error) {
             this.events.renderingFailed(options, String(error));

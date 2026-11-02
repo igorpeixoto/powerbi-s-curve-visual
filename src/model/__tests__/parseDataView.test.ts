@@ -41,6 +41,7 @@ describe("parseDataView", () => {
         }));
         expect(parsed.hasSeries).toBe(true);
         expect(parsed.series.map((s) => [s.key, s.groupIndex])).toEqual([["Civil", 0], ["Electrical", 1]]);
+        expect(parsed.seriesFieldName).toBe("Discipline");
         expect(parsed.values["columnValues:Sum(Progress.Planned)"]).toEqual([[10, 20], [1, 2]]);
     });
 

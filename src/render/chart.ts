@@ -2,12 +2,17 @@
 // Every x position comes from scene.layout.geometry; nothing here computes bucket positions itself.
 import { curveLinear, curveMonotoneX, line as d3line, scaleLinear, type Selection } from "d3";
 
+import type { BarSegment } from "../model/columns";
 import { clusterSlots, labelStep } from "../model/geometry";
 import { ptToPx, type LineStyle } from "./options";
 import type { Scene } from "./scene";
 
 type SvgSelection = Selection<SVGSVGElement, unknown, null, undefined>;
 type GSelection = Selection<SVGGElement, unknown, null, undefined>;
+
+/** Opacity of the full value behind a highlighted subset, and of unselected marks. */
+export const HIGHLIGHT_BACKGROUND_OPACITY = 0.4;
+const POINT_HIT_RADIUS = 6;
 
 interface Box {
     x0: number;
@@ -80,22 +85,34 @@ export function drawChart(svg: SvgSelection, scene: Scene, clipId: string, scrol
         axisText(svg.append("g").attr("class", "s-curve__axis-right"), scene.right.labels, scene.right.ticks, yRight, plotRight + 6, "start", options.rightAxis.fontSize);
     }
 
-    // Columns.
+    // Columns. With highlights from another visual, the full bar is drawn faded and the highlighted part solid
+    // on top (SPEC §7.2). In high contrast, measures alternate between filled and outlined bars (SPEC §7.4).
     const bars = content.append("g").attr("class", "s-curve__bars");
     if (yLeft) {
         const slotsByBucket = geometry.buckets.map((b) => clusterSlots(b, scene.bars.slotCount, options.columns.clusterGap));
-        bars.selectAll("rect").data(scene.bars.segments).join("rect")
-            .attr("data-role", "bar")
-            .attr("data-bucket", (s) => s.bucketIndex)
-            .attr("data-measure", (s) => s.measureKey)
-            .attr("data-series", (s) => (s.seriesIndex === null ? null : s.seriesIndex))
-            .attr("x", (s) => slotsByBucket[s.bucketIndex][s.slot].x)
-            .attr("width", (s) => slotsByBucket[s.bucketIndex][s.slot].width)
-            .attr("y", (s) => yLeft(Math.max(s.base, s.top)))
-            .attr("height", (s) => Math.abs(yLeft(s.base) - yLeft(s.top)))
-            .attr("rx", options.columns.cornerRadius)
-            .attr("fill", (s) => scene.colors.bar(s.measureKey, s.seriesIndex))
-            .attr("fill-opacity", options.columns.opacity);
+        const highContrast = scene.highContrast;
+        const highlighted = scene.barsHighlight !== null;
+        const drawBars = (segments: BarSegment[], role: "bar" | "bar-highlight") => {
+            const background = role === "bar" && highlighted;
+            const outlined = (s: BarSegment) => highContrast && (background || scene.columnIndex(s.measureKey) % 2 === 1);
+            bars.append("g").selectAll("rect").data(segments).join("rect")
+                .attr("data-role", role)
+                .attr("data-bucket", (s) => s.bucketIndex)
+                .attr("data-measure", (s) => s.measureKey)
+                .attr("data-series", (s) => (s.seriesIndex === null ? null : s.seriesIndex))
+                .attr("data-value", (s) => s.value)
+                .attr("x", (s) => slotsByBucket[s.bucketIndex][s.slot].x)
+                .attr("width", (s) => slotsByBucket[s.bucketIndex][s.slot].width)
+                .attr("y", (s) => yLeft(Math.max(s.base, s.top)))
+                .attr("height", (s) => Math.abs(yLeft(s.base) - yLeft(s.top)))
+                .attr("rx", options.columns.cornerRadius)
+                .attr("fill", (s) => (outlined(s) ? theme.background : scene.colors.bar(s.measureKey, s.seriesIndex)))
+                .attr("stroke", (s) => (highContrast ? (outlined(s) ? scene.colors.bar(s.measureKey, s.seriesIndex) : theme.background) : null))
+                .attr("stroke-width", highContrast ? 1.5 : null)
+                .attr("fill-opacity", background && !highContrast ? options.columns.opacity * HIGHLIGHT_BACKGROUND_OPACITY : options.columns.opacity);
+        };
+        drawBars(scene.bars.segments, "bar");
+        if (scene.barsHighlight) drawBars(scene.barsHighlight.segments, "bar-highlight");
     }
 
     // Lines and their points (points exist even with markers off: they are measured, focused and selected).
@@ -108,19 +125,25 @@ export function drawChart(svg: SvgSelection, scene: Scene, clipId: string, scrol
             .x((_, i) => geometry.buckets[i].center)
             .y((v) => yRight(v as number))
             .curve(options.lines.interpolation === "monotone" ? curveMonotoneX : curveLinear);
+        const markers = options.lines.showMarkers || scene.highContrast;
         for (const line of model.lines) {
             if (!options.lines.show) break;
             const color = scene.colors.line(line.measureKey, line.seriesIndex);
             const style = scene.lineStyle(line.measureKey);
-            linesGroup.append("path")
-                .attr("data-role", "line").attr("data-measure", line.measureKey)
-                .attr("d", path(line.values))
+            const drawPath = (values: (number | null)[], role: "line" | "line-highlight", faded: boolean) => linesGroup.append("path")
+                .attr("data-role", role).attr("data-measure", line.measureKey)
+                .attr("data-series", line.seriesIndex === null ? null : line.seriesIndex)
+                .attr("d", path(values))
                 .attr("fill", "none").attr("stroke", color)
-                .attr("stroke-width", options.lines.strokeWidth).attr("stroke-opacity", options.lines.opacity)
+                .attr("stroke-width", faded && scene.highContrast ? 1 : options.lines.strokeWidth)
+                .attr("stroke-opacity", faded && !scene.highContrast ? options.lines.opacity * HIGHLIGHT_BACKGROUND_OPACITY : options.lines.opacity)
                 .attr("stroke-dasharray", dashArray(style, options.lines.strokeWidth))
                 .attr("stroke-linecap", style === "dotted" ? "round" : "butt")
                 .attr("stroke-linejoin", "round");
+            drawPath(line.values, "line", line.highlights !== null);
+            if (line.highlights) drawPath(line.highlights, "line-highlight", false);
             const points = line.values.map((v, i) => ({ v, i })).filter((p): p is { v: number; i: number } => p.v !== null);
+            // Points double as hit targets: transparent and a little larger than the stroke when markers are off.
             linesGroup.append("g").selectAll("circle").data(points).join("circle")
                 .attr("data-role", "point")
                 .attr("data-bucket", (p) => p.i)
@@ -128,9 +151,9 @@ export function drawChart(svg: SvgSelection, scene: Scene, clipId: string, scrol
                 .attr("data-series", line.seriesIndex === null ? null : line.seriesIndex)
                 .attr("cx", (p) => geometry.buckets[p.i].center)
                 .attr("cy", (p) => yRight(p.v))
-                .attr("r", options.lines.showMarkers ? options.lines.markerSize : Math.max(3, options.lines.strokeWidth + 1))
+                .attr("r", markers ? options.lines.markerSize : Math.max(POINT_HIT_RADIUS, options.lines.strokeWidth + 1))
                 .attr("fill", color)
-                .attr("fill-opacity", options.lines.showMarkers ? 1 : 0);
+                .attr("fill-opacity", markers ? 1 : 0);
 
             if (options.dataLabels.lines.show && points.length) {
                 const format = scene.lineLabel(line.measureKey);

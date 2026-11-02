@@ -53,6 +53,8 @@ export interface ParsedDataView {
     buckets: Bucket[];
     series: SeriesInfo[];
     hasSeries: boolean;
+    /** Display name of the field in the Series well, for tooltips. */
+    seriesFieldName: string | null;
     measures: MeasureInfo[];
     /** values[measureKey][seriesIndex][bucketIndex], already combined per bucket. */
     values: Record<string, Values[]>;

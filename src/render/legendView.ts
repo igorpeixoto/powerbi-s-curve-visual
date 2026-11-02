@@ -24,6 +24,8 @@ export function drawLegend(svg: SvgSelection, scene: Scene): void {
         if (!position) return;
         const g = svg.append("g")
             .attr("data-role", "legend-item")
+            .attr("data-measure", item.measureKey)
+            .attr("data-series", item.seriesIndex === null ? null : item.seriesIndex)
             .attr("transform", `translate(${position.x},${position.y})`);
         const middle = itemHeight / 2;
         if (item.kind === "bar") {

@@ -25,6 +25,7 @@ export function progressDataView({
     tableOnly = 1,
     reduced = false,
     actualAllNull = false,
+    highlights = false,
 } = {}) {
     const dates = Array.from({ length: weeks }, (_, i) => new Date(2026, 0, 5 + 7 * i));
     const dateSource = { displayName: "WeekStart", queryName: "progress.WeekStart", roles: { categoryDate: true }, index: 0 };
@@ -42,6 +43,10 @@ export function progressDataView({
             { source: { ...actual, groupName: name }, values: actualValues },
             ...tables.map((t, k) => ({ source: { ...t, groupName: name }, values: dates.map((_, i) => (i + k + g) % 5 + 1) })),
         ];
+        // Another visual highlights one discipline: its values come back as highlights, the others as null.
+        if (highlights) {
+            for (const column of values) column.highlights = column.values.map((v) => (g === 0 ? v : null));
+        }
         return { name, identity: name ? { key: `series:${name}` } : undefined, values };
     });
 

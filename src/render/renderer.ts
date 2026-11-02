@@ -51,6 +51,8 @@ export class Renderer {
     private scrolled: Selection<SVGGElement, unknown, null, undefined>[] = [];
     private scrollX = 0;
     private plotLeft = 0;
+    private scene: Scene | null = null;
+    private scrollListener: (() => void) | null = null;
 
     constructor(element: HTMLElement, private readonly host: RendererHost) {
         instanceCounter += 1;
@@ -71,10 +73,41 @@ export class Renderer {
         this.scrollbar.on("scroll", () => {
             this.scrollX = (this.scrollbar.node() as HTMLDivElement).scrollLeft;
             this.applyScroll();
+            this.scrollListener?.();
         });
     }
 
-    render(dataView: powerbi.DataView | undefined, viewport: powerbi.IViewport, options: RenderOptions): void {
+    /** The visual's root element, for delegated event listeners. */
+    get element(): HTMLDivElement {
+        return this.root.node() as HTMLDivElement;
+    }
+
+    /** Called after every horizontal scroll (e.g. to move the keyboard focus ring). */
+    onScroll(listener: () => void): void {
+        this.scrollListener = listener;
+    }
+
+    /** Scrolls horizontally just enough to show a bucket. */
+    scrollToBucket(index: number): void {
+        const geometry = this.scene?.layout.geometry;
+        const bucket = geometry?.buckets[index];
+        if (!geometry || !bucket || !geometry.scrollable) return;
+        let next = this.scrollX;
+        if (bucket.x0 < next) next = bucket.x0;
+        if (bucket.x1 > next + geometry.plotWidth) next = bucket.x1 - geometry.plotWidth;
+        if (next !== this.scrollX) {
+            this.scrollX = next;
+            (this.scrollbar.node() as HTMLDivElement).scrollLeft = next;
+            this.applyScroll();
+        }
+    }
+
+    get horizontalScroll(): number {
+        return this.scrollX;
+    }
+
+    /** Draws the visual and returns the scene, or null when an empty state or a message is shown instead. */
+    render(dataView: powerbi.DataView | undefined, viewport: powerbi.IViewport, options: RenderOptions): Scene | null {
         const width = Math.max(0, viewport.width);
         const height = Math.max(0, viewport.height);
         this.root.style("width", `${width}px`).style("height", `${height}px`).style("font-family", options.fontFamily);
@@ -91,7 +124,7 @@ export class Renderer {
         const empty = classifyEmptyState(model);
         if (empty) {
             this.showMessage(empty === "landing" ? this.strings("landingTitle") : null, this.strings(EMPTY_MESSAGES[empty]), empty);
-            return;
+            return null;
         }
 
         const scene = buildScene({
@@ -106,13 +139,15 @@ export class Renderer {
         });
         if (scene.layout.tooSmall) {
             this.showMessage(null, this.strings("tooSmall"), "tooSmall");
-            return;
+            return null;
         }
         this.draw(scene);
+        return scene;
     }
 
     private draw(scene: Scene): void {
         const { layout } = scene;
+        this.scene = scene;
         this.message.style("display", "none");
         this.chart.style("display", null);
 
@@ -151,6 +186,7 @@ export class Renderer {
     }
 
     private showMessage(title: string | null, body: string, kind: string): void {
+        this.scene = null;
         this.legend.style("display", "none");
         this.chart.style("display", "none");
         this.matrix.style("display", "none");

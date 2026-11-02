@@ -14,6 +14,8 @@ export const defaultStrings = {
     totalsLabel: "Total",
     blank: "(Blank)",
     weekPrefix: "W",
+    noValue: "(no value)",
+    highlightedSuffix: " (highlighted)",
     warningTitle: "Not all data is shown as bound",
     warningReduced: "Power BI sent a reduced dataset, so not all data is shown.",
     warningExcludedDates: "{0} rows with an empty or non-date value in the Date field were excluded.",

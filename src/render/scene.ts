@@ -23,6 +23,8 @@ export interface LegendItem {
     kind: "bar" | "line";
     color: string;
     lineStyle: LineStyle;
+    measureKey: string;
+    seriesIndex: number | null;
 }
 
 export interface Scene {
@@ -36,6 +38,11 @@ export interface Scene {
     bucketLabels: string[];
     columnMeasures: MeasureInfo[];
     bars: BarLayout;
+    /** Highlighted subset as bars, when another visual highlights; drawn solid over the faded full bars. */
+    barsHighlight: BarLayout | null;
+    highContrast: boolean;
+    /** Position of a column measure among the drawn column measures (high-contrast fill/outline). */
+    columnIndex(measureKey: string): number;
     left: AxisScene | null;
     right: AxisScene | null;
     lineLabel(measureKey: string): NumberFormatter;
@@ -45,7 +52,11 @@ export interface Scene {
     /** Formatted cell text that fits maxWidth: full, then abbreviated, then empty (SPEC §3.2). */
     cellText(row: MatrixRow, value: number | null, maxWidth: number): string;
     totalsLabel: string;
+    cumulativeSuffix: string;
     legendItems: LegendItem[];
+    /** Full-precision value text for tooltips and accessible labels. */
+    formatValue(format: string | undefined, value: number | null, percent: boolean): string;
+    formatRaw(value: unknown, format: string | undefined): string;
 }
 
 export interface SceneInput {
@@ -60,6 +71,7 @@ export interface SceneInput {
 }
 
 const AXIS_LABEL_PADDING = 10;
+const HIGH_CONTRAST_LINE_STYLES: LineStyle[] = ["solid", "dashed", "dotted"];
 const LEGEND_SWATCH = 16;
 const LEGEND_SWATCH_GAP = 5;
 const MATRIX_PADDING = 12;
@@ -90,6 +102,14 @@ export function buildScene(input: SceneInput): Scene {
         options.columns.layout,
         model.buckets.length,
     );
+    const barsHighlight = model.highlights
+        ? buildBarLayout(
+            columnMeasures.map((m) => ({ measureKey: m.key, rows: model.highlights?.[m.key] ?? [] })),
+            model.hasSeries,
+            options.columns.layout,
+            model.buckets.length,
+        )
+        : null;
     const leftDomain = niceDomain(columnExtent(columnMeasures.map((m) => model.values[m.key]), options.columns.layout), options.leftAxis);
     const lineValues = lines.map((l) => l.values);
     const rightDomain = percent ? (lines.length ? percentDomain(lineExtent(lineValues)) : null) : niceDomain(lineExtent(lineValues), options.rightAxis);
@@ -132,17 +152,24 @@ export function buildScene(input: SceneInput): Scene {
         : 0;
 
     // Legend items: one per drawn mark (SPEC §5.5).
-    const lineStyle = (measureKey: string): LineStyle => options.lines.styles[measuresByKey.get(measureKey)?.queryName ?? ""] ?? "solid";
+    // High contrast tells lines apart by dash style rather than colour (SPEC §7.4).
+    const highContrast = Boolean(input.palette.isHighContrast);
+    const lineOrder = new Map(lineMeasures.map((m, i) => [m.key, i]));
+    const lineStyle = (measureKey: string): LineStyle => {
+        if (highContrast) return HIGH_CONTRAST_LINE_STYLES[(lineOrder.get(measureKey) ?? 0) % HIGH_CONTRAST_LINE_STYLES.length];
+        return options.lines.styles[measuresByKey.get(measureKey)?.queryName ?? ""] ?? "solid";
+    };
+    const columnOrder = new Map(columnMeasures.map((m, i) => [m.key, i]));
     const legendItems: LegendItem[] = [];
     const seriesName = (i: number) => String(model.series[i]?.value ?? strings("blank"));
     for (const m of columnMeasures) {
         if (model.hasSeries) {
             model.series.forEach((_, i) => legendItems.push({
                 label: columnMeasures.length > 1 ? `${seriesName(i)} · ${m.displayName}` : seriesName(i),
-                kind: "bar", color: colors.bar(m.key, i), lineStyle: "solid",
+                kind: "bar", color: colors.bar(m.key, i), lineStyle: "solid", measureKey: m.key, seriesIndex: i,
             }));
         } else {
-            legendItems.push({ label: m.displayName, kind: "bar", color: colors.bar(m.key, null), lineStyle: "solid" });
+            legendItems.push({ label: m.displayName, kind: "bar", color: colors.bar(m.key, null), lineStyle: "solid", measureKey: m.key, seriesIndex: null });
         }
     }
     for (const line of lines) {
@@ -152,6 +179,7 @@ export function buildScene(input: SceneInput): Scene {
         legendItems.push({
             label: line.seriesIndex === null ? name : `${seriesName(line.seriesIndex)} · ${name}`,
             kind: "line", color: colors.line(line.measureKey, line.seriesIndex), lineStyle: lineStyle(line.measureKey),
+            measureKey: line.measureKey, seriesIndex: line.seriesIndex,
         });
     }
     const legendFont = options.legend.fontSize;
@@ -206,6 +234,9 @@ export function buildScene(input: SceneInput): Scene {
         bucketLabels,
         columnMeasures,
         bars,
+        barsHighlight,
+        highContrast,
+        columnIndex: (measureKey) => columnOrder.get(measureKey) ?? 0,
         left: leftScale,
         right: rightScale,
         lineLabel,
@@ -214,6 +245,17 @@ export function buildScene(input: SceneInput): Scene {
         matrixRows,
         cellText,
         totalsLabel,
+        cumulativeSuffix,
+        formatValue: (format, value, isPercent) => {
+            if (value === null) return strings("noValue");
+            return isPercent ? formatters.percent(1)(value) : formatters.number(format, { displayUnits: 1 })(value);
+        },
+        formatRaw: (value, format) => {
+            if (value === null || value === undefined) return strings("noValue");
+            if (typeof value === "number") return formatters.number(format, { displayUnits: 1 })(value);
+            if (value instanceof Date) return formatters.shortDate(value);
+            return String(value);
+        },
         legendItems: legendItems.map((item, i) => ({ ...item, label: truncate(item.label, itemWidths[i] - LEGEND_SWATCH - LEGEND_SWATCH_GAP, (t) => measure(t, legendFont)) })),
     };
 }

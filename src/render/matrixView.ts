@@ -93,6 +93,7 @@ export function drawMatrix(container: DivSelection, scene: Scene, clipId: string
         group.selectAll("text").data(geometry.buckets).join("text")
             .attr("data-role", "cell-text")
             .attr("data-bucket", (b) => b.index)
+            .attr("data-row", rowIndex)
             .attr("x", (b) => b.center)
             .attr("y", y + rowHeight / 2).attr("dy", "0.35em")
             .attr("text-anchor", "middle").attr("fill", theme.text)

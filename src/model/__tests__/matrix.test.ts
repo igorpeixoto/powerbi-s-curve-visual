@@ -61,6 +61,21 @@ describe("buildMatrixRows", () => {
         expect(rows[4].values).toEqual([5, 10, 20]); // Planned cumulative, Electrical
     });
 
+    it("shows highlighted values in cells and totals when another visual highlights a subset", () => {
+        const highlighted = makeDataView({
+            bucketRole: "category",
+            buckets: ["W01", "W02"],
+            measures: [
+                { name: "Planned", roles: ["columnValues", "lineValues"], values: [10, 20], highlights: [4, null] },
+                { name: "Manpower", roles: ["tableOnlyValues"], values: [3, 4], highlights: [1, 2] },
+            ],
+        });
+        const rows = buildMatrixRows(buildModel(highlighted, {}), options);
+        // The highlighted running total follows the line-end rule, like the plotted highlight line.
+        expect(rows.map((r) => r.values)).toEqual([[4, null], [4, null], [1, 2]]);
+        expect(rows.map((r) => r.total)).toEqual([4, 4, 3]);
+    });
+
     it("drops the suffix for lines plotted as provided and flags percent rows", () => {
         const model = buildModel(dataView(), { valueModes: { "Sum(Progress.Actual)": "asProvided" }, displayAs: "percentOfBaseline" });
         const rows = buildMatrixRows(model, options);

@@ -35,7 +35,10 @@ const KIND_BY_ROLE: Partial<Record<MeasureInfo["role"], MatrixRowKind>> = {
     tableOnlyValues: "table",
 };
 
-/** Matrix rows in SPEC order: column measures, then line measures, then table-only measures, in well order. */
+/**
+ * Matrix rows in SPEC order: column measures, then line measures, then table-only measures, in well order.
+ * When another visual highlights a subset, cells and totals show the highlighted values (SPEC §7.2).
+ */
 export function buildMatrixRows(model: SCurveModel, options: MatrixOptions): MatrixRow[] {
     const rows: MatrixRow[] = [];
     for (const measure of model.measures) {
@@ -46,7 +49,9 @@ export function buildMatrixRows(model: SCurveModel, options: MatrixOptions): Mat
         const detail = kind === "line" ? model.lineDetails[measure.key] : undefined;
         const percent = kind === "line" && model.displayAs === "percentOfBaseline";
         const label = detail?.total.accumulated ? `${measure.displayName}${options.cumulativeSuffix}` : measure.displayName;
-        const sourceRows = model.values[measure.key] ?? [];
+        const highlighted = model.highlights !== null;
+        const sourceRows = (highlighted ? model.highlights?.[measure.key] : model.values[measure.key]) ?? [];
+        const lineRow = (line: { values: Values; highlights: Values | null }) => (highlighted ? line.highlights ?? [] : line.values);
 
         const row = (seriesIndex: number | null, values: Values): MatrixRow => ({
             key: `${measure.key}|${seriesIndex ?? "total"}`,
@@ -63,10 +68,10 @@ export function buildMatrixRows(model: SCurveModel, options: MatrixOptions): Mat
 
         if (options.expandSeries && model.hasSeries) {
             model.series.forEach((_, seriesIndex) => {
-                rows.push(row(seriesIndex, detail ? detail.perSeries[seriesIndex].values : sourceRows[seriesIndex] ?? []));
+                rows.push(row(seriesIndex, detail ? lineRow(detail.perSeries[seriesIndex]) : sourceRows[seriesIndex] ?? []));
             });
         }
-        rows.push(row(null, detail ? detail.total.values : sumAcross(sourceRows)));
+        rows.push(row(null, detail ? lineRow(detail.total) : sumAcross(sourceRows)));
     }
     return rows;
 }
