@@ -19,7 +19,7 @@ export function emptyParsedDataView(): ParsedDataView {
         values: {},
         highlights: null,
         tooltipValues: {},
-        warnings: { excludedDateRows: 0, dataReduced: false, emptyWeeksSkipped: false },
+        warnings: { excludedDateRows: 0, dataReduced: false, emptyWeeksSkipped: false, dateHierarchy: false },
     };
 }
 
@@ -30,9 +30,9 @@ export function valueGroups(values: powerbi.DataViewValueColumns | undefined): p
 }
 
 /**
- * Position of a column within a role's well. The host is believed to send `rolesIndex`, but API 5.11's typings
- * don't declare it and the docs don't mention it, so it's read defensively; without it, column order is assumed
- * to be well order (wrong for a measure bound to two wells when it isn't first in the second well).
+ * Position of a column within a role's well. API 5.11's typings don't declare `rolesIndex` and Power BI Desktop
+ * (Oct 2026) doesn't send it, so it's read defensively; otherwise column order is the well order, which is
+ * wrong in the second well of a measure bound to two wells (SPEC §4).
  */
 function roleIndexOf(source: powerbi.DataViewMetadataColumn, role: ValueRole): number | undefined {
     const rolesIndex = (source as { rolesIndex?: Record<string, number[] | undefined> }).rolesIndex;
@@ -83,6 +83,14 @@ function readBuckets(category: powerbi.DataViewCategoryColumn, role: BucketRole,
     return { buckets, excludedRows: 0, emptyWeeksSkipped: false };
 }
 
+/**
+ * A date dropped with its auto date hierarchy arrives as several category columns (Year, Quarter, Month, Day)
+ * whose queryNames go through the column's `Variation`, observed in Power BI Desktop (Oct 2026).
+ */
+function isDateHierarchy(categories: readonly powerbi.DataViewCategoryColumn[]): boolean {
+    return categories.length > 1 || categories.some((c) => (c.source.queryName ?? "").includes(".Variation."));
+}
+
 /** Week buckets combine several rows: sums for per-bucket values, the last value for cumulative inputs. */
 function combineHow(measure: MeasureInfo, options: ModelOptions): "sum" | "last" {
     return measure.role === "lineValues" && options.valueModes[measure.queryName] === "asProvided" ? "last" : "sum";
@@ -98,6 +106,12 @@ export function parseDataView(dataView: DataView | undefined, options: ModelOpti
     parsed.warnings.dataReduced = Boolean(dataView?.metadata?.segment);
 
     const category = categorical?.categories?.[0];
+    if (category?.source.roles?.categoryDate && isDateHierarchy(categorical?.categories ?? [])) {
+        // Year/Quarter/Month/Day levels instead of a date: nothing to bucket (SPEC §8).
+        parsed.bucketRole = "categoryDate";
+        parsed.warnings.dateHierarchy = true;
+        return parsed;
+    }
     const bucketRole: BucketRole | null = category?.source.roles?.categoryDate ? "categoryDate" : category ? "category" : null;
     if (category && bucketRole) {
         const { buckets, excludedRows, emptyWeeksSkipped } = readBuckets(category, bucketRole, options);

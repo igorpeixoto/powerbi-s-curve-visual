@@ -135,8 +135,24 @@ describe("parseDataView", () => {
             measures: [{ name: "Planned", roles: ["columnValues"], values: [1, 2] }],
             reduced: true,
         }));
-        expect(parsed.warnings).toEqual({ excludedDateRows: 1, dataReduced: true, emptyWeeksSkipped: false });
+        expect(parsed.warnings).toEqual({ excludedDateRows: 1, dataReduced: true, emptyWeeksSkipped: false, dateHierarchy: false });
         expect(parsed.values["columnValues:Sum(Progress.Planned)"]).toEqual([[1]]);
+    });
+
+    it("recognises a date hierarchy in the Date well and builds no buckets from it", () => {
+        const dataView = makeDataView({
+            bucketRole: "categoryDate",
+            buckets: [2026, 2026],
+            measures: [{ name: "Planned", roles: ["columnValues"], values: [1, 2] }],
+        });
+        // As observed in Desktop: one category column per level, queryNames through the Variation.
+        const categories = dataView.categorical?.categories ?? [];
+        categories[0].source.queryName = "progress.Date.Variation.Date Hierarchy.Year";
+        categories.push({ ...categories[0], source: { ...categories[0].source, queryName: "progress.Date.Variation.Date Hierarchy.Quarter" } });
+        const parsed = parse(dataView);
+        expect(parsed.warnings.dateHierarchy).toBe(true);
+        expect(parsed.bucketRole).toBe("categoryDate");
+        expect(parsed.buckets).toEqual([]);
     });
 
     it("keeps raw tooltip values per bucket", () => {

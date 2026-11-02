@@ -41,13 +41,13 @@ export function buildModel(dataView: powerbi.DataView | undefined, overrides: Pa
         }
     }
 
-    // Percent mode: the baseline is the grand total of the first line measure (SPEC §6.3).
+    // Percent mode: the baseline is the marked line measure, else the first one as delivered (SPEC §6.3).
     let displayAs = options.displayAs;
     let baseline: number | null = null;
     let percentBaselineMissing = false;
     if (displayAs === "percentOfBaseline") {
-        const first = lineMeasures[0];
-        baseline = first ? baselineOf(sumAcross(parsed.values[first.key]), options.valueModes[first.queryName] ?? "runningTotal") : null;
+        const base = lineMeasures.find((m) => m.queryName === options.percentBaseline) ?? lineMeasures[0];
+        baseline = base ? baselineOf(sumAcross(parsed.values[base.key]), options.valueModes[base.queryName] ?? "runningTotal") : null;
         const converted = lines.map((line) => ({ values: toPercent(line.values, baseline), highlights: line.highlights && toPercent(line.highlights, baseline) }));
         if (converted.some((c) => c.values === null)) {
             displayAs = "value";

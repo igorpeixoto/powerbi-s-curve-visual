@@ -74,7 +74,7 @@ Typical use: bind `Planned qty` and `Actual qty` to both *Column values* and *Li
 | `tooltips` | Tooltips | Measure | any | 0–10 | Extra fields in the default tooltip. |
 
 - `category` and `categoryDate` are **mutually exclusive**, enforced by Power BI through two `conditions` entries (one with `category ≤ 1, categoryDate = 0`, one the other way round). The code never has to arbitrate between them. (Decision 9.)
-- The same measure may be bound to several wells (the typical case is `Planned qty` in both *Column values* and *Line values*). The public docs don't pin down whether Power BI then sends **one** value column whose `source.roles` flags both roles, or **one column per role**. The parser must handle both: it reads each value column's `source.roles` and creates one entry per role flagged, so a single source column can yield a column series, a line series and their matrix rows. Phase 2 unit tests cover both shapes.
+- The same measure may be bound to several wells (the typical case is `Planned qty` in both *Column values* and *Line values*). Observed in Power BI Desktop (Oct 2026): such a measure arrives as **one** value column whose `source.roles` flags both roles, positioned by its first well, and the host sends no `rolesIndex`, so the order of measures within the second well is **not** recoverable. The parser reads each value column's `source.roles` and creates one entry per role flagged (and still accepts one column per role). No feature may depend on the order of measures inside a well beyond "as delivered".
 - Role names above are final once SPEC.md is approved: renaming a role after release discards report authors' bindings.
 
 ### 4.1 dataViewMappings
@@ -157,7 +157,7 @@ Per line measure (and per series in `perSeries` mode):
 
 ### 6.3 Percent display
 
-Physical progress is usually read as a percentage. **Display as** `value` (default) or `percentOfBaseline`, where the baseline is the **grand total of the first line measure** (normally the plan). In percent mode every line and its matrix rows show `cumulative ÷ baseline`, and the right axis runs from 0 % to 100 % (it extends above 100 % if values exceed the baseline). Column values and the left axis are unaffected.
+Physical progress is usually read as a percentage. **Display as** `value` (default) or `percentOfBaseline`, where the baseline is the **grand total of the line measure marked *Use as % baseline*** (normally the plan). If none is marked, the first line measure as delivered is used (see §4: well order isn't recoverable for measures bound to two wells, so authors should mark the baseline explicitly). In percent mode every line and its matrix rows show `cumulative ÷ baseline`, and the right axis runs from 0 % to 100 % (it extends above 100 % if values exceed the baseline). Column values and the left axis are unaffected.
 
 ### 6.4 Scales and domains
 
@@ -207,6 +207,7 @@ When another visual highlights a subset, the highlighted part is shown solid and
 | No fields bound | Landing page: short description of the visual and which wells to fill. |
 | Bucket field bound, no measures (or the reverse) | Message naming the missing well(s). |
 | Wells bound, zero rows | "No data for the current filters." |
+| Date well holds a date hierarchy (Year/Quarter/Month/Day) instead of a date | "Use the date field itself, not its Date Hierarchy" (with how to switch it in the well). |
 | A measure whose values are all null | Its marks and matrix row stay empty; everything else renders. No error. |
 | No column measures / no line measures / no table-only measures | That part simply isn't drawn; its axis is hidden. Not an error. |
 | One bucket | Renders normally (one cluster, a single line point with a marker). |
@@ -264,7 +265,7 @@ Types: T toggle, N number, % percent number, C colour, D dropdown, X text, F fon
 
 **Lines** (`lines`), card toggle `showLines` T
 - *Options* (`options`): `lineSeriesMode` D (total | perSeries), `strokeWidth` N (2), `lineOpacity` % (100), `interpolation` D (linear | monotone), `showMarkers` T (off), `markerSize` N (4)
-- *Values* (`values`): `valueMode` D (runningTotal | asProvided), Inst.; `lineEnd` D (lastValue | lastBucket), Inst.; `displayAs` D (value | percentOfBaseline); `cumulativeSuffix` X (" (cumulative)")
+- *Values* (`values`): `valueMode` D (runningTotal | asProvided), Inst.; `lineEnd` D (lastValue | lastBucket), Inst.; `percentBaseline` T (off), Inst.; `displayAs` D (value | percentOfBaseline); `cumulativeSuffix` X (" (cumulative)")
 - *Colors and style* (`colors`): `lineColor` C, Inst.; `lineStyle` D (solid | dashed | dotted), Inst.
 
 **Y-axis (columns)** (`leftAxis`), card toggle `showLeftAxis` T
@@ -341,7 +342,7 @@ Harness (packaged visual, mock host):
 
 Settled in the SPEC review on 2026-11-01 (all as proposed in the draft):
 
-1. **Percent display (§6.3)**: included. `displayAs = percentOfBaseline`, baseline = grand total of the first line measure.
+1. **Percent display (§6.3)**: included. `displayAs = percentOfBaseline`. Amended after the Desktop check: the baseline is the line measure marked with the per-measure `percentBaseline` toggle, falling back to the first line measure as delivered.
 2. **Highlights (§7.2)**: the highlighted subset is shown in bars, lines and the matrix, with full values as faded context in the chart.
 3. **Line end (§6.2)**: `lastValue` is the default for every line measure; a plan with blank final weeks is switched to `lastBucket` by the author. No positional assumptions.
 4. **Series with several measures (§5.1)**: `stacked` by series is the default, with lighter tints for the 2nd and later measures.
@@ -350,3 +351,4 @@ Settled in the SPEC review on 2026-11-01 (all as proposed in the draft):
 7. **Control count (§9.1)**: all 86 static controls stay in v1.
 8. **Limits (§4.1)**: 1000 distinct dates or categories before bucketing, 30 series, 6 column, 6 line and 10 table-only measures; the documentation recommends binding a week-start date column.
 9. **Category and Date (§4)**: mutually exclusive in v1, enforced by `conditions`. Allowing both (date for ordering, text for labels) would be an additive change later.
+10. **Date hierarchy in the Date well (§8)**: decided after the Desktop check. Power BI sends Year/Quarter/Month/Day columns instead of dates; the visual detects it and shows a specific message rather than rebuilding dates from localised level values.

@@ -51,6 +51,12 @@ describe("buildModel", () => {
         expect(model.lines[1].values[1]).toBeCloseTo(27 / 80);
     });
 
+    it("uses the measure marked as % baseline, wherever it sits in the well", () => {
+        const model = buildModel(twoSeries(), { displayAs: "percentOfBaseline", percentBaseline: ACTUAL });
+        expect(model.baseline).toBe(27);
+        expect(model.lines[1].values[1]).toBe(1);
+    });
+
     it("falls back to values with a warning when the baseline is zero", () => {
         const dataView = makeDataView({
             bucketRole: "category",

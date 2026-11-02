@@ -70,6 +70,8 @@ export interface ModelWarnings {
     dataReduced: boolean;
     /** Empty weeks were not filled because the date range spans more than MAX_FILLED_WEEKS. */
     emptyWeeksSkipped: boolean;
+    /** The Date well holds a date hierarchy (Year/Quarter/Month/Day columns) instead of a date. */
+    dateHierarchy: boolean;
 }
 
 export interface ModelOptions {
@@ -80,6 +82,8 @@ export interface ModelOptions {
     /** Per line-measure queryName; missing entries use the defaults below. */
     valueModes: Record<string, ValueMode>;
     lineEnds: Record<string, LineEnd>;
+    /** queryName of the line measure marked "Use as % baseline"; null = first line measure as delivered. */
+    percentBaseline: string | null;
 }
 
 export const defaultModelOptions: ModelOptions = {
@@ -89,6 +93,7 @@ export const defaultModelOptions: ModelOptions = {
     displayAs: "value",
     valueModes: {},
     lineEnds: {},
+    percentBaseline: null,
 };
 
 export interface LineSeries {

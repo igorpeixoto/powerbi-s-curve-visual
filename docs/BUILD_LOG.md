@@ -22,4 +22,16 @@ How this visual was built, session by session: what the AI (Claude Code) did and
 - I did: TODO(igor): review.
 - Where it got stuck / how it was unblocked: the capabilities schema has no date type for data roles, so the Date well can't be restricted; non-date values are excluded and counted instead (SPEC §4 and §6.1 updated). API 5.11's typings have no `rolesIndex`, so `rolesIndex` is read defensively and column order is the fallback. A review pass (advisor model) caught that the fallback would pick the wrong percent baseline when a measure sits in two wells and isn't first in the line well, and that one outlier date would make empty-week filling insert thousands of weeks; both fixed with tests (filling now stops past 1000 weeks, with a warning). Also added a measure-only selection identity for measure row headers.
 - Tests: 77 unit (75 model + 2 placeholder), 6 harness, capability parity green, lint and typecheck clean. Mutation check: breaking the line-end rule and the bucket centre failed 7 tests; restored.
-- To verify in Desktop (unverified host behaviour): whether date-only values arrive as local or UTC midnight (the Berlin test pin can't tell them apart; in a UTC-3 zone UTC midnight would shift dates to the previous day); whether the host sends `rolesIndex`; what the Date well receives when an author drops a date with the auto date hierarchy (if only year numbers arrive, every row is excluded and the empty state should say to use the date field itself).
+- Desktop questions: answered in the next entry.
+
+## 2026-11-01: Desktop check of host behaviour (between Phases 2 and 3)
+- Time: TODO(igor) h
+- AI did: built a throwaway diagnostic visual (separate GUID, never committed) that prints what the host sends; generated a synthetic daily CSV (4 disciplines, 100 working days) for a scratch report outside the repo; bound the fields by editing the report's PBIR files (validated with `pbi report validate`), and read the results from a screenshot of the Desktop window.
+- Findings (Power BI Desktop 2.159, Oct 2026, São Paulo time zone):
+  - Dates arrive as local midnight (`h=0`, offset 180 min), so local-calendar bucketing is correct.
+  - A measure in both wells arrives as one column flagged with both roles, in Column values order; no `rolesIndex` is sent, so Line values order is lost. Percent mode therefore gets a per-measure "Use as % baseline" toggle (SPEC §6.3 amended).
+  - A date hierarchy in the Date well arrives as Year/Quarter/Month/Day columns (Year as numbers) with `.Variation.` queryNames; the visual detects it and shows a specific message (SPEC §8, Decision 10).
+  - Text buckets carry the model's sort order; series arrive sorted alphabetically.
+- I did: opened the report so the diagnostic could be captured, and chose the baseline toggle and the hierarchy message. TODO(igor): anything else.
+- Where it got stuck / how it was unblocked: double-clicking the diagnostic `.pbiviz` made Desktop try to open it as a report ("does not have a valid file extension"); custom visuals only load through *Import a visual from a file*, and this one was already embedded, so the stray file was removed.
+- Tests: 79 unit (2 new: hierarchy detection, marked baseline), 6 harness, all green.
