@@ -111,5 +111,7 @@
     "sorting": {
         "default": {}
     },
+    "supportsLandingPage": true,
+    "supportsEmptyDataView": true,
     "privileges": []
 }

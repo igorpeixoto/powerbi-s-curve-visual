@@ -9,6 +9,8 @@ Every version heading must match `pbiviz.json`'s `visual.version` and a `vX.Y.Z`
 
 ## [Unreleased]
 
+- Rendering: stacked or clustered columns, cumulative lines with end labels, value axes, weekly x-axis labels, legend, and the aligned matrix with totals, all positioned from the shared x geometry
+- Empty states: landing page, missing wells, zero rows, date hierarchy in the Date well, viewport too small
 - Data roles per SPEC §4: Category or Date, Series, Column values, Line values, Table-only values, Tooltips
 - Model layer: weekly bucketing, running totals, percent of baseline, axis domains, shared x geometry, selection identities
 - Scaffold, strict TypeScript, ESLint, unit tests (Vitest), headless harness (Puppeteer), capability parity check, CI and tag-driven release workflow

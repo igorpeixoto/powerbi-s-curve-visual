@@ -1,5 +1,11 @@
 import { createMockHost } from "./mock-host.mjs";
-import { emptyDataView, weeklyDataView } from "./data.mjs";
+import {
+    bucketsOnlyDataView,
+    dateHierarchyDataView,
+    measuresOnlyDataView,
+    progressDataView,
+    zeroRowsDataView,
+} from "./data.mjs";
 
 const lines = [];
 let pass = 0;
@@ -31,14 +37,57 @@ async function loadPackagedVisual(packageUrl) {
     return { guid: pkg.visual.guid, plugin: window.powerbi.visuals?.plugins?.[pkg.visual.guid] };
 }
 
-function updateOptions(dataView, width = 800, height = 500) {
-    return {
+const element = document.getElementById("visual");
+
+/** Sizes the container and passes the same size as the viewport: geometry must come from the viewport. */
+function render(visual, dataView, width = 800, height = 500) {
+    element.style.width = `${width}px`;
+    element.style.height = `${height}px`;
+    visual.update({
         dataViews: dataView ? [dataView] : [],
         viewport: { width, height },
         type: 2,
         viewMode: 0,
         editMode: 0,
+    });
+}
+
+function centerX(elements) {
+    const rects = [...elements].map((e) => e.getBoundingClientRect());
+    if (rects.length === 0) return null;
+    return (Math.min(...rects.map((r) => r.left)) + Math.max(...rects.map((r) => r.right))) / 2;
+}
+
+const PLANNED_LINE = "lineValues:Sum(progress.PlannedQty)";
+
+function alignmentAt(bucket) {
+    const q = (selector) => element.querySelectorAll(selector);
+    return {
+        bars: centerX(q(`[data-role="bar"][data-bucket="${bucket}"]`)),
+        point: centerX(q(`[data-role="point"][data-bucket="${bucket}"][data-measure="${PLANNED_LINE}"]`)),
+        label: centerX(q(`[data-role="x-label"][data-bucket="${bucket}"]`)),
+        cell: centerX(q(`[data-role="cell"][data-bucket="${bucket}"][data-row="0"]`)),
     };
+}
+
+function checkAlignment(name, bucketCount) {
+    const failures = [];
+    for (const bucket of [0, Math.floor((bucketCount - 1) / 2), bucketCount - 1]) {
+        const c = alignmentAt(bucket);
+        const values = Object.values(c);
+        if (values.some((v) => v === null)) {
+            failures.push(`bucket ${bucket}: missing ${Object.entries(c).filter(([, v]) => v === null).map(([k]) => k).join(",")}`);
+            continue;
+        }
+        const spread = Math.max(...values) - Math.min(...values);
+        if (spread > 0.5) failures.push(`bucket ${bucket}: spread ${spread.toFixed(2)} px ${JSON.stringify(c)}`);
+    }
+    check(name, failures.length === 0, failures.join("; "));
+}
+
+function messageState() {
+    const message = element.querySelector(".s-curve__message");
+    return message && getComputedStyle(message).display !== "none" ? { state: message.dataset.state, text: message.textContent } : null;
 }
 
 async function run() {
@@ -47,24 +96,86 @@ async function run() {
     check("packaged visual registers its plugin under the GUID", Boolean(plugin), `guid ${guid}`);
     if (!plugin) return;
 
-    const element = document.getElementById("visual");
     const { host, calls } = createMockHost();
     const visual = plugin.create({ element, host });
 
-    visual.update(updateOptions(weeklyDataView()));
-    const message = element.querySelector(".s-curve__message");
-    check("renders synthetic weekly data", message?.textContent === "3 buckets, 2 measures", `got "${message?.textContent}"`);
-    check("signals renderingFinished without renderingFailed",
-        calls.renderingFinished === 1 && calls.renderingFailed.length === 0,
-        JSON.stringify(calls));
+    // Full chart: columns, lines and matrix from data shaped like Desktop's.
+    render(visual, progressDataView());
+    const q = (selector) => element.querySelectorAll(selector);
+    check("draws stacked columns for every series and measure", q('[data-role="bar"]').length > 0 && q('[data-role="bar"][data-series="3"]').length > 0);
+    check("draws one cumulative line per line measure", q('[data-role="line"]').length === 2);
+    check("ends the actual line at the last reported week", q('[data-role="point"][data-measure="lineValues:Sum(progress.ActualQty)"]').length === 12);
+    const headers = [...q('[data-role="row-header"]')].map((e) => e.textContent);
+    check("lists matrix rows: columns, cumulative lines, table-only", headers.length === 5 && headers[2].endsWith("(cumulative)") && headers[4] === "Table measure 1", JSON.stringify(headers));
+    check("shows a totals column", q('[data-role="total"]').length === 5 && q('[data-role="totals-header"]').length === 1);
+    check("draws a legend entry per drawn mark", q('[data-role="legend-item"]').length === 10, `got ${q('[data-role="legend-item"]').length}`);
+    check("labels the last point of each line", q('[data-role="line-label"]').length === 2);
 
-    visual.update(updateOptions(emptyDataView()));
-    check("renders an empty state for a dataView with no categories",
-        element.querySelector(".s-curve--empty") !== null && message.textContent.length > 0);
+    // Alignment: bars, line points, axis labels and matrix cells share x centres (SPEC §3.1, §12).
+    // Every slot is filled here (actuals reported to the end), so the drawn cluster spans the whole band.
+    for (const width of [400, 800, 1200, 2000]) {
+        render(visual, progressDataView({ reportedWeeks: 20 }), width, 500);
+        checkAlignment(`aligns first/middle/last buckets at ${width} px`, 20);
+    }
 
-    visual.update(updateOptions(undefined));
-    check("renders an empty state when no dataView is sent", element.querySelector(".s-curve--empty") !== null);
+    // When a measure has no value in a bucket, the others keep their slots: the planned bar sits at the
+    // same offset from the bucket centre in a week without actuals as in a week with them.
+    render(visual, progressDataView(), 800, 500);
+    const offset = (bucket) => {
+        const bar = centerX(q(`[data-role="bar"][data-bucket="${bucket}"][data-measure="columnValues:Sum(progress.PlannedQty)"]`));
+        const label = centerX(q(`[data-role="x-label"][data-bucket="${bucket}"]`));
+        return bar === null || label === null ? null : bar - label;
+    };
+    const fullWeek = offset(0);
+    const tailWeek = offset(19);
+    check("keeps bar slots fixed when a measure is missing in a bucket",
+        fullWeek !== null && tailWeek !== null && Math.abs(fullWeek - tailWeek) <= 0.5,
+        `offset week 1 ${fullWeek?.toFixed(2)}, week 20 ${tailWeek?.toFixed(2)}`);
+
+    // A matrix tall enough to scroll vertically must not shift its columns or hide its totals.
+    render(visual, progressDataView({ tableOnly: 10, reportedWeeks: 20 }), 800, 500);
+    const body = element.querySelector(".s-curve__matrix-body");
+    check("scrolls a tall matrix vertically", body && body.scrollHeight > body.clientHeight, body ? `${body.scrollHeight} / ${body.clientHeight}` : "no body");
+    checkAlignment("aligns columns while the matrix scrolls vertically", 20);
+    const bodyRight = body ? body.getBoundingClientRect().left + body.clientWidth : 0;
+    const totalsRight = Math.max(...[...q('[data-role="total"]')].map((e) => e.getBoundingClientRect().right));
+    check("keeps the totals column clear of the vertical scrollbar", totalsRight <= bodyRight + 0.5, `totals ${totalsRight.toFixed(1)} vs body ${bodyRight.toFixed(1)}`);
+
+    // Updates redraw instead of accumulating DOM (CLAUDE.md Hard Rule #7).
+    render(visual, progressDataView(), 800, 500);
+    const before = element.querySelectorAll("*").length;
+    render(visual, progressDataView(), 800, 500);
+    check("repeated updates don't accumulate elements", element.querySelectorAll("*").length === before);
+
+    // Degenerate data still draws what it can.
+    render(visual, progressDataView({ actualAllNull: true }));
+    check("renders the other measures when one measure is all null", q('[data-role="bar"]').length > 0 && messageState() === null);
+    render(visual, progressDataView({ weeks: 1, reportedWeeks: 1 }));
+    check("renders a single bucket", q('[data-role="bar"][data-bucket="0"]').length > 0 && q('[data-role="point"]').length === 2);
+
+    // Empty states render a clear message, not an error (SPEC §8).
+    const emptyCases = [
+        ["landing page with nothing bound", undefined, "landing"],
+        ["message for measures without a Date/Category", measuresOnlyDataView(), "missingBuckets"],
+        ["message for a Date without measures", bucketsOnlyDataView(), "missingMeasures"],
+        ["message for zero rows", zeroRowsDataView(), "noRows"],
+        ["message for a date hierarchy in the Date well", dateHierarchyDataView(), "dateHierarchy"],
+    ];
+    for (const [name, dataView, state] of emptyCases) {
+        render(visual, dataView);
+        const message = messageState();
+        check(`shows the ${name}`, message?.state === state && message.text.length > 0, JSON.stringify(message));
+    }
+    render(visual, progressDataView(), 100, 60);
+    check("asks for more room in a tiny viewport", messageState()?.state === "tooSmall");
+
+    // Warnings go to the host's warning icon.
+    calls.warnings.length = 0;
+    render(visual, progressDataView({ reduced: true }));
+    check("reports reduced data through the warning icon", calls.warnings.some((w) => /reduced/i.test(w.detailedText)), JSON.stringify(calls.warnings));
+
     check("never reports renderingFailed", calls.renderingFailed.length === 0, calls.renderingFailed.join("; "));
+    check("signals renderingFinished for every update", calls.renderingFinished === calls.renderingStarted, JSON.stringify(calls));
 }
 
 run()

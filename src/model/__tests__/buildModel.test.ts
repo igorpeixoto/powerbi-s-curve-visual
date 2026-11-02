@@ -34,6 +34,20 @@ describe("buildModel", () => {
         expect(model.lines[3].values).toEqual([4, null, null]);
     });
 
+    it("keeps the total line available in perSeries mode, and per-series lines in total mode", () => {
+        const perSeries = buildModel(twoSeries(), { lineSeriesMode: "perSeries" });
+        expect(perSeries.lineDetails[`lineValues:${PLANNED}`].total.values).toEqual([15, 40, 80]);
+
+        const total = buildModel(twoSeries(), {});
+        expect(total.lineDetails[`lineValues:${ACTUAL}`].perSeries.map((l) => l.values)).toEqual([[8, 23, null], [4, null, null]]);
+    });
+
+    it("converts every line, drawn or not, in percent mode", () => {
+        const model = buildModel(twoSeries(), { lineSeriesMode: "perSeries", displayAs: "percentOfBaseline" });
+        expect(model.lineDetails[`lineValues:${PLANNED}`].total.values).toEqual([15 / 80, 0.5, 1]);
+        expect(model.lines[0].values[2]).toBe(60 / 80); // Planned, Civil: 10 + 20 + 30
+    });
+
     it("applies per-measure value modes and line ends", () => {
         const model = buildModel(twoSeries(), {
             valueModes: { [PLANNED]: "asProvided" },

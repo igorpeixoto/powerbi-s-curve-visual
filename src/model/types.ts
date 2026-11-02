@@ -107,8 +107,18 @@ export interface LineSeries {
     accumulated: boolean;
 }
 
+export interface LineDetail {
+    /** The measure summed across series, then plotted. */
+    total: LineSeries;
+    /** One plotted line per series; empty without series. */
+    perSeries: LineSeries[];
+}
+
 export interface SCurveModel extends ParsedDataView {
+    /** The lines the chart draws: totals, or per series in perSeries mode. */
     lines: LineSeries[];
+    /** Per line-measure key: both the total and the per-series lines, whichever mode is drawn. */
+    lineDetails: Record<string, LineDetail>;
     /** Effective display mode: falls back to "value" when the baseline is zero or missing. */
     displayAs: DisplayAs;
     baseline: number | null;
