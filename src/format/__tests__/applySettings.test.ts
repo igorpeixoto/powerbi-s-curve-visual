@@ -4,6 +4,7 @@ import type powerbi from "powerbi-visuals-api";
 import { formattingSettings } from "powerbi-visuals-utils-formattingmodel";
 
 import { applySettings, type ApplyContext } from "../applySettings";
+import { createStrings } from "../../render/strings";
 import { THEME_LIGHT_TINT } from "../presets";
 import { toRenderOptions } from "../toRenderOptions";
 
@@ -14,7 +15,7 @@ const palette = {
     background: { value: "#ffffff" },
 };
 
-const context = (extra: Partial<ApplyContext> = {}): ApplyContext => ({ palette, measures: [], series: [], ...extra });
+const context = (extra: Partial<ApplyContext> = {}): ApplyContext => ({ palette, measures: [], series: [], strings: createStrings(), ...extra });
 const view = (objects: Record<string, Record<string, unknown>>) => ({ metadata: { columns: [], objects } }) as unknown as powerbi.DataView;
 
 describe("Format pane model", () => {
@@ -23,6 +24,56 @@ describe("Format pane model", () => {
         const names = model.cards.flatMap((card) => ("groups" in card ? card.groups.map((g) => g.name) : []));
         expect(names.length).toBe(26);
         expect(new Set(names).size).toBe(names.length);
+    });
+});
+
+describe("Format pane language", () => {
+    const portuguese = createStrings({ getDisplayName: (key) => ({ Visual_enumMinimal: "Mínimo", Visual_placeholderMeasureName: "Nome da medida", Visual_cumulativeSuffix: " (acumulado)", Visual_instanceValueMode: "{0} · Modo de valor" })[key] ?? key });
+
+    it("gives every card, group and static control a key, not a literal", () => {
+        const { model } = applySettings(undefined, context());
+        const named = model.cards.flatMap((card) => [
+            card,
+            ...("topLevelSlice" in card && card.topLevelSlice ? [card.topLevelSlice] : []),
+            ...("groups" in card ? card.groups.flatMap((g) => [g, ...(g.topLevelSlice ? [g.topLevelSlice] : []), ...(g.slices ?? [])]) : []),
+        ]);
+        expect(named.length).toBeGreaterThan(100);
+        for (const entity of named) {
+            expect(entity.displayNameKey, entity.name).toMatch(/^Visual_/);
+            expect(entity.displayName, entity.name).toBeUndefined();
+        }
+    });
+
+    it("translates dropdown items, keeping their stored values", () => {
+        const { model } = applySettings(view({ general: { stylePreset: "minimal" } }), context({ strings: portuguese }));
+        expect(model.general.preset.stylePreset.value).toEqual({ value: "minimal", displayName: "Mínimo" });
+        expect(model.general.preset.stylePreset.items.map((i) => i.value)).toEqual(["classic", "weeklyProgress", "minimal"]);
+        expect(model.general.preset.stylePreset.items[2].displayName).toBe("Mínimo");
+    });
+
+    it("shows English item names without a translation, and never a key", () => {
+        const { model } = applySettings(undefined, context());
+        const dropdowns = model.cards.flatMap((card) => ("groups" in card ? card.groups.flatMap((g) => g.slices ?? []) : []))
+            .filter((slice): slice is formattingSettings.ItemDropdown => slice instanceof formattingSettings.ItemDropdown);
+        expect(dropdowns.length).toBeGreaterThan(10);
+        expect(dropdowns.flatMap((d) => d.items.map((i) => String(i.displayName))).filter((name) => /^enum[A-Z]/.test(name))).toEqual([]);
+        expect(model.general.preset.stylePreset.value.displayName).toBe("Classic S-curve");
+    });
+
+    it("translates placeholders, default texts and per-measure labels", () => {
+        const { model } = applySettings(undefined, context({
+            strings: portuguese,
+            measures: [{ queryName: "P", displayName: "Planned", role: "lineValues", objects: undefined }],
+        }));
+        expect(model.leftAxis.title.leftTitleText.placeholder).toBe("Nome da medida");
+        expect(model.lines.values.cumulativeSuffix.value).toBe(" (acumulado)");
+        expect((model.lines.values.slices as { name: string; displayName: string }[]).find((s) => s.name === "valueMode")?.displayName).toBe("Planned · Modo de valor");
+    });
+
+    it("keeps a saved text as typed", () => {
+        const { model } = applySettings(view({ matrix: { totalsLabel: "Sum" }, lines: { cumulativeSuffix: "" } }), context({ strings: portuguese }));
+        expect(model.matrix.options.totalsLabel.value).toBe("Sum");
+        expect(model.lines.values.cumulativeSuffix.value).toBe("");
     });
 });
 

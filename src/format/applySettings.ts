@@ -8,6 +8,7 @@ import { orderByPosition } from "../model/matrix";
 import { roleIndexOf } from "../model/parseDataView";
 import { mix, themeColors, type PaletteLike } from "../render/colors";
 import { matrixGridLineWidth } from "../render/options";
+import type { StringKey, Strings } from "../render/strings";
 import { item, VisualFormattingSettingsModel, type InstanceSpec } from "../settings";
 import { presetOverrides, THEME_LIGHT_TINT, type StylePreset } from "./presets";
 import { isExplicit, presetOf, type ObjectsLike } from "./resolve";
@@ -57,6 +58,7 @@ export interface ApplyContext {
     palette: PaletteLike;
     measures: MeasureInstance[];
     series: SeriesInstance[];
+    strings: Strings;
 }
 
 function savedColor(objects: ObjectsLike, card: string, property: string): string | null {
@@ -96,7 +98,23 @@ function displayColor(property: string, palette: PaletteLike, presetValue: unkno
 
 const measureSelector = (queryName: string): Selector => ({ metadata: queryName });
 
+/** The formatting library translates display names only: dropdown items and placeholders hold string keys until here. */
+function translateItemsAndPlaceholders(model: VisualFormattingSettingsModel, strings: Strings): void {
+    const translate = (key: unknown): string => strings(key as StringKey);
+    for (const card of model.cards as formattingSettings.CompositeCard[]) {
+        for (const slice of staticSlices(card)) {
+            if (slice instanceof formattingSettings.ItemDropdown) {
+                slice.items = slice.items.map((i) => ({ ...i, displayName: translate(i.displayName) }));
+                if (slice.value) slice.value = { ...slice.value, displayName: translate(slice.value.displayName) };
+            } else if (slice instanceof formattingSettings.TextInput && slice.placeholder) {
+                slice.placeholder = translate(slice.placeholder);
+            }
+        }
+    }
+}
+
 export function applySettings(dataView: powerbi.DataView | undefined, context: ApplyContext): AppliedSettings {
+    const { strings } = context;
     const model = new VisualFormattingSettingsModel();
     const objects = dataView?.metadata?.objects as ObjectsLike;
     const preset = presetOf(objects);
@@ -146,9 +164,9 @@ export function applySettings(dataView: powerbi.DataView | undefined, context: A
         instances.lineEnds[m.queryName] = lineEnd;
         if (percentBaseline) instances.percentBaselines.push(m.queryName);
         return {
-            valueMode: { displayName: `${m.displayName} · Value mode`, selector, value: valueMode },
-            lineEnd: { displayName: `${m.displayName} · Line end`, selector, value: lineEnd },
-            percentBaseline: { displayName: `${m.displayName} · Use as % baseline`, selector, value: percentBaseline },
+            valueMode: { displayName: strings("instanceValueMode", m.displayName), selector, value: valueMode },
+            lineEnd: { displayName: strings("instanceLineEnd", m.displayName), selector, value: lineEnd },
+            percentBaseline: { displayName: strings("instancePercentBaseline", m.displayName), selector, value: percentBaseline },
         };
     }));
 
@@ -159,8 +177,8 @@ export function applySettings(dataView: powerbi.DataView | undefined, context: A
         const style = String(savedValue(m.objects, "lines", "lineStyle") ?? "solid");
         instances.lineStyles[m.queryName] = style;
         return {
-            lineColor: { displayName: `${m.displayName} · Color`, selector, value: saved ?? context.palette.getColor(m.queryName).value },
-            lineStyle: { displayName: `${m.displayName} · Style`, selector, value: style },
+            lineColor: { displayName: strings("instanceColor", m.displayName), selector, value: saved ?? context.palette.getColor(m.queryName).value },
+            lineStyle: { displayName: strings("instanceStyle", m.displayName), selector, value: style },
         };
     }));
 
@@ -172,7 +190,7 @@ export function applySettings(dataView: powerbi.DataView | undefined, context: A
     model.matrix.values.setInstances(aggregationTargets.map(({ m, kind, property, fallback }) => {
         const value = String(savedValue(m.objects, "matrix", property) ?? fallback);
         instances.aggregations[`${kind}:${m.queryName}`] = value;
-        return { kind, spec: { displayName: `${m.displayName} · ${kind === "line" ? "Cumulative total" : "Total"}`, selector: measureSelector(m.queryName), value } };
+        return { kind, spec: { displayName: strings(kind === "line" ? "instanceCumulativeTotal" : "instanceTotal", m.displayName), selector: measureSelector(m.queryName), value } };
     }));
 
     // Row order and lines, per matrix row. The pane shows effective values: positions always read 1, 2, 3... and a
@@ -190,19 +208,24 @@ export function applySettings(dataView: powerbi.DataView | undefined, context: A
     const rowOrder = orderByPosition(rowTargets.map((t) => t.key), instances.rowPositions);
     model.matrix.rows.setInstances(rowTargets.map(({ m, kind, key, lineWidth }) => {
         const selector = measureSelector(m.queryName);
-        const row = kind === "table" ? m.displayName : `${m.displayName} (${kind})`;
+        const row = kind === "table" ? m.displayName : strings(kind === "column" ? "instanceColumnRow" : "instanceLineRow", m.displayName);
         return {
             kind,
-            position: { displayName: `${row} · Position`, selector, value: rowOrder.indexOf(key) + 1 },
-            lineWidth: { displayName: `${row} · Line below (px)`, selector, value: lineWidth ?? gridLine },
+            position: { displayName: strings("instancePosition", row), selector, value: rowOrder.indexOf(key) + 1 },
+            lineWidth: { displayName: strings("instanceLineBelow", row), selector, value: lineWidth ?? gridLine },
         };
     }));
+
+    // Text boxes the author hasn't set show the text the visual will use, in the report's language.
+    if (!explicit.has("lines.cumulativeSuffix")) model.lines.values.cumulativeSuffix.value = strings("cumulativeSuffix");
+    if (!explicit.has("matrix.totalsLabel")) model.matrix.options.totalsLabel.value = strings("totalsLabel");
+    translateItemsAndPlaceholders(model, strings);
 
     return { model, preset, explicit, fromPreset, instances };
 }
 
 /** Measures and series the Format pane offers per-instance settings for, read defensively from the dataView. */
-export function readInstances(dataView: powerbi.DataView | undefined, seriesSelector: (groupIndex: number) => Selector | null): Pick<ApplyContext, "measures" | "series"> {
+export function readInstances(dataView: powerbi.DataView | undefined, seriesSelector: (groupIndex: number) => Selector | null, blankLabel: string): Pick<ApplyContext, "measures" | "series"> {
     const measures: MeasureInstance[] = [];
     const wellIndex = new Map<MeasureInstance, number>();
     const seen = new Set<string>();
@@ -227,7 +250,7 @@ export function readInstances(dataView: powerbi.DataView | undefined, seriesSele
             const selector = seriesSelector(index);
             if (!selector) return;
             const key = String(group.name);
-            series.push({ key, displayName: group.name === null || group.name === undefined ? "(Blank)" : key, objects: group.objects as ObjectsLike, selector });
+            series.push({ key, displayName: group.name === null || group.name === undefined ? blankLabel : key, objects: group.objects as ObjectsLike, selector });
         });
     }
     return { measures, series };

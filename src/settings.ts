@@ -7,6 +7,8 @@
 import powerbi from "powerbi-visuals-api";
 import { formattingSettings } from "powerbi-visuals-utils-formattingmodel";
 
+import { resourceKey, type StringKey } from "./render/strings";
+
 import Card = formattingSettings.CompositeCard;
 import Group = formattingSettings.Group;
 import Model = formattingSettings.Model;
@@ -55,26 +57,27 @@ function range([min, max]: Limit): powerbi.visuals.NumUpDownFormat {
 }
 const DEFAULT_FONT = "'Segoe UI', wf_segoe-ui_normal, helvetica, arial, sans-serif";
 
-function items(entries: [string, string][]): powerbi.IEnumMember[] {
+/** displayName holds the string key: the formatting library doesn't translate items, so applySettings does. */
+function items(entries: [string, StringKey][]): powerbi.IEnumMember[] {
     return entries.map(([value, displayName]) => ({ value, displayName }));
 }
 
 export const ITEMS = {
-    stylePreset: items([["classic", "Classic S-curve"], ["weeklyProgress", "Weekly progress"], ["minimal", "Minimal"]]),
-    seriesLayout: items([["stacked", "Stacked"], ["clustered", "Clustered"]]),
-    lineSeriesMode: items([["total", "Total across series"], ["perSeries", "One line per series"]]),
-    interpolation: items([["linear", "Straight"], ["monotone", "Smooth"]]),
-    valueMode: items([["runningTotal", "Running total"], ["asProvided", "As provided"]]),
-    lineEnd: items([["lastValue", "Stop at last value"], ["lastBucket", "Carry to the end"]]),
-    displayAs: items([["value", "Values"], ["percentOfBaseline", "% of baseline"]]),
-    lineStyle: items([["solid", "Solid"], ["dashed", "Dashed"], ["dotted", "Dotted"]]),
-    weekLabelFormat: items([["weekStart", "Week start date"], ["isoWeek", "ISO week"], ["projectWeek", "Project week"]]),
-    weekLabelSecondLine: items([["none", "None"], ["weekStart", "Week start date"], ["isoWeek", "ISO week"], ["projectWeek", "Project week"]]),
-    weekStartDay: items([["monday", "Monday"], ["sunday", "Sunday"]]),
-    labelPosition: items([["outsideEnd", "Outside end"], ["insideEnd", "Inside end"]]),
-    labelPoints: items([["last", "Last point"], ["all", "All points"]]),
-    legendPosition: items([["top", "Top"], ["bottom", "Bottom"], ["left", "Left"], ["right", "Right"]]),
-    aggregation: items([["sum", "Sum"], ["last", "Last"], ["average", "Average"], ["none", "None"]]),
+    stylePreset: items([["classic", "enumClassic"], ["weeklyProgress", "enumWeeklyProgress"], ["minimal", "enumMinimal"]]),
+    seriesLayout: items([["stacked", "enumStacked"], ["clustered", "enumClustered"]]),
+    lineSeriesMode: items([["total", "enumTotalLine"], ["perSeries", "enumPerSeriesLine"]]),
+    interpolation: items([["linear", "enumStraight"], ["monotone", "enumSmooth"]]),
+    valueMode: items([["runningTotal", "enumRunningTotal"], ["asProvided", "enumAsProvided"]]),
+    lineEnd: items([["lastValue", "enumLastValue"], ["lastBucket", "enumLastBucket"]]),
+    displayAs: items([["value", "enumValues"], ["percentOfBaseline", "enumPercentOfBaseline"]]),
+    lineStyle: items([["solid", "enumSolid"], ["dashed", "enumDashed"], ["dotted", "enumDotted"]]),
+    weekLabelFormat: items([["weekStart", "enumWeekStart"], ["isoWeek", "enumIsoWeek"], ["projectWeek", "enumProjectWeek"]]),
+    weekLabelSecondLine: items([["none", "enumNoSecondLine"], ["weekStart", "enumWeekStart"], ["isoWeek", "enumIsoWeek"], ["projectWeek", "enumProjectWeek"]]),
+    weekStartDay: items([["monday", "enumMonday"], ["sunday", "enumSunday"]]),
+    labelPosition: items([["outsideEnd", "enumOutsideEnd"], ["insideEnd", "enumInsideEnd"]]),
+    labelPoints: items([["last", "enumLastPoint"], ["all", "enumAllPoints"]]),
+    legendPosition: items([["top", "enumTop"], ["bottom", "enumBottom"], ["left", "enumLeft"], ["right", "enumRight"]]),
+    aggregation: items([["sum", "enumSum"], ["last", "enumLast"], ["average", "enumAverage"], ["none", "enumNoTotal"]]),
 };
 
 export function item(list: powerbi.IEnumMember[], value: unknown): powerbi.IEnumMember {
@@ -84,28 +87,28 @@ export function item(list: powerbi.IEnumMember[], value: unknown): powerbi.IEnum
 // ----- General -----
 
 class PresetGroup extends Group {
-    stylePreset = new formattingSettings.ItemDropdown({ name: "stylePreset", displayName: "Style preset", items: ITEMS.stylePreset, value: ITEMS.stylePreset[0] });
+    stylePreset = new formattingSettings.ItemDropdown({ name: "stylePreset", displayNameKey: resourceKey("paneStylePreset"), items: ITEMS.stylePreset, value: ITEMS.stylePreset[0] });
 
     constructor() {
-        super({ name: "generalPreset", displayName: "Preset" });
+        super({ name: "generalPreset", displayNameKey: resourceKey("panePreset") });
         this.slices = [this.stylePreset];
     }
 }
 
 class LayoutGroup extends Group {
-    minBucketWidth = new formattingSettings.NumUpDown({ name: "minBucketWidth", displayName: "Minimum bucket width (px, 0 = fit)", value: 0, options: range(LIMITS.minBucketWidth) });
-    bucketGap = new formattingSettings.NumUpDown({ name: "bucketGap", displayName: "Gap between buckets (%)", value: 20, options: range(LIMITS.bucketGap) });
-    fontFamily = new formattingSettings.FontPicker({ name: "fontFamily", displayName: "Font", value: DEFAULT_FONT });
+    minBucketWidth = new formattingSettings.NumUpDown({ name: "minBucketWidth", displayNameKey: resourceKey("paneMinBucketWidth"), value: 0, options: range(LIMITS.minBucketWidth) });
+    bucketGap = new formattingSettings.NumUpDown({ name: "bucketGap", displayNameKey: resourceKey("paneBucketGap"), value: 20, options: range(LIMITS.bucketGap) });
+    fontFamily = new formattingSettings.FontPicker({ name: "fontFamily", displayNameKey: resourceKey("paneFont"), value: DEFAULT_FONT });
 
     constructor() {
-        super({ name: "generalLayout", displayName: "Layout" });
+        super({ name: "generalLayout", displayNameKey: resourceKey("paneLayout") });
         this.slices = [this.minBucketWidth, this.bucketGap, this.fontFamily];
     }
 }
 
 class GeneralCard extends Card {
     name = "general";
-    displayName = "General";
+    displayNameKey = resourceKey("paneGeneral");
     preset = new PresetGroup();
     layout = new LayoutGroup();
     groups = [this.preset, this.layout];
@@ -114,20 +117,20 @@ class GeneralCard extends Card {
 // ----- Columns -----
 
 class ColumnOptionsGroup extends Group {
-    seriesLayout = new formattingSettings.ItemDropdown({ name: "seriesLayout", displayName: "Series layout", items: ITEMS.seriesLayout, value: ITEMS.seriesLayout[0] });
-    clusterGap = new formattingSettings.NumUpDown({ name: "clusterGap", displayName: "Gap within a bucket (%)", value: 10, options: range(LIMITS.percent) });
-    columnOpacity = new formattingSettings.NumUpDown({ name: "columnOpacity", displayName: "Opacity (%)", value: 100, options: range(LIMITS.percent) });
-    cornerRadius = new formattingSettings.NumUpDown({ name: "cornerRadius", displayName: "Corner radius (px)", value: 0, options: range(LIMITS.cornerRadius) });
+    seriesLayout = new formattingSettings.ItemDropdown({ name: "seriesLayout", displayNameKey: resourceKey("paneSeriesLayout"), items: ITEMS.seriesLayout, value: ITEMS.seriesLayout[0] });
+    clusterGap = new formattingSettings.NumUpDown({ name: "clusterGap", displayNameKey: resourceKey("paneClusterGap"), value: 10, options: range(LIMITS.percent) });
+    columnOpacity = new formattingSettings.NumUpDown({ name: "columnOpacity", displayNameKey: resourceKey("paneOpacity"), value: 100, options: range(LIMITS.percent) });
+    cornerRadius = new formattingSettings.NumUpDown({ name: "cornerRadius", displayNameKey: resourceKey("paneCornerRadius"), value: 0, options: range(LIMITS.cornerRadius) });
 
     constructor() {
-        super({ name: "columnsOptions", displayName: "Options" });
+        super({ name: "columnsOptions", displayNameKey: resourceKey("paneOptions") });
         this.slices = [this.seriesLayout, this.clusterGap, this.columnOpacity, this.cornerRadius];
     }
 }
 
 class ColumnColorsGroup extends Group {
     constructor() {
-        super({ name: "columnsColors", displayName: "Colors" });
+        super({ name: "columnsColors", displayNameKey: resourceKey("paneColors") });
         this.slices = [];
         this.visible = false;
     }
@@ -141,8 +144,8 @@ class ColumnColorsGroup extends Group {
 
 class ColumnsCard extends Card {
     name = "columns";
-    displayName = "Columns";
-    topLevelSlice = new formattingSettings.ToggleSwitch({ name: "showColumns", displayName: "Show columns", value: true });
+    displayNameKey = resourceKey("paneColumns");
+    topLevelSlice = new formattingSettings.ToggleSwitch({ name: "showColumns", displayNameKey: resourceKey("paneShowColumns"), value: true });
     options = new ColumnOptionsGroup();
     colors = new ColumnColorsGroup();
     groups = [this.options, this.colors];
@@ -151,26 +154,26 @@ class ColumnsCard extends Card {
 // ----- Lines -----
 
 class LineOptionsGroup extends Group {
-    lineSeriesMode = new formattingSettings.ItemDropdown({ name: "lineSeriesMode", displayName: "With series", items: ITEMS.lineSeriesMode, value: ITEMS.lineSeriesMode[0] });
-    strokeWidth = new formattingSettings.NumUpDown({ name: "strokeWidth", displayName: "Stroke width (px)", value: 2, options: range(LIMITS.strokeWidth) });
-    lineOpacity = new formattingSettings.NumUpDown({ name: "lineOpacity", displayName: "Opacity (%)", value: 100, options: range(LIMITS.percent) });
-    interpolation = new formattingSettings.ItemDropdown({ name: "interpolation", displayName: "Interpolation", items: ITEMS.interpolation, value: ITEMS.interpolation[0] });
-    showMarkers = new formattingSettings.ToggleSwitch({ name: "showMarkers", displayName: "Markers", value: false });
-    markerSize = new formattingSettings.NumUpDown({ name: "markerSize", displayName: "Marker size (px)", value: 4, options: range(LIMITS.markerSize) });
+    lineSeriesMode = new formattingSettings.ItemDropdown({ name: "lineSeriesMode", displayNameKey: resourceKey("paneWithSeries"), items: ITEMS.lineSeriesMode, value: ITEMS.lineSeriesMode[0] });
+    strokeWidth = new formattingSettings.NumUpDown({ name: "strokeWidth", displayNameKey: resourceKey("paneStrokeWidth"), value: 2, options: range(LIMITS.strokeWidth) });
+    lineOpacity = new formattingSettings.NumUpDown({ name: "lineOpacity", displayNameKey: resourceKey("paneOpacity"), value: 100, options: range(LIMITS.percent) });
+    interpolation = new formattingSettings.ItemDropdown({ name: "interpolation", displayNameKey: resourceKey("paneInterpolation"), items: ITEMS.interpolation, value: ITEMS.interpolation[0] });
+    showMarkers = new formattingSettings.ToggleSwitch({ name: "showMarkers", displayNameKey: resourceKey("paneMarkers"), value: false });
+    markerSize = new formattingSettings.NumUpDown({ name: "markerSize", displayNameKey: resourceKey("paneMarkerSize"), value: 4, options: range(LIMITS.markerSize) });
 
     constructor() {
-        super({ name: "linesOptions", displayName: "Options" });
+        super({ name: "linesOptions", displayNameKey: resourceKey("paneOptions") });
         this.slices = [this.lineSeriesMode, this.strokeWidth, this.lineOpacity, this.interpolation, this.showMarkers, this.markerSize];
     }
 }
 
 class LineValuesGroup extends Group {
-    displayAs = new formattingSettings.ItemDropdown({ name: "displayAs", displayName: "Display as", items: ITEMS.displayAs, value: ITEMS.displayAs[0] });
-    cumulativeSuffix = new formattingSettings.TextInput({ name: "cumulativeSuffix", displayName: "Cumulative suffix", value: " (cumulative)", placeholder: "" });
+    displayAs = new formattingSettings.ItemDropdown({ name: "displayAs", displayNameKey: resourceKey("paneDisplayAs"), items: ITEMS.displayAs, value: ITEMS.displayAs[0] });
+    cumulativeSuffix = new formattingSettings.TextInput({ name: "cumulativeSuffix", displayNameKey: resourceKey("paneCumulativeSuffix"), value: "", placeholder: "" });
     private readonly staticSlices = [this.displayAs, this.cumulativeSuffix];
 
     constructor() {
-        super({ name: "linesValues", displayName: "Values" });
+        super({ name: "linesValues", displayNameKey: resourceKey("paneValues") });
         this.slices = [...this.staticSlices];
     }
 
@@ -187,7 +190,7 @@ class LineValuesGroup extends Group {
 
 class LineColorsGroup extends Group {
     constructor() {
-        super({ name: "linesColors", displayName: "Colors and style" });
+        super({ name: "linesColors", displayNameKey: resourceKey("paneColorsAndStyle") });
         this.slices = [];
         this.visible = false;
     }
@@ -204,8 +207,8 @@ class LineColorsGroup extends Group {
 
 class LinesCard extends Card {
     name = "lines";
-    displayName = "Lines";
-    topLevelSlice = new formattingSettings.ToggleSwitch({ name: "showLines", displayName: "Show lines", value: true });
+    displayNameKey = resourceKey("paneLines");
+    topLevelSlice = new formattingSettings.ToggleSwitch({ name: "showLines", displayNameKey: resourceKey("paneShowLines"), value: true });
     options = new LineOptionsGroup();
     values = new LineValuesGroup();
     colors = new LineColorsGroup();
@@ -215,48 +218,48 @@ class LinesCard extends Card {
 // ----- Y-axis (columns) -----
 
 class LeftRangeGroup extends Group {
-    leftMin = new formattingSettings.NumUpDown({ name: "leftMin", displayName: "Minimum", value: AUTO });
-    leftMax = new formattingSettings.NumUpDown({ name: "leftMax", displayName: "Maximum", value: AUTO });
+    leftMin = new formattingSettings.NumUpDown({ name: "leftMin", displayNameKey: resourceKey("paneMinimum"), value: AUTO });
+    leftMax = new formattingSettings.NumUpDown({ name: "leftMax", displayNameKey: resourceKey("paneMaximum"), value: AUTO });
 
     constructor() {
-        super({ name: "leftAxisRange", displayName: "Range" });
+        super({ name: "leftAxisRange", displayNameKey: resourceKey("paneRange") });
         this.slices = [this.leftMin, this.leftMax];
     }
 }
 
 class LeftLabelsGroup extends Group {
-    leftLabelFontSize = new formattingSettings.NumUpDown({ name: "leftLabelFontSize", displayName: "Text size", value: 9, options: range(LIMITS.fontSize) });
-    leftLabelColor = new formattingSettings.ColorPicker({ name: "leftLabelColor", displayName: "Color", value: THEME_COLOR });
-    leftDisplayUnits = new formattingSettings.AutoDropdown({ name: "leftDisplayUnits", displayName: "Display units", value: 0 });
-    leftPrecision = new formattingSettings.NumUpDown({ name: "leftPrecision", displayName: "Value decimal places", value: AUTO, options: range(LIMITS.precision) });
+    leftLabelFontSize = new formattingSettings.NumUpDown({ name: "leftLabelFontSize", displayNameKey: resourceKey("paneTextSize"), value: 9, options: range(LIMITS.fontSize) });
+    leftLabelColor = new formattingSettings.ColorPicker({ name: "leftLabelColor", displayNameKey: resourceKey("paneColor"), value: THEME_COLOR });
+    leftDisplayUnits = new formattingSettings.AutoDropdown({ name: "leftDisplayUnits", displayNameKey: resourceKey("paneDisplayUnits"), value: 0 });
+    leftPrecision = new formattingSettings.NumUpDown({ name: "leftPrecision", displayNameKey: resourceKey("panePrecision"), value: AUTO, options: range(LIMITS.precision) });
 
     constructor() {
-        super({ name: "leftAxisLabels", displayName: "Labels" });
+        super({ name: "leftAxisLabels", displayNameKey: resourceKey("paneLabels") });
         this.slices = [this.leftLabelFontSize, this.leftLabelColor, this.leftDisplayUnits, this.leftPrecision];
     }
 }
 
 class LeftTitleGroup extends Group {
-    leftTitleShow = new formattingSettings.ToggleSwitch({ name: "leftTitleShow", displayName: "Title", value: false });
-    leftTitleText = new formattingSettings.TextInput({ name: "leftTitleText", displayName: "Title text", value: "", placeholder: "Measure name" });
-    leftTitleFontSize = new formattingSettings.NumUpDown({ name: "leftTitleFontSize", displayName: "Text size", value: 11, options: range(LIMITS.fontSize) });
-    leftTitleColor = new formattingSettings.ColorPicker({ name: "leftTitleColor", displayName: "Color", value: THEME_COLOR });
+    leftTitleShow = new formattingSettings.ToggleSwitch({ name: "leftTitleShow", displayNameKey: resourceKey("paneTitle"), value: false });
+    leftTitleText = new formattingSettings.TextInput({ name: "leftTitleText", displayNameKey: resourceKey("paneTitleText"), value: "", placeholder: "placeholderMeasureName" });
+    leftTitleFontSize = new formattingSettings.NumUpDown({ name: "leftTitleFontSize", displayNameKey: resourceKey("paneTextSize"), value: 11, options: range(LIMITS.fontSize) });
+    leftTitleColor = new formattingSettings.ColorPicker({ name: "leftTitleColor", displayNameKey: resourceKey("paneColor"), value: THEME_COLOR });
 
     constructor() {
-        super({ name: "leftAxisTitle", displayName: "Title" });
+        super({ name: "leftAxisTitle", displayNameKey: resourceKey("paneTitle") });
         this.topLevelSlice = this.leftTitleShow;
         this.slices = [this.leftTitleText, this.leftTitleFontSize, this.leftTitleColor];
     }
 }
 
 class LeftGridlinesGroup extends Group {
-    gridlinesShow = new formattingSettings.ToggleSwitch({ name: "gridlinesShow", displayName: "Gridlines", value: true });
-    gridlineColor = new formattingSettings.ColorPicker({ name: "gridlineColor", displayName: "Color", value: THEME_COLOR });
-    gridlineWidth = new formattingSettings.NumUpDown({ name: "gridlineWidth", displayName: "Width (px)", value: 1, options: range(LIMITS.gridlineWidth) });
-    gridlineStyle = new formattingSettings.ItemDropdown({ name: "gridlineStyle", displayName: "Style", items: ITEMS.lineStyle, value: item(ITEMS.lineStyle, "dashed") });
+    gridlinesShow = new formattingSettings.ToggleSwitch({ name: "gridlinesShow", displayNameKey: resourceKey("paneGridlines"), value: true });
+    gridlineColor = new formattingSettings.ColorPicker({ name: "gridlineColor", displayNameKey: resourceKey("paneColor"), value: THEME_COLOR });
+    gridlineWidth = new formattingSettings.NumUpDown({ name: "gridlineWidth", displayNameKey: resourceKey("paneWidth"), value: 1, options: range(LIMITS.gridlineWidth) });
+    gridlineStyle = new formattingSettings.ItemDropdown({ name: "gridlineStyle", displayNameKey: resourceKey("paneStyle"), items: ITEMS.lineStyle, value: item(ITEMS.lineStyle, "dashed") });
 
     constructor() {
-        super({ name: "leftAxisGridlines", displayName: "Gridlines" });
+        super({ name: "leftAxisGridlines", displayNameKey: resourceKey("paneGridlines") });
         this.topLevelSlice = this.gridlinesShow;
         this.slices = [this.gridlineColor, this.gridlineWidth, this.gridlineStyle];
     }
@@ -264,8 +267,8 @@ class LeftGridlinesGroup extends Group {
 
 class LeftAxisCard extends Card {
     name = "leftAxis";
-    displayName = "Y-axis (columns)";
-    topLevelSlice = new formattingSettings.ToggleSwitch({ name: "showLeftAxis", displayName: "Show axis", value: true });
+    displayNameKey = resourceKey("paneLeftAxis");
+    topLevelSlice = new formattingSettings.ToggleSwitch({ name: "showLeftAxis", displayNameKey: resourceKey("paneShowAxis"), value: true });
     range = new LeftRangeGroup();
     labels = new LeftLabelsGroup();
     title = new LeftTitleGroup();
@@ -276,53 +279,53 @@ class LeftAxisCard extends Card {
 // ----- Y-axis (lines) -----
 
 class RightRangeGroup extends Group {
-    rightMin = new formattingSettings.NumUpDown({ name: "rightMin", displayName: "Minimum", value: AUTO });
-    rightMax = new formattingSettings.NumUpDown({ name: "rightMax", displayName: "Maximum", value: AUTO });
+    rightMin = new formattingSettings.NumUpDown({ name: "rightMin", displayNameKey: resourceKey("paneMinimum"), value: AUTO });
+    rightMax = new formattingSettings.NumUpDown({ name: "rightMax", displayNameKey: resourceKey("paneMaximum"), value: AUTO });
 
     constructor() {
-        super({ name: "rightAxisRange", displayName: "Range" });
+        super({ name: "rightAxisRange", displayNameKey: resourceKey("paneRange") });
         this.slices = [this.rightMin, this.rightMax];
     }
 }
 
 class RightLabelsGroup extends Group {
-    rightLabelFontSize = new formattingSettings.NumUpDown({ name: "rightLabelFontSize", displayName: "Text size", value: 9, options: range(LIMITS.fontSize) });
-    rightLabelColor = new formattingSettings.ColorPicker({ name: "rightLabelColor", displayName: "Color", value: THEME_COLOR });
-    rightDisplayUnits = new formattingSettings.AutoDropdown({ name: "rightDisplayUnits", displayName: "Display units", value: 0 });
-    rightPrecision = new formattingSettings.NumUpDown({ name: "rightPrecision", displayName: "Value decimal places", value: AUTO, options: range(LIMITS.precision) });
+    rightLabelFontSize = new formattingSettings.NumUpDown({ name: "rightLabelFontSize", displayNameKey: resourceKey("paneTextSize"), value: 9, options: range(LIMITS.fontSize) });
+    rightLabelColor = new formattingSettings.ColorPicker({ name: "rightLabelColor", displayNameKey: resourceKey("paneColor"), value: THEME_COLOR });
+    rightDisplayUnits = new formattingSettings.AutoDropdown({ name: "rightDisplayUnits", displayNameKey: resourceKey("paneDisplayUnits"), value: 0 });
+    rightPrecision = new formattingSettings.NumUpDown({ name: "rightPrecision", displayNameKey: resourceKey("panePrecision"), value: AUTO, options: range(LIMITS.precision) });
 
     constructor() {
-        super({ name: "rightAxisLabels", displayName: "Labels" });
+        super({ name: "rightAxisLabels", displayNameKey: resourceKey("paneLabels") });
         this.slices = [this.rightLabelFontSize, this.rightLabelColor, this.rightDisplayUnits, this.rightPrecision];
     }
 }
 
 class RightTitleGroup extends Group {
-    rightTitleShow = new formattingSettings.ToggleSwitch({ name: "rightTitleShow", displayName: "Title", value: false });
-    rightTitleText = new formattingSettings.TextInput({ name: "rightTitleText", displayName: "Title text", value: "", placeholder: "Measure name" });
-    rightTitleFontSize = new formattingSettings.NumUpDown({ name: "rightTitleFontSize", displayName: "Text size", value: 11, options: range(LIMITS.fontSize) });
-    rightTitleColor = new formattingSettings.ColorPicker({ name: "rightTitleColor", displayName: "Color", value: THEME_COLOR });
+    rightTitleShow = new formattingSettings.ToggleSwitch({ name: "rightTitleShow", displayNameKey: resourceKey("paneTitle"), value: false });
+    rightTitleText = new formattingSettings.TextInput({ name: "rightTitleText", displayNameKey: resourceKey("paneTitleText"), value: "", placeholder: "placeholderMeasureName" });
+    rightTitleFontSize = new formattingSettings.NumUpDown({ name: "rightTitleFontSize", displayNameKey: resourceKey("paneTextSize"), value: 11, options: range(LIMITS.fontSize) });
+    rightTitleColor = new formattingSettings.ColorPicker({ name: "rightTitleColor", displayNameKey: resourceKey("paneColor"), value: THEME_COLOR });
 
     constructor() {
-        super({ name: "rightAxisTitle", displayName: "Title" });
+        super({ name: "rightAxisTitle", displayNameKey: resourceKey("paneTitle") });
         this.topLevelSlice = this.rightTitleShow;
         this.slices = [this.rightTitleText, this.rightTitleFontSize, this.rightTitleColor];
     }
 }
 
 class RightGridlinesGroup extends Group {
-    rightGridlinesShow = new formattingSettings.ToggleSwitch({ name: "rightGridlinesShow", displayName: "Gridlines", value: false });
+    rightGridlinesShow = new formattingSettings.ToggleSwitch({ name: "rightGridlinesShow", displayNameKey: resourceKey("paneGridlines"), value: false });
 
     constructor() {
-        super({ name: "rightAxisGridlines", displayName: "Gridlines" });
+        super({ name: "rightAxisGridlines", displayNameKey: resourceKey("paneGridlines") });
         this.slices = [this.rightGridlinesShow];
     }
 }
 
 class RightAxisCard extends Card {
     name = "rightAxis";
-    displayName = "Y-axis (lines)";
-    topLevelSlice = new formattingSettings.ToggleSwitch({ name: "showRightAxis", displayName: "Show axis", value: true });
+    displayNameKey = resourceKey("paneRightAxis");
+    topLevelSlice = new formattingSettings.ToggleSwitch({ name: "showRightAxis", displayNameKey: resourceKey("paneShowAxis"), value: true });
     range = new RightRangeGroup();
     labels = new RightLabelsGroup();
     title = new RightTitleGroup();
@@ -333,25 +336,25 @@ class RightAxisCard extends Card {
 // ----- X-axis -----
 
 class XLabelsGroup extends Group {
-    xLabelFontSize = new formattingSettings.NumUpDown({ name: "xLabelFontSize", displayName: "Text size", value: 9, options: range(LIMITS.fontSize) });
-    xLabelColor = new formattingSettings.ColorPicker({ name: "xLabelColor", displayName: "Color", value: THEME_COLOR });
-    weekLabelFormat = new formattingSettings.ItemDropdown({ name: "weekLabelFormat", displayName: "Week labels", items: ITEMS.weekLabelFormat, value: ITEMS.weekLabelFormat[0] });
-    weekLabelSecondLine = new formattingSettings.ItemDropdown({ name: "weekLabelSecondLine", displayName: "Second line", items: ITEMS.weekLabelSecondLine, value: ITEMS.weekLabelSecondLine[0] });
-    weekStartDay = new formattingSettings.ItemDropdown({ name: "weekStartDay", displayName: "Week starts on", items: ITEMS.weekStartDay, value: ITEMS.weekStartDay[0] });
-    showEmptyWeeks = new formattingSettings.ToggleSwitch({ name: "showEmptyWeeks", displayName: "Show empty weeks", value: true });
+    xLabelFontSize = new formattingSettings.NumUpDown({ name: "xLabelFontSize", displayNameKey: resourceKey("paneTextSize"), value: 9, options: range(LIMITS.fontSize) });
+    xLabelColor = new formattingSettings.ColorPicker({ name: "xLabelColor", displayNameKey: resourceKey("paneColor"), value: THEME_COLOR });
+    weekLabelFormat = new formattingSettings.ItemDropdown({ name: "weekLabelFormat", displayNameKey: resourceKey("paneWeekLabels"), items: ITEMS.weekLabelFormat, value: ITEMS.weekLabelFormat[0] });
+    weekLabelSecondLine = new formattingSettings.ItemDropdown({ name: "weekLabelSecondLine", displayNameKey: resourceKey("paneSecondLine"), items: ITEMS.weekLabelSecondLine, value: ITEMS.weekLabelSecondLine[0] });
+    weekStartDay = new formattingSettings.ItemDropdown({ name: "weekStartDay", displayNameKey: resourceKey("paneWeekStartsOn"), items: ITEMS.weekStartDay, value: ITEMS.weekStartDay[0] });
+    showEmptyWeeks = new formattingSettings.ToggleSwitch({ name: "showEmptyWeeks", displayNameKey: resourceKey("paneShowEmptyWeeks"), value: true });
 
     constructor() {
-        super({ name: "xAxisLabels", displayName: "Labels" });
+        super({ name: "xAxisLabels", displayNameKey: resourceKey("paneLabels") });
         this.slices = [this.xLabelFontSize, this.xLabelColor, this.weekLabelFormat, this.weekLabelSecondLine, this.weekStartDay, this.showEmptyWeeks];
     }
 }
 
 class XTitleGroup extends Group {
-    xTitleShow = new formattingSettings.ToggleSwitch({ name: "xTitleShow", displayName: "Title", value: false });
-    xTitleText = new formattingSettings.TextInput({ name: "xTitleText", displayName: "Title text", value: "", placeholder: "Field name" });
+    xTitleShow = new formattingSettings.ToggleSwitch({ name: "xTitleShow", displayNameKey: resourceKey("paneTitle"), value: false });
+    xTitleText = new formattingSettings.TextInput({ name: "xTitleText", displayNameKey: resourceKey("paneTitleText"), value: "", placeholder: "placeholderFieldName" });
 
     constructor() {
-        super({ name: "xAxisTitle", displayName: "Title" });
+        super({ name: "xAxisTitle", displayNameKey: resourceKey("paneTitle") });
         this.topLevelSlice = this.xTitleShow;
         this.slices = [this.xTitleText];
     }
@@ -359,8 +362,8 @@ class XTitleGroup extends Group {
 
 class XAxisCard extends Card {
     name = "xAxis";
-    displayName = "X-axis";
-    topLevelSlice = new formattingSettings.ToggleSwitch({ name: "showXAxis", displayName: "Show axis", value: true });
+    displayNameKey = resourceKey("paneXAxis");
+    topLevelSlice = new formattingSettings.ToggleSwitch({ name: "showXAxis", displayNameKey: resourceKey("paneShowAxis"), value: true });
     labels = new XLabelsGroup();
     title = new XTitleGroup();
     groups = [this.labels, this.title];
@@ -369,30 +372,30 @@ class XAxisCard extends Card {
 // ----- Data labels -----
 
 class ColumnLabelsGroup extends Group {
-    columnLabelsShow = new formattingSettings.ToggleSwitch({ name: "columnLabelsShow", displayName: "Column labels", value: false });
-    columnLabelPosition = new formattingSettings.ItemDropdown({ name: "columnLabelPosition", displayName: "Position", items: ITEMS.labelPosition, value: ITEMS.labelPosition[0] });
-    columnLabelFontSize = new formattingSettings.NumUpDown({ name: "columnLabelFontSize", displayName: "Text size", value: 9, options: range(LIMITS.fontSize) });
-    columnLabelColor = new formattingSettings.ColorPicker({ name: "columnLabelColor", displayName: "Color", value: THEME_COLOR });
-    columnLabelDisplayUnits = new formattingSettings.AutoDropdown({ name: "columnLabelDisplayUnits", displayName: "Display units", value: 0 });
-    columnLabelPrecision = new formattingSettings.NumUpDown({ name: "columnLabelPrecision", displayName: "Value decimal places", value: AUTO, options: range(LIMITS.precision) });
+    columnLabelsShow = new formattingSettings.ToggleSwitch({ name: "columnLabelsShow", displayNameKey: resourceKey("paneColumnLabels"), value: false });
+    columnLabelPosition = new formattingSettings.ItemDropdown({ name: "columnLabelPosition", displayNameKey: resourceKey("panePosition"), items: ITEMS.labelPosition, value: ITEMS.labelPosition[0] });
+    columnLabelFontSize = new formattingSettings.NumUpDown({ name: "columnLabelFontSize", displayNameKey: resourceKey("paneTextSize"), value: 9, options: range(LIMITS.fontSize) });
+    columnLabelColor = new formattingSettings.ColorPicker({ name: "columnLabelColor", displayNameKey: resourceKey("paneColor"), value: THEME_COLOR });
+    columnLabelDisplayUnits = new formattingSettings.AutoDropdown({ name: "columnLabelDisplayUnits", displayNameKey: resourceKey("paneDisplayUnits"), value: 0 });
+    columnLabelPrecision = new formattingSettings.NumUpDown({ name: "columnLabelPrecision", displayNameKey: resourceKey("panePrecision"), value: AUTO, options: range(LIMITS.precision) });
 
     constructor() {
-        super({ name: "dataLabelsColumns", displayName: "Columns" });
+        super({ name: "dataLabelsColumns", displayNameKey: resourceKey("paneColumns") });
         this.topLevelSlice = this.columnLabelsShow;
         this.slices = [this.columnLabelPosition, this.columnLabelFontSize, this.columnLabelColor, this.columnLabelDisplayUnits, this.columnLabelPrecision];
     }
 }
 
 class LineLabelsGroup extends Group {
-    lineLabelsShow = new formattingSettings.ToggleSwitch({ name: "lineLabelsShow", displayName: "Line labels", value: true });
-    lineLabelPoints = new formattingSettings.ItemDropdown({ name: "lineLabelPoints", displayName: "Points", items: ITEMS.labelPoints, value: ITEMS.labelPoints[0] });
-    lineLabelFontSize = new formattingSettings.NumUpDown({ name: "lineLabelFontSize", displayName: "Text size", value: 9, options: range(LIMITS.fontSize) });
-    lineLabelColor = new formattingSettings.ColorPicker({ name: "lineLabelColor", displayName: "Color", value: THEME_COLOR });
-    lineLabelDisplayUnits = new formattingSettings.AutoDropdown({ name: "lineLabelDisplayUnits", displayName: "Display units", value: 0 });
-    lineLabelPrecision = new formattingSettings.NumUpDown({ name: "lineLabelPrecision", displayName: "Value decimal places", value: AUTO, options: range(LIMITS.precision) });
+    lineLabelsShow = new formattingSettings.ToggleSwitch({ name: "lineLabelsShow", displayNameKey: resourceKey("paneLineLabels"), value: true });
+    lineLabelPoints = new formattingSettings.ItemDropdown({ name: "lineLabelPoints", displayNameKey: resourceKey("panePoints"), items: ITEMS.labelPoints, value: ITEMS.labelPoints[0] });
+    lineLabelFontSize = new formattingSettings.NumUpDown({ name: "lineLabelFontSize", displayNameKey: resourceKey("paneTextSize"), value: 9, options: range(LIMITS.fontSize) });
+    lineLabelColor = new formattingSettings.ColorPicker({ name: "lineLabelColor", displayNameKey: resourceKey("paneColor"), value: THEME_COLOR });
+    lineLabelDisplayUnits = new formattingSettings.AutoDropdown({ name: "lineLabelDisplayUnits", displayNameKey: resourceKey("paneDisplayUnits"), value: 0 });
+    lineLabelPrecision = new formattingSettings.NumUpDown({ name: "lineLabelPrecision", displayNameKey: resourceKey("panePrecision"), value: AUTO, options: range(LIMITS.precision) });
 
     constructor() {
-        super({ name: "dataLabelsLines", displayName: "Lines" });
+        super({ name: "dataLabelsLines", displayNameKey: resourceKey("paneLines") });
         this.topLevelSlice = this.lineLabelsShow;
         this.slices = [this.lineLabelPoints, this.lineLabelFontSize, this.lineLabelColor, this.lineLabelDisplayUnits, this.lineLabelPrecision];
     }
@@ -400,7 +403,7 @@ class LineLabelsGroup extends Group {
 
 class DataLabelsCard extends Card {
     name = "dataLabels";
-    displayName = "Data labels";
+    displayNameKey = resourceKey("paneDataLabels");
     columnLabels = new ColumnLabelsGroup();
     lineLabels = new LineLabelsGroup();
     groups = [this.columnLabels, this.lineLabels];
@@ -409,30 +412,30 @@ class DataLabelsCard extends Card {
 // ----- Legend -----
 
 class LegendOptionsGroup extends Group {
-    legendPosition = new formattingSettings.ItemDropdown({ name: "legendPosition", displayName: "Position", items: ITEMS.legendPosition, value: ITEMS.legendPosition[0] });
-    legendShowTitle = new formattingSettings.ToggleSwitch({ name: "legendShowTitle", displayName: "Title", value: false });
-    legendTitleText = new formattingSettings.TextInput({ name: "legendTitleText", displayName: "Title text", value: "", placeholder: "Series field name" });
+    legendPosition = new formattingSettings.ItemDropdown({ name: "legendPosition", displayNameKey: resourceKey("panePosition"), items: ITEMS.legendPosition, value: ITEMS.legendPosition[0] });
+    legendShowTitle = new formattingSettings.ToggleSwitch({ name: "legendShowTitle", displayNameKey: resourceKey("paneTitle"), value: false });
+    legendTitleText = new formattingSettings.TextInput({ name: "legendTitleText", displayNameKey: resourceKey("paneTitleText"), value: "", placeholder: "placeholderSeriesFieldName" });
 
     constructor() {
-        super({ name: "legendOptions", displayName: "Options" });
+        super({ name: "legendOptions", displayNameKey: resourceKey("paneOptions") });
         this.slices = [this.legendPosition, this.legendShowTitle, this.legendTitleText];
     }
 }
 
 class LegendTextGroup extends Group {
-    legendFontSize = new formattingSettings.NumUpDown({ name: "legendFontSize", displayName: "Text size", value: 9, options: range(LIMITS.fontSize) });
-    legendColor = new formattingSettings.ColorPicker({ name: "legendColor", displayName: "Color", value: THEME_COLOR });
+    legendFontSize = new formattingSettings.NumUpDown({ name: "legendFontSize", displayNameKey: resourceKey("paneTextSize"), value: 9, options: range(LIMITS.fontSize) });
+    legendColor = new formattingSettings.ColorPicker({ name: "legendColor", displayNameKey: resourceKey("paneColor"), value: THEME_COLOR });
 
     constructor() {
-        super({ name: "legendText", displayName: "Text" });
+        super({ name: "legendText", displayNameKey: resourceKey("paneText") });
         this.slices = [this.legendFontSize, this.legendColor];
     }
 }
 
 class LegendCard extends Card {
     name = "legend";
-    displayName = "Legend";
-    topLevelSlice = new formattingSettings.ToggleSwitch({ name: "showLegend", displayName: "Show legend", value: true });
+    displayNameKey = resourceKey("paneLegend");
+    topLevelSlice = new formattingSettings.ToggleSwitch({ name: "showLegend", displayNameKey: resourceKey("paneShowLegend"), value: true });
     options = new LegendOptionsGroup();
     text = new LegendTextGroup();
     groups = [this.options, this.text];
@@ -441,23 +444,23 @@ class LegendCard extends Card {
 // ----- Matrix -----
 
 class MatrixOptionsGroup extends Group {
-    showTotals = new formattingSettings.ToggleSwitch({ name: "showTotals", displayName: "Totals column", value: true });
-    totalsLabel = new formattingSettings.TextInput({ name: "totalsLabel", displayName: "Totals label", value: "Total", placeholder: "Total" });
-    expandSeries = new formattingSettings.ToggleSwitch({ name: "expandSeries", displayName: "One row per series", value: false });
+    showTotals = new formattingSettings.ToggleSwitch({ name: "showTotals", displayNameKey: resourceKey("paneTotalsColumn"), value: true });
+    totalsLabel = new formattingSettings.TextInput({ name: "totalsLabel", displayNameKey: resourceKey("paneTotalsLabel"), value: "", placeholder: "totalsLabel" });
+    expandSeries = new formattingSettings.ToggleSwitch({ name: "expandSeries", displayNameKey: resourceKey("paneExpandSeries"), value: false });
 
     constructor() {
-        super({ name: "matrixOptions", displayName: "Options" });
+        super({ name: "matrixOptions", displayNameKey: resourceKey("paneOptions") });
         this.slices = [this.showTotals, this.totalsLabel, this.expandSeries];
     }
 }
 
 class MatrixValuesGroup extends Group {
-    matrixDisplayUnits = new formattingSettings.AutoDropdown({ name: "matrixDisplayUnits", displayName: "Display units", value: 0 });
-    matrixPrecision = new formattingSettings.NumUpDown({ name: "matrixPrecision", displayName: "Value decimal places", value: AUTO, options: range(LIMITS.precision) });
+    matrixDisplayUnits = new formattingSettings.AutoDropdown({ name: "matrixDisplayUnits", displayNameKey: resourceKey("paneDisplayUnits"), value: 0 });
+    matrixPrecision = new formattingSettings.NumUpDown({ name: "matrixPrecision", displayNameKey: resourceKey("panePrecision"), value: AUTO, options: range(LIMITS.precision) });
     private readonly staticSlices = [this.matrixDisplayUnits, this.matrixPrecision];
 
     constructor() {
-        super({ name: "matrixValues", displayName: "Values" });
+        super({ name: "matrixValues", displayNameKey: resourceKey("paneValues") });
         this.slices = [...this.staticSlices];
     }
 
@@ -480,7 +483,7 @@ class MatrixValuesGroup extends Group {
 
 class MatrixRowsGroup extends Group {
     constructor() {
-        super({ name: "matrixRows", displayName: "Row order and lines" });
+        super({ name: "matrixRows", displayNameKey: resourceKey("paneRowOrderAndLines") });
         this.slices = [];
         this.visible = false;
     }
@@ -506,35 +509,35 @@ class MatrixRowsGroup extends Group {
 }
 
 class MatrixTextGroup extends Group {
-    matrixFontSize = new formattingSettings.NumUpDown({ name: "matrixFontSize", displayName: "Text size", value: 9, options: range(LIMITS.fontSize) });
-    matrixFontColor = new formattingSettings.ColorPicker({ name: "matrixFontColor", displayName: "Color", value: THEME_COLOR });
-    headerFontColor = new formattingSettings.ColorPicker({ name: "headerFontColor", displayName: "Row header color", value: THEME_COLOR });
-    headerBold = new formattingSettings.ToggleSwitch({ name: "headerBold", displayName: "Bold row headers", value: true });
+    matrixFontSize = new formattingSettings.NumUpDown({ name: "matrixFontSize", displayNameKey: resourceKey("paneTextSize"), value: 9, options: range(LIMITS.fontSize) });
+    matrixFontColor = new formattingSettings.ColorPicker({ name: "matrixFontColor", displayNameKey: resourceKey("paneColor"), value: THEME_COLOR });
+    headerFontColor = new formattingSettings.ColorPicker({ name: "headerFontColor", displayNameKey: resourceKey("paneHeaderFontColor"), value: THEME_COLOR });
+    headerBold = new formattingSettings.ToggleSwitch({ name: "headerBold", displayNameKey: resourceKey("paneHeaderBold"), value: true });
 
     constructor() {
-        super({ name: "matrixText", displayName: "Text" });
+        super({ name: "matrixText", displayNameKey: resourceKey("paneText") });
         this.slices = [this.matrixFontSize, this.matrixFontColor, this.headerFontColor, this.headerBold];
     }
 }
 
 class MatrixGridGroup extends Group {
-    rowHeight = new formattingSettings.NumUpDown({ name: "rowHeight", displayName: "Row height (px)", value: 20, options: range(LIMITS.rowHeight) });
-    showBorders = new formattingSettings.ToggleSwitch({ name: "showBorders", displayName: "Borders", value: true });
-    borderColor = new formattingSettings.ColorPicker({ name: "borderColor", displayName: "Border color", value: THEME_COLOR });
-    headerLineWidth = new formattingSettings.NumUpDown({ name: "headerLineWidth", displayName: "Line below header (px)", value: 1, options: range(LIMITS.matrixLineWidth) });
-    banding = new formattingSettings.ToggleSwitch({ name: "banding", displayName: "Banded rows", value: false });
-    maxHeightPercent = new formattingSettings.NumUpDown({ name: "maxHeightPercent", displayName: "Maximum height (% of visual)", value: 50, options: range(LIMITS.maxHeightPercent) });
+    rowHeight = new formattingSettings.NumUpDown({ name: "rowHeight", displayNameKey: resourceKey("paneRowHeight"), value: 20, options: range(LIMITS.rowHeight) });
+    showBorders = new formattingSettings.ToggleSwitch({ name: "showBorders", displayNameKey: resourceKey("paneBorders"), value: true });
+    borderColor = new formattingSettings.ColorPicker({ name: "borderColor", displayNameKey: resourceKey("paneBorderColor"), value: THEME_COLOR });
+    headerLineWidth = new formattingSettings.NumUpDown({ name: "headerLineWidth", displayNameKey: resourceKey("paneHeaderLine"), value: 1, options: range(LIMITS.matrixLineWidth) });
+    banding = new formattingSettings.ToggleSwitch({ name: "banding", displayNameKey: resourceKey("paneBanding"), value: false });
+    maxHeightPercent = new formattingSettings.NumUpDown({ name: "maxHeightPercent", displayNameKey: resourceKey("paneMaxHeight"), value: 50, options: range(LIMITS.maxHeightPercent) });
 
     constructor() {
-        super({ name: "matrixGrid", displayName: "Grid" });
+        super({ name: "matrixGrid", displayNameKey: resourceKey("paneGrid") });
         this.slices = [this.rowHeight, this.showBorders, this.borderColor, this.headerLineWidth, this.banding, this.maxHeightPercent];
     }
 }
 
 class MatrixCard extends Card {
     name = "matrix";
-    displayName = "Matrix";
-    topLevelSlice = new formattingSettings.ToggleSwitch({ name: "showMatrix", displayName: "Show matrix", value: true });
+    displayNameKey = resourceKey("paneMatrix");
+    topLevelSlice = new formattingSettings.ToggleSwitch({ name: "showMatrix", displayNameKey: resourceKey("paneShowMatrix"), value: true });
     options = new MatrixOptionsGroup();
     values = new MatrixValuesGroup();
     rows = new MatrixRowsGroup();

@@ -45,6 +45,7 @@ src/visual.ts                ← IVisual implementation: constructor + update()
 src/settings.ts              ← formatting model (CompositeCard ➔ Group ➔ slices)
 src/model/                   ← pure functions, no DOM; unit tests in src/**/__tests__
 style/visual.less            ← styles
+stringResources/             ← <locale>/resources.resjson; en-US must match defaultStrings in src/render/strings.ts
 assets/icon.png              ← 20x20 pane icon
 harness/                     ← headless harness page, mock host and synthetic data
 tools/                       ← run-harness.mjs (Puppeteer), check-capabilities.mjs
@@ -140,4 +141,6 @@ The consumer of this repo is a **report author who has already bound fields and 
 - **Pinned on purpose:** `powerbi-visuals-utils-formattingutils` stays at 6.1.2. Version 7.0.0 ships its locale table as an ES module, and the localization loader in `powerbi-visuals-tools` 7.2.1 `eval`s it as CommonJS, so packaging fails. Revisit when the tools are upgraded.
 - **Tests:** `npm test` runs `lint` (ESLint + `tsc -p tsconfig.typecheck.json` over all of `src/`) → `check:capabilities` → `test:unit` (Vitest, `src/**/__tests__`) → `test:harness` (`pbiviz package --resources`, then Puppeteer drives `harness/index.html` against the packaged JS). Fix failing tests in the code, never by weakening a test.
 - **Governance block:** the section between the `power-bi-visual-skills` markers was adapted and sanitized from the maintainer's personal starter kit. Do not overwrite it from the kit; reconcile by hand.
+- **Strings:** a new user-facing string goes in `defaultStrings` (`src/render/strings.ts`) and in both `stringResources` files, with the key `Visual_<key>`; unit tests fail if they differ or if a string is unused. Slices use `displayNameKey: resourceKey("...")`. The formatting library doesn't translate dropdown items or placeholders, so those hold a string key in `settings.ts` until `applySettings` translates them.
+- **Locale formats ship per folder:** the packager keeps number and date formats only for en-US and for locales with a `stringResources/<locale>` folder.
 - **Build log:** append an entry to `docs/BUILD_LOG.md` at the end of every working session.

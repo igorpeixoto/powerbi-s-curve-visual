@@ -1,7 +1,7 @@
 // A minimal stand-in for the Power BI visual host. It records the calls the visual makes so that
 // checks can assert on them (rendering events, warnings).
 
-export function createMockHost({ highContrast = false, allowInteractions = true } = {}) {
+export function createMockHost({ highContrast = false, allowInteractions = true, locale = "en-US", strings = null } = {}) {
     const calls = {
         renderingStarted: 0,
         renderingFinished: 0,
@@ -17,7 +17,7 @@ export function createMockHost({ highContrast = false, allowInteractions = true 
     const color = (value) => ({ value });
 
     const host = {
-        locale: "en-US",
+        locale,
         eventService: {
             renderingStarted: () => { calls.renderingStarted += 1; },
             renderingFinished: () => { calls.renderingFinished += 1; },
@@ -38,7 +38,8 @@ export function createMockHost({ highContrast = false, allowInteractions = true 
             getColor: (key) => color(paletteColor(key)),
             reset: () => {},
         },
-        createLocalizationManager: () => ({ getDisplayName: (key) => key }),
+        // Like the real manager given a package's string resources; without any, it answers with the key.
+        createLocalizationManager: () => ({ getDisplayName: (key) => strings?.[key] ?? key }),
         createSelectionIdBuilder: () => createSelectionIdBuilder(),
         createSelectionManager: () => ({
             select: (ids, multi) => { calls.select.push({ keys: [].concat(ids).map(keyOf), multi }); return Promise.resolve([]); },

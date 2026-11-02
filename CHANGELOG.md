@@ -9,6 +9,7 @@ Every version heading must match `pbiviz.json`'s `visual.version` and a `vX.Y.Z`
 
 ## [Unreleased]
 
+- Localization: every Format pane and on-visual string in `stringResources/en-US` and `stringResources/pt-BR`, with pt-BR number and date formats
 - Format pane: number boxes enforce their valid range (text sizes, widths, percentages, decimal places, row height); axis minimum and maximum stay open because negative values are valid
 - Matrix: custom row order and a width for the line below any measure row or the header, so rows can be grouped and separated
 - X-axis: optional second label line for weeks (e.g. date above, ISO or project week below)

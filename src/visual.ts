@@ -13,6 +13,7 @@ import { Interactivity } from "./behaviour/interactivity";
 import { applySettings, readInstances } from "./format/applySettings";
 import { toRenderOptions } from "./format/toRenderOptions";
 import { Renderer } from "./render/renderer";
+import { createStrings, paneLocalization, type Strings } from "./render/strings";
 import { VisualFormattingSettingsModel } from "./settings";
 
 export class Visual implements IVisual {
@@ -21,6 +22,7 @@ export class Visual implements IVisual {
     private readonly interactivity: Interactivity;
     private readonly formattingSettingsService: FormattingSettingsService;
     private readonly host: powerbi.extensibility.visual.IVisualHost;
+    private readonly strings: Strings;
     private formattingSettings: VisualFormattingSettingsModel;
 
     // The generated plugin wrapper declares options as optional, so the constructor must accept that.
@@ -31,11 +33,13 @@ export class Visual implements IVisual {
         const host = options.host;
         this.host = host;
         this.events = host.eventService;
-        this.formattingSettingsService = new FormattingSettingsService();
+        const localizationManager = host.createLocalizationManager?.();
+        this.strings = createStrings(localizationManager);
+        this.formattingSettingsService = new FormattingSettingsService(paneLocalization(this.strings) as powerbi.extensibility.ILocalizationManager);
         this.renderer = new Renderer(options.element, {
             colorPalette: host.colorPalette as powerbi.extensibility.ISandboxExtendedColorPalette,
             locale: host.locale,
-            localizationManager: host.createLocalizationManager?.(),
+            localizationManager,
             displayWarningIcon: (hoverText, detailedText) => host.displayWarningIcon(hoverText, detailedText),
         });
         this.interactivity = new Interactivity(
@@ -48,7 +52,7 @@ export class Visual implements IVisual {
             this.renderer,
         );
         // The Format pane must render before the first update and with nothing bound.
-        this.formattingSettings = applySettings(undefined, { palette: host.colorPalette, measures: [], series: [] }).model;
+        this.formattingSettings = applySettings(undefined, { palette: host.colorPalette, measures: [], series: [], strings: this.strings }).model;
     }
 
     public update(options: VisualUpdateOptions): void {
@@ -57,7 +61,8 @@ export class Visual implements IVisual {
             const dataView = options.dataViews?.[0];
             const applied = applySettings(dataView, {
                 palette: this.host.colorPalette,
-                ...readInstances(dataView, (groupIndex) => this.seriesSelector(dataView, groupIndex)),
+                strings: this.strings,
+                ...readInstances(dataView, (groupIndex) => this.seriesSelector(dataView, groupIndex), this.strings("blank")),
             });
             this.formattingSettings = applied.model;
             const scene = this.renderer.render(dataView, options.viewport, toRenderOptions(applied));

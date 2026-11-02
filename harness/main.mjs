@@ -8,6 +8,7 @@ import {
 } from "./data.mjs";
 import { runFormatChecks } from "./format.mjs";
 import { runInteractionChecks } from "./interaction.mjs";
+import { runLocalizationChecks } from "./localization.mjs";
 
 const lines = [];
 let pass = 0;
@@ -36,7 +37,7 @@ async function loadPackagedVisual(packageUrl) {
     script.textContent = pkg.content.js;
     document.head.appendChild(script);
 
-    return { guid: pkg.visual.guid, plugin: window.powerbi.visuals?.plugins?.[pkg.visual.guid] };
+    return { guid: pkg.visual.guid, plugin: window.powerbi.visuals?.plugins?.[pkg.visual.guid], stringResources: pkg.stringResources };
 }
 
 const element = document.getElementById("visual");
@@ -94,7 +95,7 @@ function messageState() {
 
 async function run() {
     const packageUrl = new URLSearchParams(location.search).get("pkg");
-    const { guid, plugin } = await loadPackagedVisual(packageUrl);
+    const { guid, plugin, stringResources } = await loadPackagedVisual(packageUrl);
     check("packaged visual registers its plugin under the GUID", Boolean(plugin), `guid ${guid}`);
     if (!plugin) return;
 
@@ -178,7 +179,8 @@ async function run() {
 
     const interactionCalls = runInteractionChecks(plugin, check);
     const formatCalls = runFormatChecks(plugin, check);
-    const failures = [calls, ...interactionCalls, ...formatCalls].flatMap((c) => c.renderingFailed);
+    const localizationCalls = runLocalizationChecks(plugin, stringResources, check);
+    const failures = [calls, ...interactionCalls, ...formatCalls, ...localizationCalls].flatMap((c) => c.renderingFailed);
     check("never reports renderingFailed", failures.length === 0, failures.join("; "));
     check("signals renderingFinished for every update", calls.renderingFinished === calls.renderingStarted, JSON.stringify(calls));
 }

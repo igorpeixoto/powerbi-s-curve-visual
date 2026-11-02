@@ -310,6 +310,9 @@ All colour defaults come from the theme (foreground, secondary foreground, or `g
 
 - en-US is the default; pt-BR ships in `stringResources/pt-BR/resources.resjson`. Every role, card, group and property `displayName`, every enum label and every UI string (empty states, warnings, suffixes, week-label prefixes, aria-labels) uses a `displayNameKey` / resource key.
 - Numbers and dates are formatted with Power BI's value formatter in the host locale (`host.locale`), using each measure's own format string. No hand-rolled decimal or thousands separators.
+- Stored values never translate: only display text does. Text the author typed (titles, totals label, suffix) stays as typed. ISO week labels keep the ISO format (`2026-W05`) in every language; project weeks use the localised prefix (`W1`, `S1`).
+- A language without a translation shows English text, never a resource key.
+- **Known limitation:** the packager only keeps number and date formats for en-US and for locales with a folder in `stringResources/` (the localization loader in `powerbi-visuals-tools`). Until more folders are added, a report in any other locale gets en-US formats: `1/5/2026` and `10,994` in en-GB, de-DE or es-ES.
 
 ## 11. Non-goals for v1
 

@@ -2,25 +2,33 @@
     "dataRoles": [
         {
             "displayName": "Category",
+            "displayNameKey": "Visual_roleCategory",
             "description": "Text time buckets, shown in data order.",
+            "descriptionKey": "Visual_roleCategoryDescription",
             "name": "category",
             "kind": "Grouping"
         },
         {
             "displayName": "Date",
+            "displayNameKey": "Visual_roleCategoryDate",
             "description": "Dates, grouped into weeks by the visual.",
+            "descriptionKey": "Visual_roleCategoryDateDescription",
             "name": "categoryDate",
             "kind": "Grouping"
         },
         {
             "displayName": "Series",
+            "displayNameKey": "Visual_roleSeries",
             "description": "Splits every measure by this field (legend).",
+            "descriptionKey": "Visual_roleSeriesDescription",
             "name": "series",
             "kind": "Grouping"
         },
         {
             "displayName": "Column values",
+            "displayNameKey": "Visual_roleColumnValues",
             "description": "Per-bucket values, drawn as columns on the left axis.",
+            "descriptionKey": "Visual_roleColumnValuesDescription",
             "name": "columnValues",
             "kind": "Measure",
             "requiredTypes": [
@@ -34,7 +42,9 @@
         },
         {
             "displayName": "Line values",
+            "displayNameKey": "Visual_roleLineValues",
             "description": "Drawn as lines on the right axis; accumulated by default.",
+            "descriptionKey": "Visual_roleLineValuesDescription",
             "name": "lineValues",
             "kind": "Measure",
             "requiredTypes": [
@@ -48,7 +58,9 @@
         },
         {
             "displayName": "Table-only values",
+            "displayNameKey": "Visual_roleTableOnlyValues",
             "description": "Rows shown only in the matrix.",
+            "descriptionKey": "Visual_roleTableOnlyValuesDescription",
             "name": "tableOnlyValues",
             "kind": "Measure",
             "requiredTypes": [
@@ -62,7 +74,9 @@
         },
         {
             "displayName": "Tooltips",
+            "displayNameKey": "Visual_roleTooltips",
             "description": "Extra fields in the tooltip.",
+            "descriptionKey": "Visual_roleTooltipsDescription",
             "name": "tooltips",
             "kind": "Measure"
         }
