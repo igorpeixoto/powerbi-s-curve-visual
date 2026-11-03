@@ -63,6 +63,8 @@ In the Date well, use the date field itself rather than its Date Hierarchy. The 
 
 All the data is made up by [`tools/generate_sample_data.py`](tools/generate_sample_data.py).
 
+On Windows, clone into a short folder such as `C:\src`. The longest file path in the sample report is 182 characters, so with Windows' default limit of 260, a checkout fails when the path to the clone is longer than about 78 characters. If you can't use a shorter folder, clone with `git clone -c core.longpaths=true`.
+
 ## How it was built
 
 This visual is also an experiment: how much of a real, tested Power BI visual can an AI build? I wrote the plan and made the decisions; [Claude Code](https://claude.com/claude-code) wrote the code, tests and docs. Every session is logged in [docs/BUILD_LOG.md](docs/BUILD_LOG.md).
@@ -93,7 +95,7 @@ A release is a tag: pushing `vX.Y.Z` runs the tests, packages the visual and cre
 
 ## Contact
 
-Bugs and feature requests: [GitHub Issues](https://github.com/igorpeixoto/powerbi-s-curve-visual/issues). Anything else: igor@igorp.dev.
+Bugs and feature requests: [GitHub Issues](https://github.com/igorpeixoto/powerbi-s-curve-visual/issues). Anything else: visuals@igorpp.dev.
 
 ## License
 
