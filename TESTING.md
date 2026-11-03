@@ -12,27 +12,27 @@
 
 ## What's automated
 
-### Unit tests: 185
+### Unit tests: 192
 
 The time zone is pinned to `Europe/Berlin` in `vitest.config.mjs`, with a guard test, so date logic can't pass just because of the machine it runs on.
 
 | Area | Tests | Covers |
 |---|---:|---|
-| `src/model` | 112 | Parsing both dataView shapes, weekly bucketing and empty weeks, a week's rows in date order, combining tooltip rows, running totals, % of baseline, axis domains at the capability limits, shared geometry, column layout, highlights in a stack, ISO weeks, matrix rows and row order, empty states, selection identities |
+| `src/model` | 118 | Parsing both dataView shapes, weekly bucketing and empty weeks, a week's rows in date order, combining tooltip rows, running totals, % of baseline, axis domains at the capability limits, shared geometry, column layout, highlights in a stack, ISO weeks, matrix rows and row order, empty states, selection identities |
 | `src/format` | 31 | The resolution rule, presets, per-instance settings, unit conversion and clamps, number limits, pane language |
 | `src/render` | 23 | Theme colours, layout, string tables (en-US matches the defaults, pt-BR has the same keys and placeholders, no unused strings) |
-| `src/behaviour` | 19 | Click rules, stale selections, keyboard moves, keeping the focus on the grid, tooltip contents |
+| `src/behaviour` | 20 | Click rules, stale selections, keyboard moves, keeping the focus on the grid, tooltip contents |
 
-### Harness checks: 172
+### Harness checks: 189
 
 These load the JavaScript and CSS from the packaged visual, not from the source, into a mock host. Clicks go through `document.elementFromPoint`, so a mark covered by something else fails as it would for a real pointer. Any page error or console error also fails the run.
 
 | Area | Checks | Covers |
 |---|---:|---|
 | Rendering and data shapes | 31 | Real data, zero rows, missing wells, date hierarchy, null measures, lone line points, reduced data, tiny viewports, redraws without leaks, alignment within 0.5 px at 400 to 2000 px |
-| Interaction | 54 | Selection, multi-select, cross-filter IDs, highlights in a stack, tooltips over a week of daily rows, context menu, keyboard after a filter and with a hidden matrix, high contrast including deselecting, interactions disabled, moved matrix rows |
-| Format pane | 49 | Each preset's effect, explicit over preset, the pane model, per-series and per-measure settings, fixed axis ranges, two-line labels, Sunday-start ISO weeks, row order and lines, number limits, alignment while scrolled |
-| Localization | 38 | Both languages in the package, the Portuguese pane and visual, formats for each of the 20 format-only locales, fallback to English |
+| Interaction | 57 | Selection, multi-select, cross-filter IDs, highlights in a stack, tooltips over a week of daily rows, context menu, keyboard after a filter and with a hidden matrix, high contrast including deselecting, interactions disabled, moved matrix rows |
+| Format pane | 62 | Each preset's effect, explicit over preset, the pane model, per-series and per-measure settings, fixed axis ranges, two-line labels, Sunday-start ISO weeks, row order and lines, number limits, alignment while scrolled |
+| Localization | 39 | Both languages in the package, the Portuguese pane and visual, formats for each of the 20 format-only locales, fallback to English |
 
 ### Sample data: 16
 
@@ -60,6 +60,8 @@ The **Status** column records what has actually been seen in Power BI Desktop, i
 | Second x-axis label line | Observed |
 | Daily dates sorted descending or by a measure: an as-provided line takes the week's last day, and Tooltips fields cover the whole week | Not yet |
 | A fixed axis minimum or maximum cuts bars and lines at the plot's edge | Not yet |
+| A date or number in the Category or Series well shows in its column's format on the axis, legend, matrix, tooltip and Format pane | Not yet |
+| The first and last x-axis labels show in full, and look right against the axis labels above them and while scrolled | Not yet |
 
 ### Cross-filtering in a report
 
@@ -71,7 +73,7 @@ The **Status** column records what has actually been seen in Power BI Desktop, i
 | Tooltips appear at the cursor with the right content | Observed |
 | A report-page tooltip works | Not yet |
 | The context menu opens on a mark | Not yet |
-| A bookmark restores a selection | Not yet |
+| A bookmark restores a selection, including one made on a table-only cell or a total-row cell | Not yet |
 | Keyboard: Enter from the visual container, then arrows, then Esc | Not yet |
 
 ### Themes and accessibility

@@ -10,11 +10,13 @@ export interface LabelContext {
     weekPrefix: string;
     /** Localised label for a blank text bucket. */
     blankLabel: string;
+    /** A text bucket's value in its column's format. */
+    formatText: (value: unknown) => string;
 }
 
 export function bucketLabel(bucket: Bucket, index: number, format: WeekLabelFormat, context: LabelContext): string {
     if (bucket.kind === "text" || !bucket.weekStart) {
-        return bucket.value === null || bucket.value === undefined || bucket.value === "" ? context.blankLabel : String(bucket.value);
+        return bucket.value === null || bucket.value === undefined || bucket.value === "" ? context.blankLabel : context.formatText(bucket.value);
     }
     switch (format) {
         case "weekStart":

@@ -71,6 +71,9 @@ export function runLocalizationChecks(plugin, stringResources, check) {
     render(visual, progressDataView({ reportedWeeks: 20, objects: { xAxis: { weekLabelFormat: "isoWeek" } } }));
     const isoLabel = q('[data-role="x-label"][data-bucket="0"]')?.textContent;
     check("ISO weeks keep the ISO format in any language", isoLabel === "2026-W02", isoLabel);
+    render(visual, progressDataView({ reportedWeeks: 20, seriesValues: [1.5, 2.5], objects: { matrix: { expandSeries: true } } }));
+    const seriesRow = [...container.querySelectorAll('[data-role="row-header"]')].map((h) => h.textContent);
+    check("a series number with no format uses the host's notation", seriesRow.includes("1,5"), seriesRow.join());
     render(visual, progressDataView({ reportedWeeks: 20, objects: { matrix: { totalsLabel: "Soma final" }, lines: { cumulativeSuffix: " (acum.)" } } }));
     check("text the author typed is left as typed", q('[data-role="totals-header"]')?.textContent === "Soma final" && q('[data-role="row-header"][data-row="2"]')?.textContent === "Sum of PlannedQty (acum.)");
     container.remove();

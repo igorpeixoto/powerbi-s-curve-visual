@@ -3,7 +3,7 @@
 import { curveLinear, curveMonotoneX, line as d3line, scaleLinear, type Selection } from "d3";
 
 import type { BarSegment } from "../model/columns";
-import { clusterSlots, labelStep } from "../model/geometry";
+import { clusterSlots, keepLabelInside, labelStep } from "../model/geometry";
 import { inDomain } from "../model/scales";
 import { isIsolated } from "../model/values";
 import { truncate } from "./measure";
@@ -261,15 +261,31 @@ export function drawChart(svg: SvgSelection, scene: Scene, clipId: string, scrol
     }
 
     // X-axis labels: one per bucket, thinned with visibility (they stay measurable).
+    const scrolled = [content];
     if (options.xAxis.show) {
         const fontSize = options.xAxis.fontSize;
         const second = scene.bucketSecondLabels;
         const widest = Math.max(0, ...[...scene.bucketLabels, ...(second ?? [])].map((l) => scene.measure(l, fontSize)));
         const step = labelStep(geometry.bucketWidth, widest);
-        const labels = content.append("g").attr("class", "s-curve__x-labels").selectAll("text").data(geometry.buckets).join("text")
+        // A label wider than its bucket runs past the plot's edge, so labels clip further out than the marks, into the
+        // empty band under each gutter. With no gutter to run into, the first and last labels move in to stay whole.
+        const overhang = Math.max(0, (widest - geometry.bucketWidth) / 2);
+        const labelClipId = `${clipId}-x-labels`;
+        const labelClipLeft = Math.max(0, geometry.plotLeft - overhang);
+        defs.append("clipPath").attr("id", labelClipId)
+            .append("rect").attr("x", labelClipLeft).attr("y", 0).attr("width", Math.min(width, plotRight + overhang) - labelClipLeft).attr("height", height);
+        const labelContent = svg.append("g").attr("clip-path", `url(#${labelClipId})`).append("g").attr("transform", `translate(${geometry.plotLeft - scrollX},0)`);
+        scrolled.push(labelContent);
+        const labelX = (b: { index: number; center: number }) => keepLabelInside(
+            b.center,
+            Math.max(scene.measure(scene.bucketLabels[b.index], fontSize), second ? scene.measure(second[b.index], fontSize) : 0),
+            -geometry.plotLeft,
+            geometry.contentWidth + width - plotRight,
+        );
+        const labels = labelContent.append("g").attr("class", "s-curve__x-labels").selectAll("text").data(geometry.buckets).join("text")
             .attr("data-role", "x-label")
             .attr("data-bucket", (b) => b.index)
-            .attr("x", (b) => b.center)
+            .attr("x", labelX)
             .attr("y", layout.plotBottom + 4 + ptToPx(fontSize))
             .attr("text-anchor", "middle")
             .attr("fill", scene.ink.xLabels)
@@ -277,12 +293,12 @@ export function drawChart(svg: SvgSelection, scene: Scene, clipId: string, scrol
             .style("visibility", (b) => (b.index % step === 0 ? null : "hidden"));
         if (second) {
             // Two lines, both centred on the bucket (SPEC Decision 12).
-            labels.append("tspan").attr("data-line", 1).attr("x", (b) => b.center).text((b) => scene.bucketLabels[b.index]);
-            labels.append("tspan").attr("data-line", 2).attr("x", (b) => b.center).attr("dy", "1.3em").text((b) => second[b.index]);
+            labels.append("tspan").attr("data-line", 1).attr("x", labelX).text((b) => scene.bucketLabels[b.index]);
+            labels.append("tspan").attr("data-line", 2).attr("x", labelX).attr("dy", "1.3em").text((b) => second[b.index]);
         } else {
             labels.text((b) => scene.bucketLabels[b.index]);
         }
     }
 
-    return { scrolled: [content] };
+    return { scrolled };
 }

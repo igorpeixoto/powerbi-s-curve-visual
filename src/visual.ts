@@ -12,6 +12,7 @@ import IVisualEventService = powerbi.extensibility.IVisualEventService;
 import { Interactivity } from "./behaviour/interactivity";
 import { applySettings, readInstances } from "./format/applySettings";
 import { toRenderOptions } from "./format/toRenderOptions";
+import { Formatters } from "./render/format";
 import { Renderer } from "./render/renderer";
 import { createStrings, paneLocalization, type Strings } from "./render/strings";
 import { VisualFormattingSettingsModel } from "./settings";
@@ -23,6 +24,7 @@ export class Visual implements IVisual {
     private readonly formattingSettingsService: FormattingSettingsService;
     private readonly host: powerbi.extensibility.visual.IVisualHost;
     private readonly strings: Strings;
+    private readonly formatters: Formatters;
     private formattingSettings: VisualFormattingSettingsModel;
 
     // The generated plugin wrapper declares options as optional, so the constructor must accept that.
@@ -42,6 +44,7 @@ export class Visual implements IVisual {
             localizationManager,
             displayWarningIcon: (hoverText, detailedText) => host.displayWarningIcon(hoverText, detailedText),
         });
+        this.formatters = new Formatters(host.locale);
         this.interactivity = new Interactivity(
             {
                 selectionManager: host.createSelectionManager(),
@@ -62,7 +65,7 @@ export class Visual implements IVisual {
             const applied = applySettings(dataView, {
                 palette: this.host.colorPalette,
                 strings: this.strings,
-                ...readInstances(dataView, (groupIndex) => this.seriesSelector(dataView, groupIndex), this.strings("blank")),
+                ...readInstances(dataView, (groupIndex) => this.seriesSelector(dataView, groupIndex), (value, format) => this.formatters.value(value, format, this.strings("blank"))),
             });
             this.formattingSettings = applied.model;
             const scene = this.renderer.render(dataView, options.viewport, toRenderOptions(applied));

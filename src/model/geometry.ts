@@ -85,6 +85,12 @@ export function clusterSlots(band: { bandStart: number; bandWidth: number }, slo
 }
 
 /** Shows every label when they fit, otherwise every 2nd, 4th, 8th, …; Infinity when no label fits. */
+/** Where a label centred on `center` has to sit to stay within [min, max]; centred on the range when it's wider than that. */
+export function keepLabelInside(center: number, width: number, min: number, max: number): number {
+    if (width >= max - min) return (min + max) / 2;
+    return Math.min(Math.max(center, min + width / 2), max - width / 2);
+}
+
 export function labelStep(bucketWidth: number, labelWidth: number, spacing = 4): number {
     if (bucketWidth <= 0) return Number.POSITIVE_INFINITY;
     let step = 1;

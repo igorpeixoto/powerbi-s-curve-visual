@@ -11,6 +11,7 @@ const options: MatrixOptions = {
     measureAggregations: {},
     rowPositions: {},
     rowLineWidths: {},
+    seriesName: (seriesIndex) => ["Civil", "Electrical"][seriesIndex],
 };
 
 const dataView = () => makeDataView({
@@ -52,6 +53,11 @@ describe("orderByPosition", () => {
 });
 
 describe("buildMatrixRows", () => {
+    it("labels series rows with the name it's given", () => {
+        const rows = buildMatrixRows(buildModel(dataView(), {}), { ...options, expandSeries: true, seriesName: (seriesIndex) => `S${seriesIndex}` });
+        expect(rows.filter((row) => row.seriesIndex !== null).map((row) => row.label)).toContain("S1");
+    });
+
     it("moves a row to the position set for its kind, leaving the same measure's other row alone", () => {
         const rows = buildMatrixRows(buildModel(dataView(), { lineSeriesMode: "perSeries" }), {
             ...options,

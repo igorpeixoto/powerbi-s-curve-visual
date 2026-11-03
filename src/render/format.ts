@@ -36,6 +36,17 @@ export class Formatters {
         return this.number(precision > 0 ? `0.${"0".repeat(precision)}%` : "0%", { displayUnits: 1 });
     }
 
+    /**
+     * A category or series value in its column's format; `blankLabel` when empty. Without a format, a number keeps all
+     * its digits and no thousands separator, so a year stays a year, and a date is a short date.
+     */
+    value(value: unknown, format: string | undefined, blankLabel = ""): string {
+        if (value === null || value === undefined) return blankLabel;
+        if (typeof value === "number") return this.number(format ?? "0.##########", { displayUnits: 1 })(value);
+        if (value instanceof Date) return valueFormatter.format(value, format ?? "d", false, this.locale);
+        return String(value);
+    }
+
     shortDate(date: Date): string {
         return valueFormatter.format(date, "d", false, this.locale);
     }

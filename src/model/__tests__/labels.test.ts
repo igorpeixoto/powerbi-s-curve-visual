@@ -9,9 +9,17 @@ const context = {
     formatDate: (date: Date) => `${date.getDate()}/${date.getMonth() + 1}`,
     weekPrefix: "W",
     blankLabel: "(Blank)",
+    formatText: (value: unknown) => String(value),
 };
 
 describe("bucketLabel", () => {
+    it("formats a text bucket's value, and keeps the blank label for an empty one", () => {
+        const text = (value: unknown): Bucket => ({ key: "", kind: "text", value, rowIndices: [], inserted: false });
+        expect(bucketLabel(text(0.25), 0, "weekStart", { ...context, formatText: () => "25%" })).toBe("25%");
+        expect(bucketLabel(text(null), 0, "weekStart", context)).toBe("(Blank)");
+        expect(bucketLabel(text(""), 0, "weekStart", context)).toBe("(Blank)");
+    });
+
     it("formats week buckets as the week start date (default)", () => {
         expect(bucketLabel(week(d(2026, 2, 2)), 0, "weekStart", context)).toBe("2/2");
     });

@@ -207,7 +207,7 @@ export class Interactivity {
             bucketLabels: scene.bucketTitles,
             cumulativeSuffix: scene.cumulativeSuffix,
             highlightedSuffix: scene.strings("highlightedSuffix"),
-            blankLabel: scene.strings("blank"),
+            seriesName: scene.seriesName,
             formatValue: scene.formatValue,
             formatRaw: scene.formatRaw,
             color: (m: TooltipMark) => (m.kind === "bar" ? scene.colors.bar(m.measureKey, m.seriesIndex)
@@ -248,15 +248,19 @@ export class Interactivity {
         const model = scene.model;
         model.buckets.forEach((bucket, b) => identities.buckets[b].forEach((id) => offer(id, { bucket: bucket.key, series: null, measure: null })));
         model.series.forEach((series, s) => offer(identities.series[s], { bucket: null, series: series.key, measure: null }));
-        // A measure bound to both wells is one host column, so its bar and line point share an identity;
-        // a restored point selection can't tell them apart and maps to whichever is offered last.
-        const marks = [
-            ...scene.bars.segments.map((s) => ({ measureKey: s.measureKey, seriesIndex: s.seriesIndex, bucket: s.bucketIndex })),
-            ...model.lines.flatMap((line) => line.values.map((_, b) => ({ measureKey: line.measureKey, seriesIndex: line.seriesIndex, bucket: b }))),
-        ];
-        for (const m of marks) {
-            const selector = { bucket: model.buckets[m.bucket].key, series: this.seriesKey(m.seriesIndex), measure: m.measureKey };
-            identities.point(m.measureKey, m.seriesIndex, m.bucket).forEach((id) => offer(id, selector));
+        // Every point the visual can send, not only the chart's marks: a table-only row has none, and neither has a
+        // total-row cell when the chart splits that measure by series. A measure bound to both wells is one host
+        // column, so its bar and line point share an identity, and both come back selected.
+        const seriesIndices = [null, ...model.series.map((_, s) => s)];
+        if (wanted.size > 0) {
+            for (const measure of model.measures.filter((m) => m.role !== "tooltips")) {
+                for (const seriesIndex of seriesIndices) {
+                    const series = this.seriesKey(seriesIndex);
+                    model.buckets.forEach((bucket, b) => {
+                        identities.point(measure.key, seriesIndex, b).forEach((id) => offer(id, { bucket: bucket.key, series, measure: measure.key }));
+                    });
+                }
+            }
         }
         this.selected = [...found.values()];
         this.applyEmphasis();

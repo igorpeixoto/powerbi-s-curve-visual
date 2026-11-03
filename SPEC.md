@@ -53,7 +53,7 @@ Typical use: bind `Planned qty` and `Actual qty` to both *Column values* and *Li
 
 - **Bucket gap** (format setting) is the fraction of each bucket left empty between clusters.
 - **Minimum bucket width** (format setting, default 0 = always fit): when `bucketCount × minBucketWidth` exceeds the plot range, the chart and the matrix **scroll horizontally together**; the y-axes, matrix row headers and totals column stay pinned. Alignment holds while scrolling.
-- **Axis labels** thin out when they would overlap (every 2nd, 4th, … label is shown); the thinning is computed from the geometry, not from the label count.
+- **Axis labels** thin out when they would overlap (every 2nd, 4th, … label is shown); the thinning is computed from the geometry, not from the label count. A label wider than its bucket stays centred and runs into the empty band under the gutter; with no gutter to run into, the first and last labels move in just enough to show in full (Decision 16).
 - **Matrix cell text** that doesn't fit its cell is first abbreviated with automatic display units, then hidden. The cell itself always renders, and its tooltip shows the full value.
 
 ### 3.3 Vertical space
@@ -184,7 +184,7 @@ Physical progress is usually read as a percentage. **Display as** `value` (defau
 - A **date bucket** spans several rows of the date column; selecting it selects all of their identities.
 - **Ctrl/Cmd-click** adds or removes from the selection. A **background click** clears it; clicking the only selected mark again also clears it.
 - Unselected marks dim (opacity 0.4); selected marks stay at full strength.
-- **Stale selections**: after a data update, identities that no longer exist are dropped; if none remain, the visual shows the unselected state. Selection restored by bookmarks is honoured through the selection callback.
+- **Stale selections**: after a data update, identities that no longer exist are dropped; if none remain, the visual shows the unselected state. Selection restored by bookmarks is honoured through the selection callback, for every selection the visual can send: chart marks, matrix cells including table-only rows and total rows, axis labels and series. Measure-only emphasis stays local and isn't restored.
 - When the host disallows interactions (`allowInteractions = false`), clicks do nothing and nothing dims.
 
 ### 7.2 Highlights from other visuals
@@ -310,7 +310,7 @@ All colour defaults come from the theme (foreground, secondary foreground, or `g
 ## 10. Localization
 
 - en-US is the default; pt-BR ships in `stringResources/pt-BR/resources.resjson`. Every role, card, group and property `displayName`, every enum label and every UI string (empty states, warnings, suffixes, week-label prefixes, aria-labels) uses a `displayNameKey` / resource key.
-- Numbers and dates are formatted with Power BI's value formatter in the host locale (`host.locale`), using each measure's own format string. No hand-rolled decimal or thousands separators.
+- Numbers and dates are formatted with Power BI's value formatter in the host locale (`host.locale`), using each measure's own format string. Category and series values use their own column's format wherever they're shown: axis labels, legend, matrix rows, tooltips and the Format pane (Decision 16). No hand-rolled decimal or thousands separators.
 - Stored values never translate: only display text does. Text the author typed (titles, totals label, suffix) stays as typed. ISO week labels keep the ISO format (`2026-W05`) in every language; project weeks use the localised prefix (`W1`, `S1`).
 - A language without a translation shows English text, never a resource key.
 - **Locale formats:** the packager only keeps number and date formats for en-US and for locales with a folder in `stringResources/` (the localization loader in `powerbi-visuals-tools`). So 20 more locales ship an empty resource file, which gives them their own formats with English text (Decision 14): en-GB, en-AU, en-CA, en-IE, en-IN, en-ZA, de-DE, fr-FR, fr-CA, es-ES, es-MX, es-AR, es-CL, pt-PT, it-IT, nl-NL, sv-SE, nb-NO, da-DK, pl-PL. A report in any other locale gets en-US formats. Adding a locale costs about 1 KB.
@@ -367,3 +367,4 @@ Settled in the SPEC review on 2026-11-01 (all as proposed in the draft):
 13. **Matrix row order and lines (§5.6, §9.3)**: requested after the Phase 5 Desktop review, so authors can group rows by type or discipline and separate the groups visually. Per measure and row kind, a position and the width of the line below; a static width for the line below the header. Series rows inside an expanded measure don't get their own settings: they move with the measure and follow the series order the model sends.
 14. **Locale formats (§10)**: found in Phase 6. Without a folder in `stringResources/`, a UK, German or Spanish report showed `1/5/2026` and `10,994`, because the packager drops those formats. All 352 locales would add about 470 KB and 352 folders, so v1 ships 20 major ones, with English text.
 15. **Week tooltips and fixed ranges (§5.3, §6.1)**: found by the code review before v1. A numeric *Tooltips* field adds up over a week's rows, as the bars do, so the tooltip and the bar describe the same days; text has no sum, so it shows the latest value. A non-additive measure, such as a percentage bound to a daily date, adds up too; binding a week-start column avoids that. Marks outside a fixed axis range are cut at the plot's edge, not drawn over the axis labels. Bars are shortened rather than clipped, so the keyboard focus ring stays in the plot too; a line point outside the range isn't drawn, so its focus falls back to the bucket's band.
+16. **Category and series formats, and wide axis labels (§3.2, §10)**: found by the code review before v1. A date or number in the Category or Series well shows in its column's format, as built-in visuals do, instead of as the raw value. With no format string, a number keeps all its digits and no thousands separator, because a year in the Series well shouldn't read `2,026`. A blank series is labelled `(Blank)` in the matrix too, as it already was in the legend and tooltips. Saved per-series settings are unaffected: they're keyed by the raw value.

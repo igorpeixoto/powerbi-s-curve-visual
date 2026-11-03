@@ -225,7 +225,7 @@ export function applySettings(dataView: powerbi.DataView | undefined, context: A
 }
 
 /** Measures and series the Format pane offers per-instance settings for, read defensively from the dataView. */
-export function readInstances(dataView: powerbi.DataView | undefined, seriesSelector: (groupIndex: number) => Selector | null, blankLabel: string): Pick<ApplyContext, "measures" | "series"> {
+export function readInstances(dataView: powerbi.DataView | undefined, seriesSelector: (groupIndex: number) => Selector | null, seriesName: (value: unknown, format: string | undefined) => string): Pick<ApplyContext, "measures" | "series"> {
     const measures: MeasureInstance[] = [];
     const wellIndex = new Map<MeasureInstance, number>();
     const seen = new Set<string>();
@@ -250,7 +250,7 @@ export function readInstances(dataView: powerbi.DataView | undefined, seriesSele
             const selector = seriesSelector(index);
             if (!selector) return;
             const key = String(group.name);
-            series.push({ key, displayName: group.name === null || group.name === undefined ? blankLabel : key, objects: group.objects as ObjectsLike, selector });
+            series.push({ key, displayName: seriesName(group.name, values.source?.format), objects: group.objects as ObjectsLike, selector });
         });
     }
     return { measures, series };

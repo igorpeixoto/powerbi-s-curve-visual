@@ -21,7 +21,7 @@ export interface TooltipContext {
     bucketLabels: string[];
     cumulativeSuffix: string;
     highlightedSuffix: string;
-    blankLabel: string;
+    seriesName(seriesIndex: number): string;
     /** Full-precision value in the measure's format (or a percentage). */
     formatValue(format: string | undefined, value: number | null, percent: boolean): string;
     /** Any other value (text or number) in its own format. */
@@ -40,7 +40,7 @@ export function tooltipItems(ctx: TooltipContext, mark: TooltipMark): TooltipIte
     const items: TooltipItem[] = [];
     const seriesIndex = mark.kind === "cell" ? mark.row.seriesIndex : mark.seriesIndex;
     if (seriesIndex !== null && model.hasSeries) {
-        items.push({ displayName: model.seriesFieldName ?? "", value: String(model.series[seriesIndex]?.value ?? ctx.blankLabel) });
+        items.push({ displayName: model.seriesFieldName ?? "", value: ctx.seriesName(seriesIndex) });
     }
 
     const measureKey = mark.kind === "cell" ? mark.row.measureKey : mark.measureKey;

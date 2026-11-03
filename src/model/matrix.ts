@@ -23,6 +23,8 @@ export interface MatrixRow {
 }
 
 export interface MatrixOptions {
+    /** A series' name as the host's format shows it. */
+    seriesName: (seriesIndex: number) => string;
     expandSeries: boolean;
     cumulativeSuffix: string;
     /** Default aggregation per row kind. */
@@ -86,7 +88,7 @@ export function buildMatrixRows(model: SCurveModel, options: MatrixOptions): Mat
             measureKey: measure.key,
             seriesIndex,
             level: seriesIndex === null ? 0 : 1,
-            label: seriesIndex === null ? label : String(model.series[seriesIndex]?.value ?? ""),
+            label: seriesIndex === null ? label : options.seriesName(seriesIndex),
             values,
             total: aggregateTotal(values, aggregation),
             format: measure.format,

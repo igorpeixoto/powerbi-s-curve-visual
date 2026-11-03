@@ -23,13 +23,18 @@ const context = (withHighlights = false): TooltipContext => {
         bucketLabels: ["Week 1", "Week 2"],
         cumulativeSuffix: " (cumulative)",
         highlightedSuffix: " (highlighted)",
-        blankLabel: "(Blank)",
+        seriesName: (seriesIndex: number) => ["Civil", "Electrical"][seriesIndex],
         formatValue: (_format, value, percent) => (value === null ? "-" : percent ? `${value * 100}%` : String(value)),
         formatRaw: (value) => String(value),
     };
 };
 
 describe("tooltipItems", () => {
+    it("names the series with the name it's given", () => {
+        const items = tooltipItems({ ...context(), seriesName: () => "25%" }, { kind: "bar", bucket: 1, measureKey: "columnValues:Sum(Progress.Planned)", seriesIndex: 0 });
+        expect(items.map((item) => item.value)).toContain("25%");
+    });
+
     it("shows bucket, series, the bar's value and the Tooltips fields for that series", () => {
         const items = tooltipItems(context(), { kind: "bar", bucket: 1, measureKey: "columnValues:Sum(Progress.Planned)", seriesIndex: 0 });
         expect(items).toEqual([
@@ -58,7 +63,7 @@ describe("tooltipItems", () => {
 
     it("shows a matrix cell's row label and value", () => {
         const ctx = context();
-        const rows = buildMatrixRows(ctx.model, { expandSeries: false, cumulativeSuffix: " (cumulative)", aggregations: { column: "sum", line: "last", table: "sum" }, measureAggregations: {}, rowPositions: {}, rowLineWidths: {} });
+        const rows = buildMatrixRows(ctx.model, { seriesName: ctx.seriesName, expandSeries: false, cumulativeSuffix: " (cumulative)", aggregations: { column: "sum", line: "last", table: "sum" }, measureAggregations: {}, rowPositions: {}, rowLineWidths: {} });
         const items = tooltipItems(ctx, { kind: "cell", bucket: 0, row: rows[1] });
         expect(items[0]).toMatchObject({ header: "Week 1", displayName: "Planned (cumulative)", value: "15" });
     });

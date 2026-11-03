@@ -90,6 +90,7 @@ export interface Scene {
     /** Full-precision value text for tooltips and accessible labels. */
     formatValue(format: string | undefined, value: number | null, percent: boolean): string;
     formatRaw(value: unknown, format: string | undefined): string;
+    seriesName(seriesIndex: number): string;
 }
 
 export interface SceneInput {
@@ -172,7 +173,13 @@ export function buildScene(input: SceneInput): Scene {
     const leftScale = left ?? (leftDomain ? { domain: leftDomain.domain, ticks: leftDomain.ticks, labels: [] } : null);
     const rightScale = right ?? (rightDomain ? { domain: rightDomain.domain, ticks: rightDomain.ticks, labels: [] } : null);
 
-    const labelContext = { formatDate: (date: Date) => formatters.shortDate(date), weekPrefix: strings("weekPrefix"), blankLabel: strings("blank") };
+    const labelContext = {
+        formatDate: (date: Date) => formatters.shortDate(date),
+        weekPrefix: strings("weekPrefix"),
+        blankLabel: strings("blank"),
+        formatText: (value: unknown) => formatters.value(value, model.bucketFormat),
+    };
+    const seriesName = (i: number) => formatters.value(model.series[i]?.value, model.seriesFormat, strings("blank"));
     const bucketLabels = model.buckets.map((b, i) => bucketLabel(b, i, options.xAxis.weekLabelFormat, labelContext));
     const secondLine = options.xAxis.secondLine;
     const bucketSecondLabels = secondLine && model.bucketRole === "categoryDate"
@@ -184,6 +191,7 @@ export function buildScene(input: SceneInput): Scene {
     const cumulativeSuffix = options.lines.cumulativeSuffix ?? strings("cumulativeSuffix");
     const matrixRows = options.matrix.show
         ? buildMatrixRows(model, {
+            seriesName,
             expandSeries: options.matrix.expandSeries,
             cumulativeSuffix,
             aggregations: options.matrix.aggregations,
@@ -221,7 +229,6 @@ export function buildScene(input: SceneInput): Scene {
     };
     const columnOrder = new Map(columnMeasures.map((m, i) => [m.key, i]));
     const legendItems: LegendItem[] = [];
-    const seriesName = (i: number) => String(model.series[i]?.value ?? strings("blank"));
     for (const m of columnMeasures) {
         if (model.hasSeries) {
             model.series.forEach((_, i) => legendItems.push({
@@ -331,9 +338,9 @@ export function buildScene(input: SceneInput): Scene {
         formatRaw: (value, format) => {
             if (value === null || value === undefined) return strings("noValue");
             if (typeof value === "number") return formatters.number(format, { displayUnits: 1 })(value);
-            if (value instanceof Date) return formatters.shortDate(value);
-            return String(value);
+            return formatters.value(value, format);
         },
+        seriesName,
         legendItems: legendItems.map((item, i) => {
             const width = itemWidths[i + (titles.legend ? 1 : 0)];
             return { ...item, label: truncate(item.label, width - LEGEND_SWATCH - LEGEND_SWATCH_GAP, (t) => measure(t, legendFont)) };

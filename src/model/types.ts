@@ -52,11 +52,15 @@ export interface ParsedDataView {
     bucketRole: BucketRole | null;
     /** Display name of the field in the Category or Date well, for the x-axis title. */
     bucketFieldName: string | null;
+    /** Format string of that field, for text buckets. */
+    bucketFormat?: string;
     buckets: Bucket[];
     series: SeriesInfo[];
     hasSeries: boolean;
     /** Display name of the field in the Series well, for tooltips. */
     seriesFieldName: string | null;
+    /** Format string of that field. */
+    seriesFormat?: string;
     measures: MeasureInfo[];
     /** values[measureKey][seriesIndex][bucketIndex], already combined per bucket. */
     values: Record<string, Values[]>;

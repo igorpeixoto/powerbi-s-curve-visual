@@ -117,6 +117,30 @@ export function runInteractionChecks(plugin, check) {
     calls.onSelect?.([]);
     check("restoring an empty selection shows everything", qa('[data-role="bar"]').every((b) => opacity(b) === "1"));
 
+    // Every selection the visual sends has to come back, including cells with no mark of their own in the chart.
+    const restoreOf = (element) => {
+        pointerAt(element);
+        const keys = calls.select.at(-1).keys;
+        calls.onSelect?.([]);
+        calls.onSelect?.(keys.map((k) => ({ getKey: () => k, getSelector: () => ({}) })));
+    };
+    const tableRow = qa('[data-role="row-header"]').find((h) => h.textContent.startsWith("Table measure 1"))?.getAttribute("data-row");
+    const tableCell = (bucket) => q(`[data-role="cell"][data-bucket="${bucket}"][data-row="${tableRow}"]`);
+    const tableCellText = (bucket) => q(`[data-role="cell-text"][data-bucket="${bucket}"][data-row="${tableRow}"]`);
+    restoreOf(tableCell(6));
+    check("restores a table-only cell's selection from the host (bookmarks)", opacity(tableCellText(6)) === "1" && opacity(tableCellText(7)) === "0.4" && opacity(bar(6)) === "0.4");
+    calls.onSelect?.([]);
+    restoreOf(q('[data-role="cell"][data-bucket="6"][data-row="0"]'));
+    check("restores a total-row cell's selection from the host (bookmarks)", opacity(bar(6)) === "1" && opacity(bar(7)) === "0.4");
+    calls.onSelect?.([]);
+
+    // The series in a tooltip uses its column's format.
+    render(visual, container, progressDataView({ reportedWeeks: 20, seriesValues: [0.25, 0.5], seriesFormat: "0%" }));
+    pointerAt(bar(9), "mousemove");
+    const seriesItem = (calls.tooltip.show.at(-1)?.dataItems ?? []).find((item) => item.displayName === "Discipline");
+    check("a tooltip shows the series in its column's format", seriesItem?.value === "25%", JSON.stringify(seriesItem));
+    render(visual, container, progressDataView({ reportedWeeks: 20 }));
+
     // Context menu: the mark's identity, or an empty selection on the background.
     pointerAt(bar(9), "contextmenu");
     check("opens the context menu with the mark's identity", calls.contextMenu.at(-1)?.key === `c:progress.WeekStart:9|s:Civil|m:${PLANNED}`, JSON.stringify(calls.contextMenu));

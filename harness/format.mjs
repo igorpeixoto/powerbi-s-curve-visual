@@ -1,7 +1,7 @@
 // Phase 5 checks (SPEC §9, §12): presets change what renders, explicit values beat presets, the Format pane model
 // shows effective values with per-instance slices, and alignment holds while scrolled horizontally.
 import { createMockHost } from "./mock-host.mjs";
-import { progressDataView } from "./data.mjs";
+import { categoryDataView, progressDataView } from "./data.mjs";
 
 const COLUMN_PLANNED = "columnValues:Sum(progress.PlannedQty)";
 const LINE_PLANNED = "lineValues:Sum(progress.PlannedQty)";
@@ -258,6 +258,51 @@ export function runFormatChecks(plugin, check) {
     scrollCase(10, " with the matrix also scrolling vertically");
     const body = q(".s-curve__matrix-body");
     check("the matrix scrolls vertically in the combined case", body && body.scrollHeight > body.clientHeight);
+
+    // Category and series values use their column's format wherever they're shown (Hard Rule 9).
+    const legendTexts = () => qa('[data-role="legend-item"]').map((e) => e.textContent);
+    const rowHeaders = () => qa('[data-role="row-header"]').map((e) => e.textContent);
+    const seriesRows = { matrix: { expandSeries: true } };
+    render(visual, container, progressDataView({ reportedWeeks: 20, seriesValues: [0.25, 0.5], seriesFormat: "0%", objects: seriesRows }));
+    check("the legend shows a numeric series in its column's format", legendTexts().some((t) => t.startsWith("25%")) && !legendTexts().some((t) => t.includes("0.25")), legendTexts().join());
+    check("the matrix shows a numeric series in its column's format", rowHeaders().includes("25%") && !rowHeaders().includes("0.25"), rowHeaders().join());
+    const paneNames = JSON.stringify(visual.getFormattingModel());
+    check("the Format pane shows a numeric series in its column's format", paneNames.includes('"25%') && !paneNames.includes('"0.25'));
+    render(visual, container, progressDataView({ reportedWeeks: 20, seriesValues: [new Date(2026, 0, 5), new Date(2026, 1, 2)], seriesFormat: "MMM yyyy", objects: seriesRows }));
+    check("a date series uses its column's format", rowHeaders().includes("Jan 2026") && legendTexts().some((t) => t.startsWith("Jan 2026")), rowHeaders().join());
+    render(visual, container, progressDataView({ reportedWeeks: 20, seriesValues: [2026, 2027], objects: seriesRows }));
+    check("a number with no format keeps its digits, so a year stays a year", rowHeaders().includes("2026"), rowHeaders().join());
+    render(visual, container, progressDataView({ reportedWeeks: 20, seriesValues: [null, "Civil"], objects: seriesRows }));
+    check("a blank series has a label in the matrix", rowHeaders().includes("(Blank)"), rowHeaders().join());
+    const xLabels = () => qa('[data-role="x-label"]').map((e) => e.textContent);
+    render(visual, container, categoryDataView([0.1, 0.25], "0%"));
+    check("a numeric category uses its column's format", xLabels().join() === "10%,25%", xLabels().join());
+    render(visual, container, categoryDataView([new Date(2026, 0, 5), new Date(2026, 1, 2)], "MMM yyyy"));
+    check("a date in the Category well uses its column's format", xLabels().join() === "Jan 2026,Feb 2026", xLabels().join());
+    render(visual, container, categoryDataView([2026, 2027]));
+    check("a number in the Category well with no format keeps its digits", xLabels().join() === "2026,2027", xLabels().join());
+
+    // The first and last x-axis labels show in full, even when they're wider than their buckets.
+    const shownLabels = () => qa('[data-role="x-label"]').filter((l) => l.style.visibility !== "hidden");
+    const svgOf = (label) => label.closest("svg");
+    const clipEdges = (label) => {
+        const id = label.closest("[clip-path]").getAttribute("clip-path").match(/url\(#(.+)\)/)[1];
+        const rect = svgOf(label).querySelector(`[id="${id}"] rect`);
+        const left = svgOf(label).getBoundingClientRect().left + Number(rect.getAttribute("x"));
+        return { left, right: left + Number(rect.getAttribute("width")) };
+    };
+    const showsInFull = (label) => {
+        const box = label.getBoundingClientRect();
+        const clip = clipEdges(label);
+        const svg = svgOf(label).getBoundingClientRect();
+        return box.left >= Math.max(clip.left, svg.left) - 0.5 && box.right <= Math.min(clip.right, svg.right) + 0.5;
+    };
+    render(visual, container, progressDataView({ reportedWeeks: 20 }));
+    check("the first x-axis label shows in full", showsInFull(shownLabels()[0]));
+    check("the last x-axis label shows in full", showsInFull(shownLabels().at(-1)));
+    render(visual, container, progressDataView({ reportedWeeks: 20, objects: { leftAxis: { showLeftAxis: false }, rightAxis: { showRightAxis: false }, matrix: { showMatrix: false } } }));
+    check("the first x-axis label shows in full with no gutter", showsInFull(shownLabels()[0]));
+    check("the last x-axis label shows in full with no gutter", showsInFull(shownLabels().at(-1)));
 
     container.remove();
     return [calls];

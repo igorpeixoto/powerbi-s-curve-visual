@@ -30,16 +30,18 @@ export function progressDataView({
     objects = undefined,
     seriesObjects = {},
     columnObjects = {},
+    seriesValues = DISCIPLINES,
+    seriesFormat = undefined,
 } = {}) {
     const dates = Array.from({ length: weeks }, (_, i) => new Date(2026, 0, 5 + 7 * i));
     const dateSource = { displayName: "WeekStart", queryName: "progress.WeekStart", roles: { categoryDate: true }, index: 0 };
     const planned = column("Sum of PlannedQty", "Sum(progress.PlannedQty)", ["columnValues", "lineValues"], { format: "#,0" });
     const actual = column("Sum of ActualQty", "Sum(progress.ActualQty)", ["columnValues", "lineValues"], { format: "#,0" });
     const tables = Array.from({ length: tableOnly }, (_, i) => column(`Table measure ${i + 1}`, `Sum(progress.Table${i + 1})`, ["tableOnlyValues"], { format: "#,0" }));
-    const seriesNames = series ? DISCIPLINES : [undefined];
+    const seriesNames = series ? seriesValues : [undefined];
 
     const groups = seriesNames.map((name, g) => {
-        const scale = name ? SCALE[name] : 11000;
+        const scale = SCALE[name] ?? 11000;
         const plannedValues = dates.map((_, i) => Math.round(scale * logisticShare(i, weeks)));
         const actualValues = plannedValues.map((v, i) => (actualAllNull || i >= reportedWeeks ? null : Math.round(v * (0.75 + 0.05 * ((i + g) % 4)))));
         const values = [
@@ -63,7 +65,7 @@ export function progressDataView({
     // Per-measure formatting (selector { metadata: queryName }) arrives on the metadata column.
     const columns = [dateSource, planned, actual, ...tables].map((c) => (columnObjects[c.queryName] ? { ...c, objects: columnObjects[c.queryName] } : c));
     if (series) {
-        flat.source = { displayName: "Discipline", queryName: "progress.Discipline", roles: { series: true } };
+        flat.source = { displayName: "Discipline", queryName: "progress.Discipline", roles: { series: true }, format: seriesFormat };
         columns.push(flat.source);
     }
 
@@ -108,6 +110,15 @@ export function dailyDescendingDataView() {
 /** Weekly values with gaps, so every reported point has no neighbour to draw a line to. */
 export function isolatedPointsDataView() {
     return lineDataView([5, 12, 19, 26].map((day) => new Date(2026, 0, day)), [10, null, 30, null]);
+}
+
+/** A field in the Category well, which may be a number or a date with its own format. */
+export function categoryDataView(values, format) {
+    const view = progressDataView({ series: false, weeks: values.length, reportedWeeks: values.length });
+    const source = { displayName: "Phase", queryName: "progress.Phase", roles: { category: true }, index: 0, format };
+    view.metadata.columns[0] = source;
+    view.categorical.categories = [{ source, values, identity: values.map((_, i) => ({ key: `row:${i}` })) }];
+    return view;
 }
 
 /** Measures bound, no Date/Category field. */

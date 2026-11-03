@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { clusterSlots, computeGeometry, labelStep, resolveGutters } from "../geometry";
+import { clusterSlots, computeGeometry, labelStep, resolveGutters, keepLabelInside } from "../geometry";
 
 const base = { leftGutter: 60, rightGutter: 50, bucketGap: 0.2, minBucketWidth: 0 };
 
@@ -80,5 +80,21 @@ describe("labelStep", () => {
         expect(labelStep(30, 40)).toBe(2);
         expect(labelStep(12, 40)).toBe(4);
         expect(labelStep(1, 40)).toBe(64);
+    });
+});
+
+describe("keepLabelInside", () => {
+    it("leaves a label centred on its bucket when it fits", () => {
+        expect(keepLabelInside(50, 40, -30, 200)).toBe(50);
+    });
+    it("moves a label in just enough to stay inside", () => {
+        expect(keepLabelInside(5, 40, 0, 200)).toBe(20);
+        expect(keepLabelInside(195, 40, 0, 200)).toBe(180);
+    });
+    it("uses the gutters before moving a label", () => {
+        expect(keepLabelInside(5, 40, -30, 200)).toBe(5);
+    });
+    it("centres a label wider than the whole range", () => {
+        expect(keepLabelInside(5, 300, 0, 200)).toBe(100);
     });
 });

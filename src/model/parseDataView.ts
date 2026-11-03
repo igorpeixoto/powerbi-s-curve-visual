@@ -109,6 +109,7 @@ export function parseDataView(dataView: DataView | undefined, options: ModelOpti
 
     const category = categorical?.categories?.[0];
     parsed.bucketFieldName = category?.source.displayName ?? null;
+    parsed.bucketFormat = category?.source.format;
     if (category?.source.roles?.categoryDate && isDateHierarchy(categorical?.categories ?? [])) {
         // Year/Quarter/Month/Day levels instead of a date: nothing to bucket (SPEC §8).
         parsed.bucketRole = "categoryDate";
@@ -129,6 +130,7 @@ export function parseDataView(dataView: DataView | undefined, options: ModelOpti
 
     parsed.hasSeries = Boolean(categorical?.values?.source);
     parsed.seriesFieldName = categorical?.values?.source?.displayName ?? null;
+    parsed.seriesFormat = categorical?.values?.source?.format;
     parsed.series = parsed.hasSeries
         ? groups.map((group, groupIndex): SeriesInfo => ({ key: String(group.name), value: group.name ?? null, groupIndex }))
         : [];
