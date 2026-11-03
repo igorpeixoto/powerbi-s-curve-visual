@@ -1,6 +1,7 @@
 import type { Selection } from "d3";
 
 import { dashArray } from "./chart";
+import { applyFont } from "./measure";
 import { ptToPx } from "./options";
 import { LEGEND_LAYOUT, type Scene } from "./scene";
 
@@ -25,7 +26,8 @@ export function drawLegend(svg: SvgSelection, scene: Scene): void {
         svg.append("text")
             .attr("data-role", "legend-title")
             .attr("x", titlePosition.x).attr("y", titlePosition.y + itemHeight / 2).attr("dy", "0.35em")
-            .attr("fill", scene.ink.legend).style("font-size", `${fontPx}px`).style("font-weight", "600")
+            .attr("fill", scene.ink.legend).style("font-size", `${fontPx}px`)
+            .call(applyFont, scene.legendTitleFont)
             .text(scene.titles.legend);
     }
 
@@ -50,6 +52,7 @@ export function drawLegend(svg: SvgSelection, scene: Scene): void {
         g.append("text")
             .attr("x", LEGEND_LAYOUT.swatch + LEGEND_LAYOUT.gap).attr("y", middle).attr("dy", "0.35em")
             .attr("fill", scene.ink.legend).style("font-size", `${fontPx}px`)
+            .call(applyFont, scene.options.legend.font)
             .text(item.label);
     });
 }

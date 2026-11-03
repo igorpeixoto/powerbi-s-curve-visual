@@ -6,8 +6,8 @@ import type { BarSegment } from "../model/columns";
 import { clusterSlots, keepLabelInside, labelStep } from "../model/geometry";
 import { inDomain } from "../model/scales";
 import { isIsolated } from "../model/values";
-import { truncate } from "./measure";
-import { ptToPx, type LineStyle } from "./options";
+import { applyFont, truncate } from "./measure";
+import { ptToPx, type LabelBackground, type LineStyle, type TextFont } from "./options";
 import type { Scene } from "./scene";
 
 type SvgSelection = Selection<SVGSVGElement, unknown, null, undefined>;
@@ -82,36 +82,38 @@ export function drawChart(svg: SvgSelection, scene: Scene, clipId: string, scrol
     }
 
     // Value axes, pinned in the gutters.
-    const axisText = (g: GSelection, labels: string[], ticks: number[], scale: (v: number) => number, x: number, anchor: string, fontSize: number, color: string) => {
+    const axisText = (g: GSelection, labels: string[], ticks: number[], scale: (v: number) => number, x: number, anchor: string, fontSize: number, font: TextFont, color: string) => {
         g.selectAll("text").data(ticks).join("text")
             .attr("x", x).attr("y", (t) => scale(t)).attr("dy", "0.32em")
             .attr("text-anchor", anchor).attr("fill", color).style("font-size", `${ptToPx(fontSize)}px`)
+            .call(applyFont, font)
             .text((_, i) => labels[i]);
     };
     if (yLeft && scene.left?.labels.length) {
-        axisText(svg.append("g").attr("class", "s-curve__axis-left"), scene.left.labels, scene.left.ticks, yLeft, geometry.plotLeft - 6, "end", options.leftAxis.fontSize, scene.ink.leftLabels);
+        axisText(svg.append("g").attr("class", "s-curve__axis-left"), scene.left.labels, scene.left.ticks, yLeft, geometry.plotLeft - 6, "end", options.leftAxis.fontSize, options.leftAxis.font, scene.ink.leftLabels);
     }
     if (yRight && scene.right?.labels.length) {
-        axisText(svg.append("g").attr("class", "s-curve__axis-right"), scene.right.labels, scene.right.ticks, yRight, plotRight + 6, "start", options.rightAxis.fontSize, scene.ink.rightLabels);
+        axisText(svg.append("g").attr("class", "s-curve__axis-right"), scene.right.labels, scene.right.ticks, yRight, plotRight + 6, "start", options.rightAxis.fontSize, options.rightAxis.font, scene.ink.rightLabels);
     }
 
     // Axis titles: rotated in the outer edge of each gutter; the x title centred under the plot (pinned, not scrolled).
     const plotMiddle = (layout.plotTop + layout.plotBottom) / 2;
-    const titleText = (role: string, text: string, x: number, y: number, rotate: number, fontSize: number, color: string) => svg.append("text")
+    const titleText = (role: string, text: string, x: number, y: number, rotate: number, fontSize: number, font: TextFont, color: string) => svg.append("text")
         .attr("data-role", role)
         .attr("transform", `translate(${x},${y}) rotate(${rotate})`)
         .attr("text-anchor", "middle").attr("dy", "0.35em")
-        .attr("fill", color).style("font-size", `${ptToPx(fontSize)}px`).style("font-weight", "600")
-        .text(truncate(text, Math.max(0, rotate ? layout.plotBottom - layout.plotTop : geometry.plotWidth), (t) => scene.measure(t, fontSize, true)));
+        .attr("fill", color).style("font-size", `${ptToPx(fontSize)}px`)
+        .call(applyFont, font)
+        .text(truncate(text, Math.max(0, rotate ? layout.plotBottom - layout.plotTop : geometry.plotWidth), (t) => scene.measure(t, fontSize, font)));
     if (scene.titles.left) {
-        titleText("axis-title-left", scene.titles.left, ptToPx(options.leftAxis.title.fontSize) * 0.75, plotMiddle, -90, options.leftAxis.title.fontSize, scene.ink.leftTitle);
+        titleText("axis-title-left", scene.titles.left, ptToPx(options.leftAxis.title.fontSize) * 0.75, plotMiddle, -90, options.leftAxis.title.fontSize, options.leftAxis.title.font, scene.ink.leftTitle);
     }
     if (scene.titles.right) {
-        titleText("axis-title-right", scene.titles.right, width - ptToPx(options.rightAxis.title.fontSize) * 0.75, plotMiddle, 90, options.rightAxis.title.fontSize, scene.ink.rightTitle);
+        titleText("axis-title-right", scene.titles.right, width - ptToPx(options.rightAxis.title.fontSize) * 0.75, plotMiddle, 90, options.rightAxis.title.fontSize, options.rightAxis.title.font, scene.ink.rightTitle);
     }
     if (scene.titles.x) {
-        const xTitleSize = options.xAxis.fontSize + 1;
-        titleText("axis-title-x", scene.titles.x, geometry.plotLeft + geometry.plotWidth / 2, height - ptToPx(xTitleSize) * 0.75, 0, xTitleSize, scene.ink.xTitle);
+        const xTitleSize = options.xAxis.title.fontSize;
+        titleText("axis-title-x", scene.titles.x, geometry.plotLeft + geometry.plotWidth / 2, height - ptToPx(xTitleSize) * 0.75, 0, xTitleSize, options.xAxis.title.font, scene.ink.xTitle);
     }
 
     // Columns. With highlights from another visual, the full bar is drawn faded and the highlighted part solid
@@ -152,6 +154,14 @@ export function drawChart(svg: SvgSelection, scene: Scene, clipId: string, scrol
     // Lines and their points (points exist even with markers off: they are measured, focused and selected).
     const placedLabels: Box[] = [];
     const labelFont = ptToPx(options.dataLabels.lines.fontSize);
+    // A data label's background, drawn under its text; it leaves room for the text's descenders and a little either side.
+    const labelBackground = (group: GSelection, box: { x0: number; x1: number; y0: number; y1: number }, background: LabelBackground, fill: string, fontPx: number) => {
+        if (!background.show) return;
+        group.append("rect")
+            .attr("data-role", "label-background")
+            .attr("x", box.x0 - 2).attr("y", box.y0).attr("width", box.x1 - box.x0 + 4).attr("height", box.y1 - box.y0 + fontPx * 0.3)
+            .attr("fill", fill).attr("fill-opacity", scene.highContrast ? 1 : background.opacity);
+    };
     if (yRight && scene.right) {
         const rightDomain = scene.right.domain;
         const linesGroup = content.append("g").attr("class", "s-curve__lines");
@@ -202,7 +212,7 @@ export function drawChart(svg: SvgSelection, scene: Scene, clipId: string, scrol
                 const labelled = options.dataLabels.lines.points === "last" ? points.filter((p) => p === reported[reported.length - 1]) : points;
                 for (const p of labelled) {
                     const text = format(p.v);
-                    const textWidth = scene.measure(text, options.dataLabels.lines.fontSize);
+                    const textWidth = scene.measure(text, options.dataLabels.lines.fontSize, options.dataLabels.lines.font);
                     const x = geometry.buckets[p.i].center;
                     const y = yRight(p.v) - 8;
                     let anchor = "middle";
@@ -217,10 +227,12 @@ export function drawChart(svg: SvgSelection, scene: Scene, clipId: string, scrol
                     const box = { x0, x1: x0 + textWidth, y0: y - labelFont, y1: y };
                     if (box.y0 < 0 || overlaps(box, placedLabels)) continue;
                     placedLabels.push(box);
+                    labelBackground(linesGroup, box, options.dataLabels.lines.background, scene.ink.lineLabelBackground, labelFont);
                     linesGroup.append("text")
                         .attr("data-role", "line-label").attr("data-bucket", p.i).attr("data-measure", line.measureKey)
                         .attr("x", x).attr("y", y).attr("text-anchor", anchor)
                         .attr("fill", scene.ink.lineLabels ?? color).style("font-size", `${labelFont}px`)
+                        .call(applyFont, options.dataLabels.lines.font)
                         .text(text);
                 }
             }
@@ -244,18 +256,21 @@ export function drawChart(svg: SvgSelection, scene: Scene, clipId: string, scrol
             if (scene.left && !inDomain(stack.extreme, scene.left.domain)) continue;
             const slot = clusterSlots(geometry.buckets[stack.bucket], scene.bars.slotCount, options.columns.clusterGap)[stack.slot];
             const text = scene.columnLabel(stack.measureKey)(stack.total);
-            const textWidth = scene.measure(text, options.dataLabels.columns.fontSize);
-            const x = slot.x + slot.width / 2;
+            const textWidth = scene.measure(text, options.dataLabels.columns.fontSize, options.dataLabels.columns.font);
+            // Wider than its bar, a label at either end of the plot moves in rather than being cut by the plot's edge.
+            const x = keepLabelInside(slot.x + slot.width / 2, textWidth, 0, geometry.contentWidth);
             const yEdge = yLeft(stack.extreme);
             const inside = options.dataLabels.columns.position === "insideEnd";
             const y = stack.extreme >= 0 ? (inside ? yEdge + columnFont + 2 : yEdge - 4) : (inside ? yEdge - 4 : yEdge + columnFont + 2);
             const box = { x0: x - textWidth / 2, x1: x + textWidth / 2, y0: y - columnFont, y1: y };
             if (box.y0 < 0 || box.y1 > layout.plotBottom || overlaps(box, placedLabels)) continue;
             placedLabels.push(box);
+            labelBackground(labels, box, options.dataLabels.columns.background, scene.ink.columnLabelBackground, columnFont);
             labels.append("text")
                 .attr("data-role", "column-label").attr("data-bucket", stack.bucket)
                 .attr("x", x).attr("y", y).attr("text-anchor", "middle")
                 .attr("fill", scene.ink.columnLabels ?? theme.text).style("font-size", `${columnFont}px`)
+                .call(applyFont, options.dataLabels.columns.font)
                 .text(text);
         }
     }
@@ -265,7 +280,7 @@ export function drawChart(svg: SvgSelection, scene: Scene, clipId: string, scrol
     if (options.xAxis.show) {
         const fontSize = options.xAxis.fontSize;
         const second = scene.bucketSecondLabels;
-        const widest = Math.max(0, ...[...scene.bucketLabels, ...(second ?? [])].map((l) => scene.measure(l, fontSize)));
+        const widest = Math.max(0, ...[...scene.bucketLabels, ...(second ?? [])].map((l) => scene.measure(l, fontSize, options.xAxis.font)));
         const step = labelStep(geometry.bucketWidth, widest);
         // A label wider than its bucket runs past the plot's edge, so labels clip further out than the marks, into the
         // empty band under each gutter. With no gutter to run into, the first and last labels move in to stay whole.
@@ -278,7 +293,7 @@ export function drawChart(svg: SvgSelection, scene: Scene, clipId: string, scrol
         scrolled.push(labelContent);
         const labelX = (b: { index: number; center: number }) => keepLabelInside(
             b.center,
-            Math.max(scene.measure(scene.bucketLabels[b.index], fontSize), second ? scene.measure(second[b.index], fontSize) : 0),
+            Math.max(scene.measure(scene.bucketLabels[b.index], fontSize, options.xAxis.font), second ? scene.measure(second[b.index], fontSize, options.xAxis.font) : 0),
             -geometry.plotLeft,
             geometry.contentWidth + width - plotRight,
         );
@@ -290,6 +305,7 @@ export function drawChart(svg: SvgSelection, scene: Scene, clipId: string, scrol
             .attr("text-anchor", "middle")
             .attr("fill", scene.ink.xLabels)
             .style("font-size", `${ptToPx(fontSize)}px`)
+            .call(applyFont, options.xAxis.font)
             .style("visibility", (b) => (b.index % step === 0 ? null : "hidden"));
         if (second) {
             // Two lines, both centred on the bucket (SPEC Decision 12).

@@ -248,6 +248,28 @@
                         }
                     }
                 },
+                "leftLabelFontFamily": {
+                    "type": {
+                        "formatting": {
+                            "fontFamily": true
+                        }
+                    }
+                },
+                "leftLabelBold": {
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "leftLabelItalic": {
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "leftLabelUnderline": {
+                    "type": {
+                        "bool": true
+                    }
+                },
                 "leftLabelColor": {
                     "type": {
                         "fill": {
@@ -284,6 +306,28 @@
                         "formatting": {
                             "fontSize": true
                         }
+                    }
+                },
+                "leftTitleFontFamily": {
+                    "type": {
+                        "formatting": {
+                            "fontFamily": true
+                        }
+                    }
+                },
+                "leftTitleBold": {
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "leftTitleItalic": {
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "leftTitleUnderline": {
+                    "type": {
+                        "bool": true
                     }
                 },
                 "leftTitleColor": {
@@ -345,6 +389,28 @@
                         }
                     }
                 },
+                "rightLabelFontFamily": {
+                    "type": {
+                        "formatting": {
+                            "fontFamily": true
+                        }
+                    }
+                },
+                "rightLabelBold": {
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "rightLabelItalic": {
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "rightLabelUnderline": {
+                    "type": {
+                        "bool": true
+                    }
+                },
                 "rightLabelColor": {
                     "type": {
                         "fill": {
@@ -383,6 +449,28 @@
                         }
                     }
                 },
+                "rightTitleFontFamily": {
+                    "type": {
+                        "formatting": {
+                            "fontFamily": true
+                        }
+                    }
+                },
+                "rightTitleBold": {
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "rightTitleItalic": {
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "rightTitleUnderline": {
+                    "type": {
+                        "bool": true
+                    }
+                },
                 "rightTitleColor": {
                     "type": {
                         "fill": {
@@ -411,6 +499,28 @@
                         "formatting": {
                             "fontSize": true
                         }
+                    }
+                },
+                "xLabelFontFamily": {
+                    "type": {
+                        "formatting": {
+                            "fontFamily": true
+                        }
+                    }
+                },
+                "xLabelBold": {
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "xLabelItalic": {
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "xLabelUnderline": {
+                    "type": {
+                        "bool": true
                     }
                 },
                 "xLabelColor": {
@@ -451,6 +561,44 @@
                     "type": {
                         "text": true
                     }
+                },
+                "xTitleFontSize": {
+                    "type": {
+                        "formatting": {
+                            "fontSize": true
+                        }
+                    }
+                },
+                "xTitleFontFamily": {
+                    "type": {
+                        "formatting": {
+                            "fontFamily": true
+                        }
+                    }
+                },
+                "xTitleBold": {
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "xTitleItalic": {
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "xTitleUnderline": {
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "xTitleColor": {
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
+                        }
+                    }
                 }
             }
         },
@@ -473,6 +621,28 @@
                         }
                     }
                 },
+                "columnLabelFontFamily": {
+                    "type": {
+                        "formatting": {
+                            "fontFamily": true
+                        }
+                    }
+                },
+                "columnLabelBold": {
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "columnLabelItalic": {
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "columnLabelUnderline": {
+                    "type": {
+                        "bool": true
+                    }
+                },
                 "columnLabelColor": {
                     "type": {
                         "fill": {
@@ -480,6 +650,25 @@
                                 "color": true
                             }
                         }
+                    }
+                },
+                "columnLabelBackgroundShow": {
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "columnLabelBackgroundColor": {
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
+                        }
+                    }
+                },
+                "columnLabelBackgroundOpacity": {
+                    "type": {
+                        "numeric": true
                     }
                 },
                 "columnLabelDisplayUnits": {
@@ -511,6 +700,28 @@
                         }
                     }
                 },
+                "lineLabelFontFamily": {
+                    "type": {
+                        "formatting": {
+                            "fontFamily": true
+                        }
+                    }
+                },
+                "lineLabelBold": {
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "lineLabelItalic": {
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "lineLabelUnderline": {
+                    "type": {
+                        "bool": true
+                    }
+                },
                 "lineLabelColor": {
                     "type": {
                         "fill": {
@@ -518,6 +729,25 @@
                                 "color": true
                             }
                         }
+                    }
+                },
+                "lineLabelBackgroundShow": {
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "lineLabelBackgroundColor": {
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
+                        }
+                    }
+                },
+                "lineLabelBackgroundOpacity": {
+                    "type": {
+                        "numeric": true
                     }
                 },
                 "lineLabelDisplayUnits": {
@@ -561,6 +791,28 @@
                         "formatting": {
                             "fontSize": true
                         }
+                    }
+                },
+                "legendFontFamily": {
+                    "type": {
+                        "formatting": {
+                            "fontFamily": true
+                        }
+                    }
+                },
+                "legendBold": {
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "legendItalic": {
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "legendUnderline": {
+                    "type": {
+                        "bool": true
                     }
                 },
                 "legendColor": {
@@ -658,6 +910,28 @@
                         "formatting": {
                             "fontSize": true
                         }
+                    }
+                },
+                "matrixFontFamily": {
+                    "type": {
+                        "formatting": {
+                            "fontFamily": true
+                        }
+                    }
+                },
+                "matrixBold": {
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "matrixItalic": {
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "matrixUnderline": {
+                    "type": {
+                        "bool": true
                     }
                 },
                 "matrixFontColor": {

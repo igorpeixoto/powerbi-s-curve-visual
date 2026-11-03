@@ -86,6 +86,7 @@ describe("Format pane number limits", () => {
             ],
         }));
         return model.cards.flatMap((card) => ("groups" in card ? card.groups.flatMap((g) => g.slices ?? []) : []))
+            .map((slice) => (slice instanceof formattingSettings.FontControl ? slice.fontSize : slice))
             .filter((slice): slice is formattingSettings.NumUpDown => slice instanceof formattingSettings.NumUpDown);
     };
 
@@ -183,6 +184,43 @@ describe("applySettings", () => {
             percentBaselines: ["Sum(p.Planned)"],
             aggregations: { "column:Sum(p.Planned)": "sum", "line:Sum(p.Planned)": "last", "table:Sum(p.Crew)": "average" },
         });
+    });
+});
+
+describe("text options", () => {
+    it("reads a section's font, and leaves the family to the General card until the author sets one", () => {
+        const options = toRenderOptions(applySettings(view({
+            leftAxis: { leftLabelFontFamily: "Georgia", leftLabelBold: true, leftLabelItalic: true, leftLabelUnderline: true },
+        }), context()));
+        expect(options.leftAxis.font).toEqual({ family: "Georgia", bold: true, italic: true, underline: true });
+        expect(options.rightAxis.font).toEqual({ family: null, bold: false, italic: false, underline: false });
+    });
+
+    it("keeps axis titles bold by default, and lets the author turn that off", () => {
+        const untouched = toRenderOptions(applySettings(undefined, context()));
+        expect([untouched.leftAxis.title.font.bold, untouched.rightAxis.title.font.bold, untouched.xAxis.title.font.bold]).toEqual([true, true, true]);
+        expect(toRenderOptions(applySettings(view({ xAxis: { xTitleBold: false } }), context())).xAxis.title.font.bold).toBe(false);
+    });
+
+    it("shows the General card's font in a section with none of its own", () => {
+        const { model } = applySettings(view({ general: { fontFamily: "Verdana" }, legend: { legendFontFamily: "Georgia" } }), context());
+        expect(model.matrix.text.matrixFontFamily.value).toBe("Verdana");
+        expect(model.legend.text.legendFontFamily.value).toBe("Georgia");
+    });
+
+    it("makes the x-axis title one point larger than its labels until the author sizes it", () => {
+        const options = (objects: Record<string, unknown>) => toRenderOptions(applySettings(view({ xAxis: objects }), context())).xAxis.title.fontSize;
+        expect(options({ xLabelFontSize: 12 })).toBe(13);
+        expect(options({ xLabelFontSize: 40 })).toBe(40);
+        expect(options({ xLabelFontSize: 12, xTitleFontSize: 20 })).toBe(20);
+    });
+
+    it("reads a data label's background, keeping the theme's colour until the author sets one", () => {
+        const options = toRenderOptions(applySettings(view({
+            dataLabels: { columnLabelBackgroundShow: true, columnLabelBackgroundOpacity: 40, lineLabelBackgroundShow: true, lineLabelBackgroundColor: { solid: { color: "#ff0000" } }, lineLabelBackgroundOpacity: 500 },
+        }), context()));
+        expect(options.dataLabels.columns.background).toEqual({ show: true, color: null, opacity: 0.4 });
+        expect(options.dataLabels.lines.background).toEqual({ show: true, color: "#ff0000", opacity: 1 });
     });
 });
 

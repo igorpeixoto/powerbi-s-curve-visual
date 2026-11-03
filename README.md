@@ -20,6 +20,7 @@ This visual rebuilds it natively for Power BI. Bars, lines and matrix cells are 
 - **Weekly bucketing** from any date field, with a Monday or Sunday week start, and labels as dates, ISO weeks or project weeks, on one line or two. A text field works too, for any other grain.
 - **Report behaviour**: cross-filtering, highlights from other visuals, tooltips including report-page tooltips, context menu, keyboard navigation and high-contrast support.
 - **Theme-aware**: every default colour comes from the report's theme.
+- **Text**: font, size, bold, italic, underline and colour for axis labels, axis titles, data labels, the legend and the matrix, and a background with colour and opacity for data labels.
 - **Languages**: English and Brazilian Portuguese, with number and date formats for 22 locales.
 
 ### Presets

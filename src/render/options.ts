@@ -11,12 +11,32 @@ export type GridlineStyle = "solid" | "dashed" | "dotted";
 /** An explicit colour from the Format pane, or null to follow the report theme. */
 export type ColorOverride = string | null;
 
+/** How a section's text is drawn. family null = the General card's font. */
+export interface TextFont {
+    family: string | null;
+    bold: boolean;
+    italic: boolean;
+    underline: boolean;
+}
+
+export const PLAIN_FONT: TextFont = { family: null, bold: false, italic: false, underline: false };
+const TITLE_FONT: TextFont = { ...PLAIN_FONT, bold: true };
+
+/** A data label's background. color null = the theme's background. */
+export interface LabelBackground {
+    show: boolean;
+    color: ColorOverride;
+    /** 0 to 1. */
+    opacity: number;
+}
+
 export interface TitleOptions {
     show: boolean;
     /** Empty = the field's name. */
     text: string;
     fontSize: number;
     color: ColorOverride;
+    font: TextFont;
 }
 
 export interface AxisOptions {
@@ -25,6 +45,7 @@ export interface AxisOptions {
     max?: number;
     /** pt */
     fontSize: number;
+    font: TextFont;
     /** 0 = auto, 1 = none, otherwise the unit (1e3, 1e6, …). */
     displayUnits: number;
     precision?: number;
@@ -35,7 +56,9 @@ export interface AxisOptions {
 
 export interface LabelOptions {
     fontSize: number;
+    font: TextFont;
     color: ColorOverride;
+    background: LabelBackground;
     displayUnits: number;
     precision?: number;
 }
@@ -76,12 +99,12 @@ export interface RenderOptions {
     /** color: explicit, the "themeLightTint" preset token, or null for the theme's gridline colour. */
     gridlines: { style: GridlineStyle; width: number; color: ColorOverride };
     /** secondLine: an optional second label line for week buckets (SPEC Decision 12); null = one line. */
-    xAxis: { show: boolean; fontSize: number; weekLabelFormat: WeekLabelFormat; secondLine: WeekLabelFormat | null; labelColor: ColorOverride; title: { show: boolean; text: string } };
+    xAxis: { show: boolean; fontSize: number; weekLabelFormat: WeekLabelFormat; secondLine: WeekLabelFormat | null; labelColor: ColorOverride; font: TextFont; title: TitleOptions };
     dataLabels: {
         columns: LabelOptions & { show: boolean; position: "outsideEnd" | "insideEnd" };
         lines: LabelOptions & { show: boolean; points: "last" | "all" };
     };
-    legend: { show: boolean; position: LegendPosition; fontSize: number; color: ColorOverride; showTitle: boolean; titleText: string };
+    legend: { show: boolean; position: LegendPosition; fontSize: number; font: TextFont; color: ColorOverride; showTitle: boolean; titleText: string };
     matrix: {
         show: boolean;
         showTotals: boolean;
@@ -89,6 +112,7 @@ export interface RenderOptions {
         totalsLabel: string | null;
         expandSeries: boolean;
         fontSize: number;
+        font: TextFont;
         headerBold: boolean;
         rowHeight: number;
         showBorders: boolean;
@@ -131,21 +155,22 @@ export const defaultRenderOptions: RenderOptions = {
         colors: {},
         cumulativeSuffix: null,
     },
-    leftAxis: { show: true, fontSize: 9, displayUnits: 0, gridlines: true, labelColor: null, title: { show: false, text: "", fontSize: 11, color: null } },
-    rightAxis: { show: true, fontSize: 9, displayUnits: 0, gridlines: false, labelColor: null, title: { show: false, text: "", fontSize: 11, color: null } },
+    leftAxis: { show: true, fontSize: 9, font: PLAIN_FONT, displayUnits: 0, gridlines: true, labelColor: null, title: { show: false, text: "", fontSize: 11, color: null, font: TITLE_FONT } },
+    rightAxis: { show: true, fontSize: 9, font: PLAIN_FONT, displayUnits: 0, gridlines: false, labelColor: null, title: { show: false, text: "", fontSize: 11, color: null, font: TITLE_FONT } },
     gridlines: { style: "dashed", width: 1, color: null },
-    xAxis: { show: true, fontSize: 9, weekLabelFormat: "weekStart", secondLine: null, labelColor: null, title: { show: false, text: "" } },
+    xAxis: { show: true, fontSize: 9, font: PLAIN_FONT, weekLabelFormat: "weekStart", secondLine: null, labelColor: null, title: { show: false, text: "", fontSize: 10, color: null, font: TITLE_FONT } },
     dataLabels: {
-        columns: { show: false, position: "outsideEnd", fontSize: 9, color: null, displayUnits: 0 },
-        lines: { show: true, points: "last", fontSize: 9, color: null, displayUnits: 0 },
+        columns: { show: false, position: "outsideEnd", fontSize: 9, font: PLAIN_FONT, color: null, background: { show: false, color: null, opacity: 1 }, displayUnits: 0 },
+        lines: { show: true, points: "last", fontSize: 9, font: PLAIN_FONT, color: null, background: { show: false, color: null, opacity: 1 }, displayUnits: 0 },
     },
-    legend: { show: true, position: "top", fontSize: 9, color: null, showTitle: false, titleText: "" },
+    legend: { show: true, position: "top", fontSize: 9, font: PLAIN_FONT, color: null, showTitle: false, titleText: "" },
     matrix: {
         show: true,
         showTotals: true,
         totalsLabel: null,
         expandSeries: false,
         fontSize: 9,
+        font: PLAIN_FONT,
         headerBold: true,
         rowHeight: 20,
         showBorders: true,

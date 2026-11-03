@@ -19,6 +19,7 @@ First release. Everything below is new.
 - Matrix: aligned with the chart at any width and while scrolling, with totals, optional series rows, a custom row order and a width for the line below any measure row or the header
 - X-axis: weekly bucketing from a date field, labels as dates, ISO weeks or project weeks, with an optional second label line
 - Format pane: nine grouped cards, per-series and per-measure settings, enforced ranges on number boxes, and three style presets (Classic S-curve, Weekly progress, Minimal) resolved as explicit value, then preset, then base default
+- Text: font, size, bold, italic, underline and colour for axis labels, axis titles, data labels, the legend and the matrix; a background with colour and opacity for data labels
 - Interaction: selection and cross-filtering from bars, line points, axis labels, matrix cells, row headers and legend entries, highlights from other visuals, tooltips including report-page tooltips, context menu, keyboard navigation with a focus ring and announcements, high-contrast styling, bookmark restore
 - Empty states: landing page, missing wells, zero rows, date hierarchy in the Date well, viewport too small
 - Localization: all text in English and Brazilian Portuguese, with number and date formats for those and 20 more locales, whose text stays in English

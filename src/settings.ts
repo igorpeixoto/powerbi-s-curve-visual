@@ -229,13 +229,18 @@ class LeftRangeGroup extends Group {
 
 class LeftLabelsGroup extends Group {
     leftLabelFontSize = new formattingSettings.NumUpDown({ name: "leftLabelFontSize", displayNameKey: resourceKey("paneTextSize"), value: 9, options: range(LIMITS.fontSize) });
+    leftLabelFontFamily = new formattingSettings.FontPicker({ name: "leftLabelFontFamily", displayNameKey: resourceKey("paneFont"), value: DEFAULT_FONT });
+    leftLabelBold = new formattingSettings.ToggleSwitch({ name: "leftLabelBold", displayNameKey: resourceKey("paneBold"), value: false });
+    leftLabelItalic = new formattingSettings.ToggleSwitch({ name: "leftLabelItalic", displayNameKey: resourceKey("paneItalic"), value: false });
+    leftLabelUnderline = new formattingSettings.ToggleSwitch({ name: "leftLabelUnderline", displayNameKey: resourceKey("paneUnderline"), value: false });
+    leftLabelFont = new formattingSettings.FontControl({ name: "leftLabelFont", displayNameKey: resourceKey("paneFont"), fontFamily: this.leftLabelFontFamily, fontSize: this.leftLabelFontSize, bold: this.leftLabelBold, italic: this.leftLabelItalic, underline: this.leftLabelUnderline });
     leftLabelColor = new formattingSettings.ColorPicker({ name: "leftLabelColor", displayNameKey: resourceKey("paneColor"), value: THEME_COLOR });
     leftDisplayUnits = new formattingSettings.AutoDropdown({ name: "leftDisplayUnits", displayNameKey: resourceKey("paneDisplayUnits"), value: 0 });
     leftPrecision = new formattingSettings.NumUpDown({ name: "leftPrecision", displayNameKey: resourceKey("panePrecision"), value: AUTO, options: range(LIMITS.precision) });
 
     constructor() {
         super({ name: "leftAxisLabels", displayNameKey: resourceKey("paneLabels") });
-        this.slices = [this.leftLabelFontSize, this.leftLabelColor, this.leftDisplayUnits, this.leftPrecision];
+        this.slices = [this.leftLabelFont, this.leftLabelColor, this.leftDisplayUnits, this.leftPrecision];
     }
 }
 
@@ -243,12 +248,17 @@ class LeftTitleGroup extends Group {
     leftTitleShow = new formattingSettings.ToggleSwitch({ name: "leftTitleShow", displayNameKey: resourceKey("paneTitle"), value: false });
     leftTitleText = new formattingSettings.TextInput({ name: "leftTitleText", displayNameKey: resourceKey("paneTitleText"), value: "", placeholder: "placeholderMeasureName" });
     leftTitleFontSize = new formattingSettings.NumUpDown({ name: "leftTitleFontSize", displayNameKey: resourceKey("paneTextSize"), value: 11, options: range(LIMITS.fontSize) });
+    leftTitleFontFamily = new formattingSettings.FontPicker({ name: "leftTitleFontFamily", displayNameKey: resourceKey("paneFont"), value: DEFAULT_FONT });
+    leftTitleBold = new formattingSettings.ToggleSwitch({ name: "leftTitleBold", displayNameKey: resourceKey("paneBold"), value: true });
+    leftTitleItalic = new formattingSettings.ToggleSwitch({ name: "leftTitleItalic", displayNameKey: resourceKey("paneItalic"), value: false });
+    leftTitleUnderline = new formattingSettings.ToggleSwitch({ name: "leftTitleUnderline", displayNameKey: resourceKey("paneUnderline"), value: false });
+    leftTitleFont = new formattingSettings.FontControl({ name: "leftTitleFont", displayNameKey: resourceKey("paneFont"), fontFamily: this.leftTitleFontFamily, fontSize: this.leftTitleFontSize, bold: this.leftTitleBold, italic: this.leftTitleItalic, underline: this.leftTitleUnderline });
     leftTitleColor = new formattingSettings.ColorPicker({ name: "leftTitleColor", displayNameKey: resourceKey("paneColor"), value: THEME_COLOR });
 
     constructor() {
         super({ name: "leftAxisTitle", displayNameKey: resourceKey("paneTitle") });
         this.topLevelSlice = this.leftTitleShow;
-        this.slices = [this.leftTitleText, this.leftTitleFontSize, this.leftTitleColor];
+        this.slices = [this.leftTitleText, this.leftTitleFont, this.leftTitleColor];
     }
 }
 
@@ -290,13 +300,18 @@ class RightRangeGroup extends Group {
 
 class RightLabelsGroup extends Group {
     rightLabelFontSize = new formattingSettings.NumUpDown({ name: "rightLabelFontSize", displayNameKey: resourceKey("paneTextSize"), value: 9, options: range(LIMITS.fontSize) });
+    rightLabelFontFamily = new formattingSettings.FontPicker({ name: "rightLabelFontFamily", displayNameKey: resourceKey("paneFont"), value: DEFAULT_FONT });
+    rightLabelBold = new formattingSettings.ToggleSwitch({ name: "rightLabelBold", displayNameKey: resourceKey("paneBold"), value: false });
+    rightLabelItalic = new formattingSettings.ToggleSwitch({ name: "rightLabelItalic", displayNameKey: resourceKey("paneItalic"), value: false });
+    rightLabelUnderline = new formattingSettings.ToggleSwitch({ name: "rightLabelUnderline", displayNameKey: resourceKey("paneUnderline"), value: false });
+    rightLabelFont = new formattingSettings.FontControl({ name: "rightLabelFont", displayNameKey: resourceKey("paneFont"), fontFamily: this.rightLabelFontFamily, fontSize: this.rightLabelFontSize, bold: this.rightLabelBold, italic: this.rightLabelItalic, underline: this.rightLabelUnderline });
     rightLabelColor = new formattingSettings.ColorPicker({ name: "rightLabelColor", displayNameKey: resourceKey("paneColor"), value: THEME_COLOR });
     rightDisplayUnits = new formattingSettings.AutoDropdown({ name: "rightDisplayUnits", displayNameKey: resourceKey("paneDisplayUnits"), value: 0 });
     rightPrecision = new formattingSettings.NumUpDown({ name: "rightPrecision", displayNameKey: resourceKey("panePrecision"), value: AUTO, options: range(LIMITS.precision) });
 
     constructor() {
         super({ name: "rightAxisLabels", displayNameKey: resourceKey("paneLabels") });
-        this.slices = [this.rightLabelFontSize, this.rightLabelColor, this.rightDisplayUnits, this.rightPrecision];
+        this.slices = [this.rightLabelFont, this.rightLabelColor, this.rightDisplayUnits, this.rightPrecision];
     }
 }
 
@@ -304,12 +319,17 @@ class RightTitleGroup extends Group {
     rightTitleShow = new formattingSettings.ToggleSwitch({ name: "rightTitleShow", displayNameKey: resourceKey("paneTitle"), value: false });
     rightTitleText = new formattingSettings.TextInput({ name: "rightTitleText", displayNameKey: resourceKey("paneTitleText"), value: "", placeholder: "placeholderMeasureName" });
     rightTitleFontSize = new formattingSettings.NumUpDown({ name: "rightTitleFontSize", displayNameKey: resourceKey("paneTextSize"), value: 11, options: range(LIMITS.fontSize) });
+    rightTitleFontFamily = new formattingSettings.FontPicker({ name: "rightTitleFontFamily", displayNameKey: resourceKey("paneFont"), value: DEFAULT_FONT });
+    rightTitleBold = new formattingSettings.ToggleSwitch({ name: "rightTitleBold", displayNameKey: resourceKey("paneBold"), value: true });
+    rightTitleItalic = new formattingSettings.ToggleSwitch({ name: "rightTitleItalic", displayNameKey: resourceKey("paneItalic"), value: false });
+    rightTitleUnderline = new formattingSettings.ToggleSwitch({ name: "rightTitleUnderline", displayNameKey: resourceKey("paneUnderline"), value: false });
+    rightTitleFont = new formattingSettings.FontControl({ name: "rightTitleFont", displayNameKey: resourceKey("paneFont"), fontFamily: this.rightTitleFontFamily, fontSize: this.rightTitleFontSize, bold: this.rightTitleBold, italic: this.rightTitleItalic, underline: this.rightTitleUnderline });
     rightTitleColor = new formattingSettings.ColorPicker({ name: "rightTitleColor", displayNameKey: resourceKey("paneColor"), value: THEME_COLOR });
 
     constructor() {
         super({ name: "rightAxisTitle", displayNameKey: resourceKey("paneTitle") });
         this.topLevelSlice = this.rightTitleShow;
-        this.slices = [this.rightTitleText, this.rightTitleFontSize, this.rightTitleColor];
+        this.slices = [this.rightTitleText, this.rightTitleFont, this.rightTitleColor];
     }
 }
 
@@ -337,6 +357,11 @@ class RightAxisCard extends Card {
 
 class XLabelsGroup extends Group {
     xLabelFontSize = new formattingSettings.NumUpDown({ name: "xLabelFontSize", displayNameKey: resourceKey("paneTextSize"), value: 9, options: range(LIMITS.fontSize) });
+    xLabelFontFamily = new formattingSettings.FontPicker({ name: "xLabelFontFamily", displayNameKey: resourceKey("paneFont"), value: DEFAULT_FONT });
+    xLabelBold = new formattingSettings.ToggleSwitch({ name: "xLabelBold", displayNameKey: resourceKey("paneBold"), value: false });
+    xLabelItalic = new formattingSettings.ToggleSwitch({ name: "xLabelItalic", displayNameKey: resourceKey("paneItalic"), value: false });
+    xLabelUnderline = new formattingSettings.ToggleSwitch({ name: "xLabelUnderline", displayNameKey: resourceKey("paneUnderline"), value: false });
+    xLabelFont = new formattingSettings.FontControl({ name: "xLabelFont", displayNameKey: resourceKey("paneFont"), fontFamily: this.xLabelFontFamily, fontSize: this.xLabelFontSize, bold: this.xLabelBold, italic: this.xLabelItalic, underline: this.xLabelUnderline });
     xLabelColor = new formattingSettings.ColorPicker({ name: "xLabelColor", displayNameKey: resourceKey("paneColor"), value: THEME_COLOR });
     weekLabelFormat = new formattingSettings.ItemDropdown({ name: "weekLabelFormat", displayNameKey: resourceKey("paneWeekLabels"), items: ITEMS.weekLabelFormat, value: ITEMS.weekLabelFormat[0] });
     weekLabelSecondLine = new formattingSettings.ItemDropdown({ name: "weekLabelSecondLine", displayNameKey: resourceKey("paneSecondLine"), items: ITEMS.weekLabelSecondLine, value: ITEMS.weekLabelSecondLine[0] });
@@ -345,18 +370,25 @@ class XLabelsGroup extends Group {
 
     constructor() {
         super({ name: "xAxisLabels", displayNameKey: resourceKey("paneLabels") });
-        this.slices = [this.xLabelFontSize, this.xLabelColor, this.weekLabelFormat, this.weekLabelSecondLine, this.weekStartDay, this.showEmptyWeeks];
+        this.slices = [this.xLabelFont, this.xLabelColor, this.weekLabelFormat, this.weekLabelSecondLine, this.weekStartDay, this.showEmptyWeeks];
     }
 }
 
 class XTitleGroup extends Group {
     xTitleShow = new formattingSettings.ToggleSwitch({ name: "xTitleShow", displayNameKey: resourceKey("paneTitle"), value: false });
     xTitleText = new formattingSettings.TextInput({ name: "xTitleText", displayNameKey: resourceKey("paneTitleText"), value: "", placeholder: "placeholderFieldName" });
+    xTitleFontSize = new formattingSettings.NumUpDown({ name: "xTitleFontSize", displayNameKey: resourceKey("paneTextSize"), value: 10, options: range(LIMITS.fontSize) });
+    xTitleFontFamily = new formattingSettings.FontPicker({ name: "xTitleFontFamily", displayNameKey: resourceKey("paneFont"), value: DEFAULT_FONT });
+    xTitleBold = new formattingSettings.ToggleSwitch({ name: "xTitleBold", displayNameKey: resourceKey("paneBold"), value: true });
+    xTitleItalic = new formattingSettings.ToggleSwitch({ name: "xTitleItalic", displayNameKey: resourceKey("paneItalic"), value: false });
+    xTitleUnderline = new formattingSettings.ToggleSwitch({ name: "xTitleUnderline", displayNameKey: resourceKey("paneUnderline"), value: false });
+    xTitleFont = new formattingSettings.FontControl({ name: "xTitleFont", displayNameKey: resourceKey("paneFont"), fontFamily: this.xTitleFontFamily, fontSize: this.xTitleFontSize, bold: this.xTitleBold, italic: this.xTitleItalic, underline: this.xTitleUnderline });
+    xTitleColor = new formattingSettings.ColorPicker({ name: "xTitleColor", displayNameKey: resourceKey("paneColor"), value: THEME_COLOR });
 
     constructor() {
         super({ name: "xAxisTitle", displayNameKey: resourceKey("paneTitle") });
         this.topLevelSlice = this.xTitleShow;
-        this.slices = [this.xTitleText];
+        this.slices = [this.xTitleText, this.xTitleFont, this.xTitleColor];
     }
 }
 
@@ -375,14 +407,22 @@ class ColumnLabelsGroup extends Group {
     columnLabelsShow = new formattingSettings.ToggleSwitch({ name: "columnLabelsShow", displayNameKey: resourceKey("paneColumnLabels"), value: false });
     columnLabelPosition = new formattingSettings.ItemDropdown({ name: "columnLabelPosition", displayNameKey: resourceKey("panePosition"), items: ITEMS.labelPosition, value: ITEMS.labelPosition[0] });
     columnLabelFontSize = new formattingSettings.NumUpDown({ name: "columnLabelFontSize", displayNameKey: resourceKey("paneTextSize"), value: 9, options: range(LIMITS.fontSize) });
+    columnLabelFontFamily = new formattingSettings.FontPicker({ name: "columnLabelFontFamily", displayNameKey: resourceKey("paneFont"), value: DEFAULT_FONT });
+    columnLabelBold = new formattingSettings.ToggleSwitch({ name: "columnLabelBold", displayNameKey: resourceKey("paneBold"), value: false });
+    columnLabelItalic = new formattingSettings.ToggleSwitch({ name: "columnLabelItalic", displayNameKey: resourceKey("paneItalic"), value: false });
+    columnLabelUnderline = new formattingSettings.ToggleSwitch({ name: "columnLabelUnderline", displayNameKey: resourceKey("paneUnderline"), value: false });
+    columnLabelFont = new formattingSettings.FontControl({ name: "columnLabelFont", displayNameKey: resourceKey("paneFont"), fontFamily: this.columnLabelFontFamily, fontSize: this.columnLabelFontSize, bold: this.columnLabelBold, italic: this.columnLabelItalic, underline: this.columnLabelUnderline });
     columnLabelColor = new formattingSettings.ColorPicker({ name: "columnLabelColor", displayNameKey: resourceKey("paneColor"), value: THEME_COLOR });
+    columnLabelBackgroundShow = new formattingSettings.ToggleSwitch({ name: "columnLabelBackgroundShow", displayNameKey: resourceKey("paneBackground"), value: false });
+    columnLabelBackgroundColor = new formattingSettings.ColorPicker({ name: "columnLabelBackgroundColor", displayNameKey: resourceKey("paneBackgroundColor"), value: THEME_COLOR });
+    columnLabelBackgroundOpacity = new formattingSettings.Slider({ name: "columnLabelBackgroundOpacity", displayNameKey: resourceKey("paneBackgroundOpacity"), value: 100, options: range(LIMITS.percent) });
     columnLabelDisplayUnits = new formattingSettings.AutoDropdown({ name: "columnLabelDisplayUnits", displayNameKey: resourceKey("paneDisplayUnits"), value: 0 });
     columnLabelPrecision = new formattingSettings.NumUpDown({ name: "columnLabelPrecision", displayNameKey: resourceKey("panePrecision"), value: AUTO, options: range(LIMITS.precision) });
 
     constructor() {
         super({ name: "dataLabelsColumns", displayNameKey: resourceKey("paneColumns") });
         this.topLevelSlice = this.columnLabelsShow;
-        this.slices = [this.columnLabelPosition, this.columnLabelFontSize, this.columnLabelColor, this.columnLabelDisplayUnits, this.columnLabelPrecision];
+        this.slices = [this.columnLabelPosition, this.columnLabelFont, this.columnLabelColor, this.columnLabelBackgroundShow, this.columnLabelBackgroundColor, this.columnLabelBackgroundOpacity, this.columnLabelDisplayUnits, this.columnLabelPrecision];
     }
 }
 
@@ -390,14 +430,22 @@ class LineLabelsGroup extends Group {
     lineLabelsShow = new formattingSettings.ToggleSwitch({ name: "lineLabelsShow", displayNameKey: resourceKey("paneLineLabels"), value: true });
     lineLabelPoints = new formattingSettings.ItemDropdown({ name: "lineLabelPoints", displayNameKey: resourceKey("panePoints"), items: ITEMS.labelPoints, value: ITEMS.labelPoints[0] });
     lineLabelFontSize = new formattingSettings.NumUpDown({ name: "lineLabelFontSize", displayNameKey: resourceKey("paneTextSize"), value: 9, options: range(LIMITS.fontSize) });
+    lineLabelFontFamily = new formattingSettings.FontPicker({ name: "lineLabelFontFamily", displayNameKey: resourceKey("paneFont"), value: DEFAULT_FONT });
+    lineLabelBold = new formattingSettings.ToggleSwitch({ name: "lineLabelBold", displayNameKey: resourceKey("paneBold"), value: false });
+    lineLabelItalic = new formattingSettings.ToggleSwitch({ name: "lineLabelItalic", displayNameKey: resourceKey("paneItalic"), value: false });
+    lineLabelUnderline = new formattingSettings.ToggleSwitch({ name: "lineLabelUnderline", displayNameKey: resourceKey("paneUnderline"), value: false });
+    lineLabelFont = new formattingSettings.FontControl({ name: "lineLabelFont", displayNameKey: resourceKey("paneFont"), fontFamily: this.lineLabelFontFamily, fontSize: this.lineLabelFontSize, bold: this.lineLabelBold, italic: this.lineLabelItalic, underline: this.lineLabelUnderline });
     lineLabelColor = new formattingSettings.ColorPicker({ name: "lineLabelColor", displayNameKey: resourceKey("paneColor"), value: THEME_COLOR });
+    lineLabelBackgroundShow = new formattingSettings.ToggleSwitch({ name: "lineLabelBackgroundShow", displayNameKey: resourceKey("paneBackground"), value: false });
+    lineLabelBackgroundColor = new formattingSettings.ColorPicker({ name: "lineLabelBackgroundColor", displayNameKey: resourceKey("paneBackgroundColor"), value: THEME_COLOR });
+    lineLabelBackgroundOpacity = new formattingSettings.Slider({ name: "lineLabelBackgroundOpacity", displayNameKey: resourceKey("paneBackgroundOpacity"), value: 100, options: range(LIMITS.percent) });
     lineLabelDisplayUnits = new formattingSettings.AutoDropdown({ name: "lineLabelDisplayUnits", displayNameKey: resourceKey("paneDisplayUnits"), value: 0 });
     lineLabelPrecision = new formattingSettings.NumUpDown({ name: "lineLabelPrecision", displayNameKey: resourceKey("panePrecision"), value: AUTO, options: range(LIMITS.precision) });
 
     constructor() {
         super({ name: "dataLabelsLines", displayNameKey: resourceKey("paneLines") });
         this.topLevelSlice = this.lineLabelsShow;
-        this.slices = [this.lineLabelPoints, this.lineLabelFontSize, this.lineLabelColor, this.lineLabelDisplayUnits, this.lineLabelPrecision];
+        this.slices = [this.lineLabelPoints, this.lineLabelFont, this.lineLabelColor, this.lineLabelBackgroundShow, this.lineLabelBackgroundColor, this.lineLabelBackgroundOpacity, this.lineLabelDisplayUnits, this.lineLabelPrecision];
     }
 }
 
@@ -424,11 +472,16 @@ class LegendOptionsGroup extends Group {
 
 class LegendTextGroup extends Group {
     legendFontSize = new formattingSettings.NumUpDown({ name: "legendFontSize", displayNameKey: resourceKey("paneTextSize"), value: 9, options: range(LIMITS.fontSize) });
+    legendFontFamily = new formattingSettings.FontPicker({ name: "legendFontFamily", displayNameKey: resourceKey("paneFont"), value: DEFAULT_FONT });
+    legendBold = new formattingSettings.ToggleSwitch({ name: "legendBold", displayNameKey: resourceKey("paneBold"), value: false });
+    legendItalic = new formattingSettings.ToggleSwitch({ name: "legendItalic", displayNameKey: resourceKey("paneItalic"), value: false });
+    legendUnderline = new formattingSettings.ToggleSwitch({ name: "legendUnderline", displayNameKey: resourceKey("paneUnderline"), value: false });
+    legendFont = new formattingSettings.FontControl({ name: "legendFont", displayNameKey: resourceKey("paneFont"), fontFamily: this.legendFontFamily, fontSize: this.legendFontSize, bold: this.legendBold, italic: this.legendItalic, underline: this.legendUnderline });
     legendColor = new formattingSettings.ColorPicker({ name: "legendColor", displayNameKey: resourceKey("paneColor"), value: THEME_COLOR });
 
     constructor() {
         super({ name: "legendText", displayNameKey: resourceKey("paneText") });
-        this.slices = [this.legendFontSize, this.legendColor];
+        this.slices = [this.legendFont, this.legendColor];
     }
 }
 
@@ -510,13 +563,18 @@ class MatrixRowsGroup extends Group {
 
 class MatrixTextGroup extends Group {
     matrixFontSize = new formattingSettings.NumUpDown({ name: "matrixFontSize", displayNameKey: resourceKey("paneTextSize"), value: 9, options: range(LIMITS.fontSize) });
+    matrixFontFamily = new formattingSettings.FontPicker({ name: "matrixFontFamily", displayNameKey: resourceKey("paneFont"), value: DEFAULT_FONT });
+    matrixBold = new formattingSettings.ToggleSwitch({ name: "matrixBold", displayNameKey: resourceKey("paneBold"), value: false });
+    matrixItalic = new formattingSettings.ToggleSwitch({ name: "matrixItalic", displayNameKey: resourceKey("paneItalic"), value: false });
+    matrixUnderline = new formattingSettings.ToggleSwitch({ name: "matrixUnderline", displayNameKey: resourceKey("paneUnderline"), value: false });
+    matrixFont = new formattingSettings.FontControl({ name: "matrixFont", displayNameKey: resourceKey("paneFont"), fontFamily: this.matrixFontFamily, fontSize: this.matrixFontSize, bold: this.matrixBold, italic: this.matrixItalic, underline: this.matrixUnderline });
     matrixFontColor = new formattingSettings.ColorPicker({ name: "matrixFontColor", displayNameKey: resourceKey("paneColor"), value: THEME_COLOR });
     headerFontColor = new formattingSettings.ColorPicker({ name: "headerFontColor", displayNameKey: resourceKey("paneHeaderFontColor"), value: THEME_COLOR });
     headerBold = new formattingSettings.ToggleSwitch({ name: "headerBold", displayNameKey: resourceKey("paneHeaderBold"), value: true });
 
     constructor() {
         super({ name: "matrixText", displayNameKey: resourceKey("paneText") });
-        this.slices = [this.matrixFontSize, this.matrixFontColor, this.headerFontColor, this.headerBold];
+        this.slices = [this.matrixFont, this.matrixFontColor, this.headerFontColor, this.headerBold];
     }
 }
 

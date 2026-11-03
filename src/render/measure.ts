@@ -1,13 +1,24 @@
-import { ptToPx } from "./options";
+import type { BaseType, Selection } from "d3";
 
-export type TextMeasurer = (text: string, fontSizePt: number, bold?: boolean) => number;
+import { PLAIN_FONT, ptToPx, type TextFont } from "./options";
+
+export type TextMeasurer = (text: string, fontSizePt: number, font?: TextFont) => number;
+
+/** Draws text in a section's font; what a section doesn't set is inherited from the visual's root. */
+export function applyFont<E extends BaseType, D, P extends BaseType, PD>(selection: Selection<E, D, P, PD>, font: TextFont): void {
+    selection
+        .style("font-family", () => font.family)
+        .style("font-weight", () => (font.bold ? "600" : null))
+        .style("font-style", () => (font.italic ? "italic" : null))
+        .style("text-decoration", () => (font.underline ? "underline" : null));
+}
 
 /** Measures text width with an offscreen canvas (no layout reflow), cached per font and string. */
 export function createTextMeasurer(fontFamily: string): TextMeasurer {
     const context = document.createElement("canvas").getContext("2d");
     const cache = new Map<string, number>();
-    return (text, fontSizePt, bold = false) => {
-        const font = `${bold ? "600 " : ""}${ptToPx(fontSizePt)}px ${fontFamily}`;
+    return (text, fontSizePt, textFont = PLAIN_FONT) => {
+        const font = `${textFont.italic ? "italic " : ""}${textFont.bold ? "600 " : ""}${ptToPx(fontSizePt)}px ${textFont.family ?? fontFamily}`;
         const key = `${font}|${text}`;
         let width = cache.get(key);
         if (width === undefined) {

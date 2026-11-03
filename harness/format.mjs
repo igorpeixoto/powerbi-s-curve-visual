@@ -259,6 +259,69 @@ export function runFormatChecks(plugin, check) {
     const body = q(".s-curve__matrix-body");
     check("the matrix scrolls vertically in the combined case", body && body.scrollHeight > body.clientHeight);
 
+    // Every section with text has the same text options (SPEC Decision 17).
+    const textSections = [
+        { name: "left axis labels", card: "leftAxis", prefix: "leftLabel", selector: ".s-curve__axis-left text" },
+        { name: "left axis title", card: "leftAxis", prefix: "leftTitle", selector: '[data-role="axis-title-left"]', extra: { leftTitleShow: true } },
+        { name: "right axis labels", card: "rightAxis", prefix: "rightLabel", selector: ".s-curve__axis-right text" },
+        { name: "right axis title", card: "rightAxis", prefix: "rightTitle", selector: '[data-role="axis-title-right"]', extra: { rightTitleShow: true } },
+        { name: "x-axis labels", card: "xAxis", prefix: "xLabel", selector: '[data-role="x-label"]' },
+        { name: "x-axis title", card: "xAxis", prefix: "xTitle", selector: '[data-role="axis-title-x"]', extra: { xTitleShow: true } },
+        { name: "column labels", card: "dataLabels", prefix: "columnLabel", selector: '[data-role="column-label"]', extra: { columnLabelsShow: true } },
+        { name: "line labels", card: "dataLabels", prefix: "lineLabel", selector: '[data-role="line-label"]' },
+        { name: "legend entries", card: "legend", prefix: "legend", selector: '[data-role="legend-item"] text' },
+        { name: "legend title", card: "legend", prefix: "legend", selector: '[data-role="legend-title"]', extra: { legendShowTitle: true, legendTitleText: "Legend" } },
+        { name: "matrix cells", card: "matrix", prefix: "matrix", selector: '[data-role="cell-text"]' },
+        { name: "matrix row headers", card: "matrix", prefix: "matrix", selector: '[data-role="row-header"]' },
+        { name: "matrix totals", card: "matrix", prefix: "matrix", selector: '[data-role="total"]' },
+    ];
+    for (const { name, card, prefix, selector, extra } of textSections) {
+        render(visual, container, progressDataView({ reportedWeeks: 20, objects: { [card]: { ...extra, [`${prefix}FontFamily`]: "Georgia", [`${prefix}Bold`]: true, [`${prefix}Italic`]: true, [`${prefix}Underline`]: true } } }));
+        const element = q(selector);
+        const style = element ? getComputedStyle(element) : null;
+        check(`${name} take the font, bold, italic and underline`, style?.fontFamily.includes("Georgia") && style.fontWeight === "600" && style.fontStyle === "italic" && style.textDecorationLine === "underline",
+            style ? [style.fontFamily, style.fontWeight, style.fontStyle, style.textDecorationLine].join() : "missing");
+    }
+    const fontModel = (() => {
+        render(visual, container, progressDataView({ reportedWeeks: 20, objects: { general: { fontFamily: "Verdana" }, legend: { legendFontFamily: "Georgia" } } }));
+        return visual.getFormattingModel();
+    })();
+    check("each text section's Format pane card has a font control", textSections.every(({ prefix }) => paneSlices(fontModel, `${prefix}FontFamily`).length === 1 && paneSlices(fontModel, `${prefix}Bold`).length === 1 && paneSlices(fontModel, `${prefix}Italic`).length === 1 && paneSlices(fontModel, `${prefix}Underline`).length === 1));
+    check("the font control is the built-in one, holding the size", JSON.stringify(fontModel).includes('"type":"FontControl"') && paneSlices(fontModel, "xLabelFontSize").length === 1);
+    check("a section's font shows the General card's until it has its own", paneSlices(fontModel, "matrixFontFamily")[0].value === "Verdana" && paneSlices(fontModel, "legendFontFamily")[0].value === "Georgia");
+    const fontOf = (selector) => getComputedStyle(q(selector)).fontFamily;
+    check("a section with no font draws in the General card's", fontOf('[data-role="x-label"]').includes("Verdana") && fontOf('[data-role="legend-item"] text').includes("Georgia"));
+
+    render(visual, container, progressDataView({ reportedWeeks: 20, objects: { xAxis: { xTitleShow: true } } }));
+    const defaultTitle = q('[data-role="axis-title-x"]');
+    check("axis titles stay bold by default", getComputedStyle(defaultTitle).fontWeight === "600");
+    render(visual, container, progressDataView({ reportedWeeks: 20, objects: { xAxis: { xTitleShow: true, xTitleFontSize: 20, xTitleColor: { solid: { color: "#ff0000" } } } } }));
+    const sizedTitle = q('[data-role="axis-title-x"]');
+    check("the x-axis title has its own size and colour", Math.abs(parseFloat(getComputedStyle(sizedTitle).fontSize) - 20 * 96 / 72) < 0.1 && sizedTitle.getAttribute("fill") === "#ff0000", `${sizedTitle.style.fontSize} ${sizedTitle.getAttribute("fill")}`);
+
+    // Layout measures text in its font, so a wider font makes room.
+    const matrixGutter = (objects) => {
+        render(visual, container, progressDataView({ reportedWeeks: 20, objects: { matrix: { headerBold: false, ...objects } } }));
+        return q('[data-role="cell"][data-bucket="0"]').getBoundingClientRect().left;
+    };
+    check("the matrix makes room for bold row headers", matrixGutter({ matrixBold: true }) > matrixGutter({}));
+
+    // A data label's background.
+    const labelBackgrounds = (selector) => qa(selector).map((label) => label.previousElementSibling).filter((e) => e?.getAttribute("data-role") === "label-background");
+    render(visual, container, progressDataView({ reportedWeeks: 20, objects: { dataLabels: { columnLabelsShow: true } } }));
+    check("data labels have no background by default", qa('[data-role="label-background"]').length === 0);
+    render(visual, container, progressDataView({ reportedWeeks: 20, objects: { dataLabels: { columnLabelsShow: true, columnLabelBackgroundShow: true, columnLabelBackgroundColor: { solid: { color: "#ff0000" } }, columnLabelBackgroundOpacity: 40, lineLabelBackgroundShow: true } } }));
+    const columnBackgrounds = labelBackgrounds('[data-role="column-label"]');
+    check("every column label has its background, in the colour and opacity set", columnBackgrounds.length > 0 && columnBackgrounds.length === qa('[data-role="column-label"]').length
+        && columnBackgrounds.every((b) => b.getAttribute("fill") === "#ff0000" && b.getAttribute("fill-opacity") === "0.4"));
+    const lineBackgrounds = labelBackgrounds('[data-role="line-label"]');
+    check("a line label's background keeps the theme's colour until one is set", lineBackgrounds.length > 0 && lineBackgrounds.every((b) => b.getAttribute("fill") === host.colorPalette.background.value && b.getAttribute("fill-opacity") === "1"), lineBackgrounds[0]?.getAttribute("fill"));
+    const firstLabel = q('[data-role="column-label"]').getBoundingClientRect();
+    const firstBackground = columnBackgrounds[0].getBoundingClientRect();
+    check("a background covers its label's text", firstBackground.left <= firstLabel.left + 0.5 && firstBackground.right >= firstLabel.right - 0.5 && firstBackground.top <= firstLabel.top + 2 && firstBackground.bottom >= firstLabel.bottom - 2);
+    check("a background doesn't catch clicks meant for the marks under it", getComputedStyle(columnBackgrounds[0]).pointerEvents === "none");
+    check("the Format pane offers the background's controls", ["columnLabel", "lineLabel"].every((p) => ["BackgroundShow", "BackgroundColor", "BackgroundOpacity"].every((s) => paneSlices(visual.getFormattingModel(), `${p}${s}`).length === 1)));
+
     // Category and series values use their column's format wherever they're shown (Hard Rule 9).
     const legendTexts = () => qa('[data-role="legend-item"]').map((e) => e.textContent);
     const rowHeaders = () => qa('[data-role="row-header"]').map((e) => e.textContent);
@@ -303,6 +366,8 @@ export function runFormatChecks(plugin, check) {
     render(visual, container, progressDataView({ reportedWeeks: 20, objects: { leftAxis: { showLeftAxis: false }, rightAxis: { showRightAxis: false }, matrix: { showMatrix: false } } }));
     check("the first x-axis label shows in full with no gutter", showsInFull(shownLabels()[0]));
     check("the last x-axis label shows in full with no gutter", showsInFull(shownLabels().at(-1)));
+    render(visual, container, progressDataView({ reportedWeeks: 20, objects: { dataLabels: { columnLabelsShow: true } } }));
+    check("the first column label shows in full", showsInFull(q('[data-role="column-label"]')));
 
     container.remove();
     return [calls];

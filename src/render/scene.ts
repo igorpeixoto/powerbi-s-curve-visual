@@ -10,7 +10,7 @@ import { DataColors, mix, themeColors, type PaletteLike, type ThemeColors } from
 import type { Formatters, NumberFormatter } from "./format";
 import { computeLayout, type Layout } from "./layout";
 import { truncate, type TextMeasurer } from "./measure";
-import { ptToPx, type LineStyle, type RenderOptions } from "./options";
+import { ptToPx, type LineStyle, type RenderOptions, type TextFont } from "./options";
 import type { Strings } from "./strings";
 
 export interface AxisScene {
@@ -27,6 +27,8 @@ export interface Ink {
     leftTitle: string;
     rightTitle: string;
     xTitle: string;
+    columnLabelBackground: string;
+    lineLabelBackground: string;
     gridline: string;
     /** null = the theme text colour. */
     columnLabels: string | null;
@@ -91,6 +93,9 @@ export interface Scene {
     formatValue(format: string | undefined, value: number | null, percent: boolean): string;
     formatRaw(value: unknown, format: string | undefined): string;
     seriesName(seriesIndex: number): string;
+    matrixRowFont(row: MatrixRow): TextFont;
+    totalsHeaderFont: TextFont;
+    legendTitleFont: TextFont;
 }
 
 export interface SceneInput {
@@ -140,9 +145,11 @@ export function buildScene(input: SceneInput): Scene {
         xLabels: pick(options.xAxis.labelColor, theme.secondaryText),
         leftTitle: pick(options.leftAxis.title.color, theme.text),
         rightTitle: pick(options.rightAxis.title.color, theme.text),
-        xTitle: pick(null, theme.text),
+        xTitle: pick(options.xAxis.title.color, theme.text),
         gridline: pick(gridlineOverride, theme.gridline),
         columnLabels: highContrast ? theme.text : options.dataLabels.columns.color,
+        columnLabelBackground: pick(options.dataLabels.columns.background.color, theme.background),
+        lineLabelBackground: pick(options.dataLabels.lines.background.color, theme.background),
         lineLabels: highContrast ? theme.text : options.dataLabels.lines.color,
         legend: pick(options.legend.color, theme.text),
         matrixText: pick(options.matrix.fontColor, theme.text),
@@ -201,6 +208,9 @@ export function buildScene(input: SceneInput): Scene {
         })
         : [];
     const fontPt = options.matrix.fontSize;
+    const matrixFont = options.matrix.font;
+    const matrixRowFont = (row: MatrixRow): TextFont => ({ ...matrixFont, bold: matrixFont.bold || (options.matrix.headerBold && row.level === 0) });
+    const totalsHeaderFont: TextFont = { ...matrixFont, bold: matrixFont.bold || options.matrix.headerBold };
     const fullFormat = (row: MatrixRow): NumberFormatter =>
         row.percent ? formatters.percent(1) : formatters.number(row.format, { displayUnits: options.matrix.displayUnits || 1, precision: options.matrix.precision });
     const shortFormat = (row: MatrixRow, value: number): NumberFormatter =>
@@ -208,16 +218,16 @@ export function buildScene(input: SceneInput): Scene {
     const cellText = (row: MatrixRow, value: number | null, maxWidth: number): string => {
         if (value === null) return "";
         const full = fullFormat(row)(value);
-        if (measure(full, fontPt) <= maxWidth) return full;
+        if (measure(full, fontPt, matrixFont) <= maxWidth) return full;
         const short = shortFormat(row, value)(value);
-        return measure(short, fontPt) <= maxWidth ? short : "";
+        return measure(short, fontPt, matrixFont) <= maxWidth ? short : "";
     };
     const totalsLabel = options.matrix.totalsLabel ?? strings("totalsLabel");
     const headerWidth = matrixRows.length
-        ? Math.min(Math.max(...matrixRows.map((r) => measure(r.label, fontPt, options.matrix.headerBold && r.level === 0) + (r.level ? 12 : 0))) + 2 * MATRIX_PADDING, input.viewport.width * 0.35)
+        ? Math.min(Math.max(...matrixRows.map((r) => measure(r.label, fontPt, matrixRowFont(r)) + (r.level ? 12 : 0))) + 2 * MATRIX_PADDING, input.viewport.width * 0.35)
         : 0;
     const totalsWidth = matrixRows.length && options.matrix.showTotals
-        ? Math.max(measure(totalsLabel, fontPt, options.matrix.headerBold), ...matrixRows.map((r) => measure(fullFormat(r)(r.total), fontPt))) + 2 * MATRIX_PADDING
+        ? Math.max(measure(totalsLabel, fontPt, totalsHeaderFont), ...matrixRows.map((r) => measure(fullFormat(r)(r.total), fontPt, matrixRowFont(r)))) + 2 * MATRIX_PADDING
         : 0;
 
     // Legend items: one per drawn mark (SPEC §5.5).
@@ -259,14 +269,15 @@ export function buildScene(input: SceneInput): Scene {
     };
 
     const legendFont = options.legend.fontSize;
-    const legendTitleWidth = titles.legend ? Math.min(measure(titles.legend, legendFont, true), 220) : 0;
+    const legendTitleFont: TextFont = { ...options.legend.font, bold: true };
+    const legendTitleWidth = titles.legend ? Math.min(measure(titles.legend, legendFont, legendTitleFont), 220) : 0;
     const itemWidths = [
         ...(titles.legend ? [legendTitleWidth] : []),
-        ...legendItems.map((item) => LEGEND_SWATCH + LEGEND_SWATCH_GAP + Math.min(measure(item.label, legendFont), 220)),
+        ...legendItems.map((item) => LEGEND_SWATCH + LEGEND_SWATCH_GAP + Math.min(measure(item.label, legendFont, options.legend.font), 220)),
     ];
 
-    const axisWidth = (axis: AxisScene | null, fontSize: number) =>
-        axis && axis.labels.length ? Math.max(...axis.labels.map((l) => measure(l, fontSize))) + AXIS_LABEL_PADDING : 0;
+    const axisWidth = (axis: AxisScene | null, fontSize: number, font: TextFont) =>
+        axis && axis.labels.length ? Math.max(...axis.labels.map((l) => measure(l, fontSize, font))) + AXIS_LABEL_PADDING : 0;
     const titleBand = (title: string | null, fontSize: number) => (title ? Math.ceil(ptToPx(fontSize) * 1.5) : 0);
 
     const layout = computeLayout({
@@ -274,9 +285,9 @@ export function buildScene(input: SceneInput): Scene {
         height: input.viewport.height,
         legend: { show: options.legend.show, position: options.legend.position, itemWidths, itemHeight: Math.ceil(ptToPx(legendFont) * 1.6) },
         axes: {
-            leftWidth: axisWidth(left, options.leftAxis.fontSize) + titleBand(titles.left, options.leftAxis.title.fontSize),
-            rightWidth: axisWidth(right, options.rightAxis.fontSize) + titleBand(titles.right, options.rightAxis.title.fontSize),
-            xLabelHeight: (options.xAxis.show ? Math.ceil(ptToPx(options.xAxis.fontSize) * 1.3 * (bucketSecondLabels ? 2 : 1)) + 6 : 4) + titleBand(titles.x, options.xAxis.fontSize + 1),
+            leftWidth: axisWidth(left, options.leftAxis.fontSize, options.leftAxis.font) + titleBand(titles.left, options.leftAxis.title.fontSize),
+            rightWidth: axisWidth(right, options.rightAxis.fontSize, options.rightAxis.font) + titleBand(titles.right, options.rightAxis.title.fontSize),
+            xLabelHeight: (options.xAxis.show ? Math.ceil(ptToPx(options.xAxis.fontSize) * 1.3 * (bucketSecondLabels ? 2 : 1)) + 6 : 4) + titleBand(titles.x, options.xAxis.title.fontSize),
         },
         matrix: {
             show: options.matrix.show,
@@ -341,9 +352,12 @@ export function buildScene(input: SceneInput): Scene {
             return formatters.value(value, format);
         },
         seriesName,
+        matrixRowFont,
+        totalsHeaderFont,
+        legendTitleFont,
         legendItems: legendItems.map((item, i) => {
             const width = itemWidths[i + (titles.legend ? 1 : 0)];
-            return { ...item, label: truncate(item.label, width - LEGEND_SWATCH - LEGEND_SWATCH_GAP, (t) => measure(t, legendFont)) };
+            return { ...item, label: truncate(item.label, width - LEGEND_SWATCH - LEGEND_SWATCH_GAP, (t) => measure(t, legendFont, options.legend.font)) };
         }),
     };
 }

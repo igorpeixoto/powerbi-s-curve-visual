@@ -9,7 +9,7 @@ import { roleIndexOf } from "../model/parseDataView";
 import { mix, themeColors, type PaletteLike } from "../render/colors";
 import { matrixGridLineWidth } from "../render/options";
 import type { StringKey, Strings } from "../render/strings";
-import { item, VisualFormattingSettingsModel, type InstanceSpec } from "../settings";
+import { item, LIMITS, VisualFormattingSettingsModel, type InstanceSpec } from "../settings";
 import { presetOverrides, THEME_LIGHT_TINT, type StylePreset } from "./presets";
 import { isExplicit, presetOf, type ObjectsLike } from "./resolve";
 
@@ -81,7 +81,14 @@ function staticSlices(card: formattingSettings.CompositeCard): AnySlice[] {
     if (card.topLevelSlice) slices.push(card.topLevelSlice as AnySlice);
     for (const group of card.groups) {
         if (group.topLevelSlice) slices.push(group.topLevelSlice as AnySlice);
-        slices.push(...(group.slices as AnySlice[]));
+        for (const slice of group.slices ?? []) {
+            // A font control is a row in the pane; what it stores are the slices inside it.
+            if (slice instanceof formattingSettings.FontControl) {
+                slices.push(...[slice.fontFamily, slice.fontSize, slice.bold, slice.italic, slice.underline].filter((part) => part !== undefined) as AnySlice[]);
+            } else {
+                slices.push(slice as AnySlice);
+            }
+        }
     }
     return slices;
 }
@@ -92,6 +99,7 @@ function displayColor(property: string, palette: PaletteLike, presetValue: unkno
     if (presetValue === THEME_LIGHT_TINT) return mix(theme.gridline, theme.background, 0.6);
     if (property === "gridlineColor") return theme.gridline;
     if (property === "borderColor") return theme.border;
+    if (/BackgroundColor$/.test(property)) return theme.background;
     if (/LabelColor$/.test(property) && !/^(column|line)/.test(property)) return theme.secondaryText;
     return theme.text;
 }
@@ -217,6 +225,14 @@ export function applySettings(dataView: powerbi.DataView | undefined, context: A
     }));
 
     // Text boxes the author hasn't set show the text the visual will use, in the report's language.
+    // The pane shows what's drawn: a section with no font of its own follows the General card, and the x-axis title's size follows its labels.
+    const generalFont = model.general.layout.fontFamily;
+    for (const card of model.cards as formattingSettings.CompositeCard[]) {
+        for (const slice of staticSlices(card)) {
+            if (slice instanceof formattingSettings.FontPicker && slice !== generalFont && !explicit.has(`${card.name}.${slice.name}`)) slice.value = generalFont.value;
+        }
+    }
+    if (!explicit.has("xAxis.xTitleFontSize")) model.xAxis.title.xTitleFontSize.value = Math.min(model.xAxis.labels.xLabelFontSize.value + 1, LIMITS.fontSize[1]);
     if (!explicit.has("lines.cumulativeSuffix")) model.lines.values.cumulativeSuffix.value = strings("cumulativeSuffix");
     if (!explicit.has("matrix.totalsLabel")) model.matrix.options.totalsLabel.value = strings("totalsLabel");
     translateItemsAndPlaceholders(model, strings);

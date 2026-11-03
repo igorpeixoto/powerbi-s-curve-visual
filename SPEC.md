@@ -120,7 +120,8 @@ If Power BI reduces the data (more than 1000 categories or 30 series), the visua
 
 - Column labels: off by default; position `outsideEnd` (default) or `insideEnd`.
 - Line labels: `last` point only (default when on) or `all` points.
-- Labels that would collide with each other or leave the plot area are hidden, never overlapped.
+- Labels that would collide with each other or leave the plot area are hidden, never overlapped. A label wider than its bar at either end of the plot moves in to show in full.
+- Each kind of label can have a background, off by default, drawn under its text with a colour and an opacity (Decision 17). It doesn't catch clicks, so the marks under it stay selectable.
 
 ### 5.5 Legend
 
@@ -228,7 +229,7 @@ When another visual highlights a subset, the highlighted part is shown solid and
 - Card and property `name`s below are **final** once SPEC.md is approved; they are stored in reports. `displayName`s are localised.
 - Group names are never stored, but the formatting library derives each group's uid from its name alone, so they must be unique across all cards. The code prefixes each group with its card (`columnsColors`, `linesColors`, …); the short group names below are the SPEC's labels for them. (Found in the Phase 5 Desktop check, where groups with the same name collided across cards.)
 - Number boxes carry limits the pane enforces on input; saved values outside them are clamped when rendering. Text sizes 6 to 40; decimal places 0 to 9; opacity and gaps within a bucket 0 to 100 %; gap between buckets 0 to 90 %; minimum bucket width 0 to 400 px; corner radius 0 to 40 px; stroke width 0.5 to 12 px; marker size 1 to 20 px; gridline width 0.5 to 6 px; row height 12 to 60 px; matrix maximum height 10 to 90 %; matrix line widths 0 to 6 px; matrix row positions 1 to the number of rows. Axis minimum and maximum have no limits, because negative values are valid there.
-- v1 has **88 static controls** (86 at approval, plus the x-axis second line from Decision 12 and the matrix header line from Decision 13), plus per-instance controls (colours, line styles, value modes, totals, matrix row positions and lines) repeated once per measure or series. All of them stay in v1 (Decision 7).
+- v1 has **136 static controls** (86 at approval, plus the x-axis second line from Decision 12, the matrix header line from Decision 13 and the 48 text options from Decision 17), plus per-instance controls (colours, line styles, value modes, totals, matrix row positions and lines) repeated once per measure or series. All of them stay in v1 (Decision 7).
 
 ### 9.2 Style presets and the resolution rule
 
@@ -276,33 +277,33 @@ Types: T toggle, N number, % percent number, C colour, D dropdown, X text, F fon
 
 **Y-axis (columns)** (`leftAxis`), card toggle `showLeftAxis` T
 - *Range* (`range`): `leftMin` N, `leftMax` N (auto)
-- *Labels* (`labels`): `leftLabelFontSize` N (9), `leftLabelColor` C, `leftDisplayUnits` D (auto), `leftPrecision` N (auto)
-- *Title* (`title`): `leftTitleShow` T (off), `leftTitleText` X, `leftTitleFontSize` N (11), `leftTitleColor` C
+- *Labels* (`labels`): font control: `leftLabelFontFamily` F, `leftLabelFontSize` N (9), `leftLabelBold`, `leftLabelItalic`, `leftLabelUnderline` T (off); `leftLabelColor` C, `leftDisplayUnits` D (auto), `leftPrecision` N (auto)
+- *Title* (`title`): `leftTitleShow` T (off), `leftTitleText` X, font control: `leftTitleFontFamily` F, `leftTitleFontSize` N (11), `leftTitleBold` T (on), `leftTitleItalic`, `leftTitleUnderline` T (off); `leftTitleColor` C
 - *Gridlines* (`gridlines`): `gridlinesShow` T (on), `gridlineColor` C, `gridlineWidth` N (1), `gridlineStyle` D (solid | dashed | dotted)
 
 **Y-axis (lines)** (`rightAxis`), card toggle `showRightAxis` T
 - *Range*: `rightMin` N, `rightMax` N
-- *Labels*: `rightLabelFontSize` N, `rightLabelColor` C, `rightDisplayUnits` D, `rightPrecision` N
-- *Title*: `rightTitleShow` T, `rightTitleText` X, `rightTitleFontSize` N, `rightTitleColor` C
+- *Labels*: font control: `rightLabelFontFamily` F, `rightLabelFontSize` N, `rightLabelBold`, `rightLabelItalic`, `rightLabelUnderline` T; `rightLabelColor` C, `rightDisplayUnits` D, `rightPrecision` N
+- *Title*: `rightTitleShow` T, `rightTitleText` X, font control: `rightTitleFontFamily` F, `rightTitleFontSize` N, `rightTitleBold` T (on), `rightTitleItalic`, `rightTitleUnderline` T; `rightTitleColor` C
 - *Gridlines*: `rightGridlinesShow` T (off)
 
 **X-axis** (`xAxis`), card toggle `showXAxis` T
-- *Labels* (`labels`): `xLabelFontSize` N (9), `xLabelColor` C, `weekLabelFormat` D (weekStart | isoWeek | projectWeek), `weekLabelSecondLine` D (none | weekStart | isoWeek | projectWeek), `weekStartDay` D (monday | sunday), `showEmptyWeeks` T (on)
-- *Title* (`title`): `xTitleShow` T (off), `xTitleText` X
+- *Labels* (`labels`): font control: `xLabelFontFamily` F, `xLabelFontSize` N (9), `xLabelBold`, `xLabelItalic`, `xLabelUnderline` T (off); `xLabelColor` C, `weekLabelFormat` D (weekStart | isoWeek | projectWeek), `weekLabelSecondLine` D (none | weekStart | isoWeek | projectWeek), `weekStartDay` D (monday | sunday), `showEmptyWeeks` T (on)
+- *Title* (`title`): `xTitleShow` T (off), `xTitleText` X, font control: `xTitleFontFamily` F, `xTitleFontSize` N (labels + 1), `xTitleBold` T (on), `xTitleItalic`, `xTitleUnderline` T (off); `xTitleColor` C
 
 **Data labels** (`dataLabels`)
-- *Columns* (`columnLabels`): `columnLabelsShow` T, `columnLabelPosition` D (outsideEnd | insideEnd), `columnLabelFontSize` N, `columnLabelColor` C, `columnLabelDisplayUnits` D, `columnLabelPrecision` N
-- *Lines* (`lineLabels`): `lineLabelsShow` T, `lineLabelPoints` D (last | all), `lineLabelFontSize` N, `lineLabelColor` C, `lineLabelDisplayUnits` D, `lineLabelPrecision` N
+- *Columns* (`columnLabels`): `columnLabelsShow` T, `columnLabelPosition` D (outsideEnd | insideEnd), font control: `columnLabelFontFamily` F, `columnLabelFontSize` N, `columnLabelBold`, `columnLabelItalic`, `columnLabelUnderline` T (off); `columnLabelColor` C, `columnLabelBackgroundShow` T (off), `columnLabelBackgroundColor` C, `columnLabelBackgroundOpacity` % slider (100), `columnLabelDisplayUnits` D, `columnLabelPrecision` N
+- *Lines* (`lineLabels`): `lineLabelsShow` T, `lineLabelPoints` D (last | all), font control: `lineLabelFontFamily` F, `lineLabelFontSize` N, `lineLabelBold`, `lineLabelItalic`, `lineLabelUnderline` T (off); `lineLabelColor` C, `lineLabelBackgroundShow` T (off), `lineLabelBackgroundColor` C, `lineLabelBackgroundOpacity` % slider (100), `lineLabelDisplayUnits` D, `lineLabelPrecision` N
 
 **Legend** (`legend`), card toggle `showLegend` T
 - *Options* (`options`): `legendPosition` D (top | bottom | left | right), `legendShowTitle` T (off), `legendTitleText` X
-- *Text* (`text`): `legendFontSize` N (9), `legendColor` C
+- *Text* (`text`): font control: `legendFontFamily` F, `legendFontSize` N (9), `legendBold`, `legendItalic`, `legendUnderline` T (off); `legendColor` C
 
 **Matrix** (`matrix`), card toggle `showMatrix` T
 - *Options* (`options`): `showTotals` T (on), `totalsLabel` X ("Total"), `expandSeries` T (off)
 - *Values* (`values`): `columnTotalAggregation`, `lineTotalAggregation`, `tableTotalAggregation` D (sum | last | average | none), each Inst. per measure; `matrixDisplayUnits` D (auto), `matrixPrecision` N (auto)
 - *Row order and lines* (`rows`): `columnRowPosition`, `lineRowPosition`, `tableRowPosition` N, each Inst. per measure (shows the row's effective position); `columnRowLineWidth`, `lineRowLineWidth`, `tableRowLineWidth` N (grid width), each Inst. per measure
-- *Text* (`text`): `matrixFontSize` N (9), `matrixFontColor` C, `headerFontColor` C, `headerBold` T (on)
+- *Text* (`text`): font control: `matrixFontFamily` F, `matrixFontSize` N (9), `matrixBold`, `matrixItalic`, `matrixUnderline` T (off); `matrixFontColor` C, `headerFontColor` C, `headerBold` T (on)
 - *Grid* (`grid`): `rowHeight` N (20), `showBorders` T (on), `borderColor` C, `headerLineWidth` N (grid width), `banding` T (off), `maxHeightPercent` % (50)
 
 All colour defaults come from the theme (foreground, secondary foreground, or `getColor` for data colours).
@@ -368,3 +369,4 @@ Settled in the SPEC review on 2026-11-01 (all as proposed in the draft):
 14. **Locale formats (§10)**: found in Phase 6. Without a folder in `stringResources/`, a UK, German or Spanish report showed `1/5/2026` and `10,994`, because the packager drops those formats. All 352 locales would add about 470 KB and 352 folders, so v1 ships 20 major ones, with English text.
 15. **Week tooltips and fixed ranges (§5.3, §6.1)**: found by the code review before v1. A numeric *Tooltips* field adds up over a week's rows, as the bars do, so the tooltip and the bar describe the same days; text has no sum, so it shows the latest value. A non-additive measure, such as a percentage bound to a daily date, adds up too; binding a week-start column avoids that. Marks outside a fixed axis range are cut at the plot's edge, not drawn over the axis labels. Bars are shortened rather than clipped, so the keyboard focus ring stays in the plot too; a line point outside the range isn't drawn, so its focus falls back to the bucket's band.
 16. **Category and series formats, and wide axis labels (§3.2, §10)**: found by the code review before v1. A date or number in the Category or Series well shows in its column's format, as built-in visuals do, instead of as the raw value. With no format string, a number keeps all its digits and no thousands separator, because a year in the Series well shouldn't read `2,026`. A blank series is labelled `(Blank)` in the matrix too, as it already was in the legend and tooltips. Saved per-series settings are unaffected: they're keyed by the raw value.
+17. **Text options (§9.3)**: requested after the Phase 9 scan, to match built-in visuals. Every section with text has the built-in font control (family, size, bold, italic, underline) plus a colour: axis labels and titles, data labels, the legend and the matrix. A section's family follows the General card's font until the author sets its own. Saved text sizes keep their property names. Titles stay bold by default, as they were drawn before. The legend title is always bold and otherwise follows the legend's font. In the matrix, `matrixBold` applies to all its text and `headerBold` still adds bold row headers. The x-axis title gets its own size, which follows its labels plus one point until set, and its own colour. Data labels get a background, per label kind, off by default, with a colour that follows the theme until set and an opacity slider, matching the Columns and Lines cards here. In high contrast, backgrounds use the theme's background at full opacity.

@@ -4,7 +4,7 @@ import type { Selection } from "d3";
 
 import { matrixGridLineWidth, ptToPx } from "./options";
 import type { Scene } from "./scene";
-import { truncate } from "./measure";
+import { applyFont, truncate } from "./measure";
 
 type DivSelection = Selection<HTMLDivElement, unknown, null, undefined>;
 type GSelection = Selection<SVGGElement, unknown, null, undefined>;
@@ -42,8 +42,9 @@ export function drawMatrix(container: DivSelection, scene: Scene, clipId: string
             .attr("data-role", "totals-header")
             .attr("x", plotRight + totalsWidth / 2).attr("y", matrix.headerHeight / 2).attr("dy", "0.35em")
             .attr("text-anchor", "middle").attr("fill", scene.ink.matrixHeader)
-            .style("font-size", `${fontPx}px`).style("font-weight", options.matrix.headerBold ? "600" : "normal")
-            .text(truncate(scene.totalsLabel, totalsWidth - 8, (t) => scene.measure(t, fontPt, options.matrix.headerBold)));
+            .style("font-size", `${fontPx}px`)
+            .call(applyFont, scene.totalsHeaderFont)
+            .text(truncate(scene.totalsLabel, totalsWidth - 8, (t) => scene.measure(t, fontPt, scene.totalsHeaderFont)));
     }
     const gridLine = matrixGridLineWidth(options.matrix.showBorders);
     const headerLine = options.matrix.headerLineWidth ?? gridLine;
@@ -76,8 +77,9 @@ export function drawMatrix(container: DivSelection, scene: Scene, clipId: string
         .attr("y", (_, i) => i * rowHeight + rowHeight / 2).attr("dy", "0.35em")
         .attr("fill", scene.ink.matrixHeader)
         .style("font-size", `${fontPx}px`)
-        .style("font-weight", (r) => (options.matrix.headerBold && r.level === 0 ? 600 : null))
-        .text((r) => truncate(r.label, geometry.plotLeft - 18 - (r.level ? 12 : 0), (t) => scene.measure(t, fontPt, options.matrix.headerBold && r.level === 0)));
+        .call(applyFont, options.matrix.font)
+        .style("font-weight", (r) => (scene.matrixRowFont(r).bold ? 600 : null))
+        .text((r) => truncate(r.label, geometry.plotLeft - 18 - (r.level ? 12 : 0), (t) => scene.measure(t, fontPt, scene.matrixRowFont(r))));
 
     // Cells, in the scrolled plot range.
     const cells = svg.append("g").attr("clip-path", `url(#${clipId})`)
@@ -100,6 +102,7 @@ export function drawMatrix(container: DivSelection, scene: Scene, clipId: string
             .attr("y", y + rowHeight / 2).attr("dy", "0.35em")
             .attr("text-anchor", "middle").attr("fill", scene.ink.matrixText)
             .style("font-size", `${fontPx}px`)
+            .call(applyFont, options.matrix.font)
             .text((b) => scene.cellText(row, row.values[b.index] ?? null, b.x1 - b.x0 - 4));
     });
 
@@ -122,7 +125,8 @@ export function drawMatrix(container: DivSelection, scene: Scene, clipId: string
             .attr("y", (_, i) => i * rowHeight + rowHeight / 2).attr("dy", "0.35em")
             .attr("text-anchor", "middle").attr("fill", scene.ink.matrixText)
             .style("font-size", `${fontPx}px`)
-            .style("font-weight", (r) => (options.matrix.headerBold && r.level === 0 ? 600 : null))
+            .call(applyFont, options.matrix.font)
+            .style("font-weight", (r) => (scene.matrixRowFont(r).bold ? 600 : null))
             .text((r) => scene.cellText(r, r.total, totalsWidth - 8));
     }
 

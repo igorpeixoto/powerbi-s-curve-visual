@@ -5,7 +5,7 @@ import type { formattingSettings } from "powerbi-visuals-utils-formattingmodel";
 import type { DisplayAs, LineEnd, LineSeriesMode, TotalAggregation, ValueMode, WeekStartDay } from "../model/types";
 import type { WeekLabelFormat } from "../model/labels";
 import type { SeriesLayout } from "../model/columns";
-import { defaultRenderOptions, type GridlineStyle, type LegendPosition, type LineStyle, type RenderOptions } from "../render/options";
+import { defaultRenderOptions, type GridlineStyle, type LabelBackground, type LegendPosition, type LineStyle, type RenderOptions, type TextFont } from "../render/options";
 import { LIMITS, type Limit } from "../settings";
 import type { AppliedSettings } from "./applySettings";
 import { THEME_LIGHT_TINT } from "./presets";
@@ -34,6 +34,18 @@ export function toRenderOptions(applied: AppliedSettings): RenderOptions {
     const { model: m, explicit, fromPreset, instances } = applied;
     const color = (card: string, slice: formattingSettings.ColorPicker): string | null =>
         explicit.has(`${card}.${slice.name}`) && slice.value?.value ? slice.value.value : null;
+    const font = (card: string, control: formattingSettings.FontControl): TextFont => ({
+        // Only a font the author set: otherwise the section follows the General card's.
+        family: explicit.has(`${card}.${control.fontFamily.name}`) && control.fontFamily.value ? String(control.fontFamily.value) : null,
+        bold: control.bold?.value === true,
+        italic: control.italic?.value === true,
+        underline: control.underline?.value === true,
+    });
+    const background = (show: formattingSettings.ToggleSwitch, fill: formattingSettings.ColorPicker, opacity: formattingSettings.Slider): LabelBackground => ({
+        show: show.value === true,
+        color: color("dataLabels", fill),
+        opacity: clamp(opacity.value, LIMITS.percent, 100) / 100,
+    });
     const base = defaultRenderOptions;
     const lineStyles: Record<string, LineStyle> = {};
     for (const [queryName, style] of Object.entries(instances.lineStyles)) lineStyles[queryName] = oneOf(style, ["solid", "dashed", "dotted"], "solid");
@@ -99,6 +111,7 @@ export function toRenderOptions(applied: AppliedSettings): RenderOptions {
             min: finite(left.range.leftMin.value),
             max: finite(left.range.leftMax.value),
             fontSize: fontSize(left.labels.leftLabelFontSize.value, 9),
+            font: font("leftAxis", left.labels.leftLabelFont),
             displayUnits: finite(left.labels.leftDisplayUnits.value) ?? 0,
             precision: precision(left.labels.leftPrecision.value),
             gridlines: left.gridlines.gridlinesShow.value !== false,
@@ -107,6 +120,7 @@ export function toRenderOptions(applied: AppliedSettings): RenderOptions {
                 show: left.title.leftTitleShow.value === true,
                 text: String(left.title.leftTitleText.value ?? ""),
                 fontSize: fontSize(left.title.leftTitleFontSize.value, 11),
+                font: font("leftAxis", left.title.leftTitleFont),
                 color: color("leftAxis", left.title.leftTitleColor),
             },
         },
@@ -115,6 +129,7 @@ export function toRenderOptions(applied: AppliedSettings): RenderOptions {
             min: finite(right.range.rightMin.value),
             max: finite(right.range.rightMax.value),
             fontSize: fontSize(right.labels.rightLabelFontSize.value, 9),
+            font: font("rightAxis", right.labels.rightLabelFont),
             displayUnits: finite(right.labels.rightDisplayUnits.value) ?? 0,
             precision: precision(right.labels.rightPrecision.value),
             gridlines: right.gridlines.rightGridlinesShow.value === true,
@@ -123,6 +138,7 @@ export function toRenderOptions(applied: AppliedSettings): RenderOptions {
                 show: right.title.rightTitleShow.value === true,
                 text: String(right.title.rightTitleText.value ?? ""),
                 fontSize: fontSize(right.title.rightTitleFontSize.value, 11),
+                font: font("rightAxis", right.title.rightTitleFont),
                 color: color("rightAxis", right.title.rightTitleColor),
             },
         },
@@ -134,17 +150,26 @@ export function toRenderOptions(applied: AppliedSettings): RenderOptions {
         xAxis: {
             show: x.topLevelSlice.value !== false,
             fontSize: fontSize(x.labels.xLabelFontSize.value, 9),
+            font: font("xAxis", x.labels.xLabelFont),
             weekLabelFormat: oneOf<WeekLabelFormat>(dropdown(x.labels.weekLabelFormat), ["weekStart", "isoWeek", "projectWeek"], "weekStart"),
             secondLine: secondLine === "none" ? null : secondLine,
             labelColor: color("xAxis", x.labels.xLabelColor),
-            title: { show: x.title.xTitleShow.value === true, text: String(x.title.xTitleText.value ?? "") },
+            title: {
+                show: x.title.xTitleShow.value === true,
+                text: String(x.title.xTitleText.value ?? ""),
+                fontSize: fontSize(x.title.xTitleFontSize.value, 10),
+                color: color("xAxis", x.title.xTitleColor),
+                font: font("xAxis", x.title.xTitleFont),
+            },
         },
         dataLabels: {
             columns: {
                 show: labels.columnLabels.columnLabelsShow.value === true,
                 position: oneOf(dropdown(labels.columnLabels.columnLabelPosition), ["outsideEnd", "insideEnd"] as const, "outsideEnd"),
                 fontSize: fontSize(labels.columnLabels.columnLabelFontSize.value, 9),
+                font: font("dataLabels", labels.columnLabels.columnLabelFont),
                 color: color("dataLabels", labels.columnLabels.columnLabelColor),
+                background: background(labels.columnLabels.columnLabelBackgroundShow, labels.columnLabels.columnLabelBackgroundColor, labels.columnLabels.columnLabelBackgroundOpacity),
                 displayUnits: finite(labels.columnLabels.columnLabelDisplayUnits.value) ?? 0,
                 precision: precision(labels.columnLabels.columnLabelPrecision.value),
             },
@@ -152,7 +177,9 @@ export function toRenderOptions(applied: AppliedSettings): RenderOptions {
                 show: labels.lineLabels.lineLabelsShow.value !== false,
                 points: oneOf(dropdown(labels.lineLabels.lineLabelPoints), ["last", "all"] as const, "last"),
                 fontSize: fontSize(labels.lineLabels.lineLabelFontSize.value, 9),
+                font: font("dataLabels", labels.lineLabels.lineLabelFont),
                 color: color("dataLabels", labels.lineLabels.lineLabelColor),
+                background: background(labels.lineLabels.lineLabelBackgroundShow, labels.lineLabels.lineLabelBackgroundColor, labels.lineLabels.lineLabelBackgroundOpacity),
                 displayUnits: finite(labels.lineLabels.lineLabelDisplayUnits.value) ?? 0,
                 precision: precision(labels.lineLabels.lineLabelPrecision.value),
             },
@@ -161,6 +188,7 @@ export function toRenderOptions(applied: AppliedSettings): RenderOptions {
             show: legend.topLevelSlice.value !== false,
             position: oneOf<LegendPosition>(dropdown(legend.options.legendPosition), ["top", "bottom", "left", "right"], "top"),
             fontSize: fontSize(legend.text.legendFontSize.value, 9),
+            font: font("legend", legend.text.legendFont),
             color: color("legend", legend.text.legendColor),
             showTitle: legend.options.legendShowTitle.value === true,
             titleText: String(legend.options.legendTitleText.value ?? ""),
@@ -171,6 +199,7 @@ export function toRenderOptions(applied: AppliedSettings): RenderOptions {
             totalsLabel: explicit.has("matrix.totalsLabel") ? String(matrix.options.totalsLabel.value ?? "") : null,
             expandSeries: matrix.options.expandSeries.value === true,
             fontSize: fontSize(matrix.text.matrixFontSize.value, 9),
+            font: font("matrix", matrix.text.matrixFont),
             headerBold: matrix.text.headerBold.value !== false,
             rowHeight: clamp(matrix.grid.rowHeight.value, LIMITS.rowHeight, 20),
             showBorders: matrix.grid.showBorders.value !== false,
