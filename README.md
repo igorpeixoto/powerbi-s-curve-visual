@@ -64,7 +64,7 @@ In the Date well, use the date field itself rather than its Date Hierarchy. The 
 
 All the data is made up by [`tools/generate_sample_data.py`](tools/generate_sample_data.py).
 
-On Windows, clone into a short folder such as `C:\src`. The longest file path in the sample report is 182 characters, so with Windows' default limit of 260, a checkout fails when the path to the clone is longer than about 78 characters. If you can't use a shorter folder, clone with `git clone -c core.longpaths=true`.
+On Windows, clone into a short folder such as `C:\src`. The longest file path in the sample report is 182 characters, so with Windows' default limit of 260, a checkout fails when the path to the clone is longer than about 78 characters. `git clone -c core.longpaths=true` gets past the checkout, but opening the report from a path that long in Desktop hasn't been tested, so a short folder is the safer choice.
 
 ## How it was built
 
