@@ -29,9 +29,19 @@ export interface TooltipContext {
     color?(mark: TooltipMark): string | undefined;
 }
 
+// Totals across series, kept per model array: every mark of a measure reads the same one, and a new model's arrays
+// replace the old ones, so nothing outlives its update.
+const totals = new WeakMap<Values[], Values>();
+
 function rowFor(rows: Values[] | undefined, seriesIndex: number | null): Values {
     if (!rows) return [];
-    return seriesIndex === null ? sumAcross(rows) : rows[seriesIndex] ?? [];
+    if (seriesIndex !== null) return rows[seriesIndex] ?? [];
+    let total = totals.get(rows);
+    if (!total) {
+        total = sumAcross(rows);
+        totals.set(rows, total);
+    }
+    return total;
 }
 
 export function tooltipItems(ctx: TooltipContext, mark: TooltipMark): TooltipItem[] {

@@ -65,6 +65,8 @@ export const PLOT_TOP_PADDING = 14;
 const MIN_GUTTER = 8;
 const LEGEND_GAP = 12;
 const LEGEND_MAX_SHARE = 0.3;
+/** Widest a left or right legend gets, as a share of the visual's width. */
+export const LEGEND_SIDE_SHARE = 0.25;
 
 function layoutLegend(input: LayoutInput): LegendLayout | null {
     const { legend, width, height } = input;
@@ -73,7 +75,7 @@ function layoutLegend(input: LayoutInput): LegendLayout | null {
     const items: ({ x: number; y: number } | null)[] = [];
 
     if (vertical) {
-        const legendWidth = Math.min(Math.max(...legend.itemWidths), width * 0.25);
+        const legendWidth = Math.min(Math.max(...legend.itemWidths), width * LEGEND_SIDE_SHARE);
         const maxItems = Math.max(0, Math.floor(height / legend.itemHeight));
         legend.itemWidths.forEach((_, i) => items.push(i < maxItems ? { x: 0, y: i * legend.itemHeight } : null));
         const x = legend.position === "left" ? 0 : width - legendWidth;

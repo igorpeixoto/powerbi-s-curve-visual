@@ -1,6 +1,7 @@
 import { createMockHost } from "./mock-host.mjs";
 import {
     bucketsOnlyDataView,
+    categoryHierarchyDataView,
     dateHierarchyDataView,
     isolatedPointsDataView,
     measuresOnlyDataView,
@@ -172,6 +173,7 @@ async function run() {
         ["message for a Date without measures", bucketsOnlyDataView(), "missingMeasures"],
         ["message for zero rows", zeroRowsDataView(), "noRows"],
         ["message for a date hierarchy in the Date well", dateHierarchyDataView(), "dateHierarchy"],
+        ["message for a hierarchy in the Category well", categoryHierarchyDataView(), "categoryHierarchy"],
     ];
     for (const [name, dataView, state] of emptyCases) {
         render(visual, dataView);

@@ -12,18 +12,36 @@ export interface UnitOptions {
     reference?: number;
 }
 
+/**
+ * The reference rounded down to a power of ten. Every auto unit boundary is one (K from 1e3, M from 1e5, bn from
+ * 1e8, T from 1e11), so the unit chosen is the same, and a matrix abbreviating each cell by its own value doesn't
+ * add a formatter per distinct value.
+ */
+export function autoUnitReference(reference: number): number {
+    const magnitude = Math.abs(reference);
+    if (!Number.isFinite(magnitude) || magnitude < 1) return 0;
+    let exponent = Math.floor(Math.log10(magnitude));
+    // log10 can land just off an exact power of ten.
+    if (10 ** exponent > magnitude) exponent -= 1;
+    else if (10 ** (exponent + 1) <= magnitude) exponent += 1;
+    // The formatter counts a value within three significant digits of a boundary as on it (999.9999 shows as 1K).
+    if (10 ** (exponent + 1) - magnitude < 10 ** (exponent - 3)) exponent += 1;
+    return 10 ** exponent;
+}
+
 export class Formatters {
     private readonly cache = new Map<string, NumberFormatter>();
 
     constructor(private readonly locale: string) {}
 
     number(format: string | undefined, units: UnitOptions): NumberFormatter {
-        const cacheKey = `${format}|${units.displayUnits}|${units.precision}|${units.reference}`;
+        const reference = units.displayUnits === 0 ? autoUnitReference(units.reference ?? 0) : undefined;
+        const cacheKey = `${format}|${units.displayUnits}|${units.precision}|${reference}`;
         const cached = this.cache.get(cacheKey);
         if (cached) return cached;
         const formatter = valueFormatter.create({
             format: format ?? "#,0.##",
-            value: units.displayUnits === 0 ? Math.abs(units.reference ?? 0) : units.displayUnits === 1 ? 0 : units.displayUnits,
+            value: reference ?? (units.displayUnits === 1 ? 0 : units.displayUnits),
             precision: units.precision,
             cultureSelector: this.locale,
         });

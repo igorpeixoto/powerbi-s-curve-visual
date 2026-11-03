@@ -12,7 +12,7 @@ import IVisualEventService = powerbi.extensibility.IVisualEventService;
 import { Interactivity } from "./behaviour/interactivity";
 import { applySettings, readInstances } from "./format/applySettings";
 import { toRenderOptions } from "./format/toRenderOptions";
-import { Formatters } from "./render/format";
+import type { Formatters } from "./render/format";
 import { Renderer } from "./render/renderer";
 import { createStrings, paneLocalization, type Strings } from "./render/strings";
 import { VisualFormattingSettingsModel } from "./settings";
@@ -44,7 +44,7 @@ export class Visual implements IVisual {
             localizationManager,
             displayWarningIcon: (hoverText, detailedText) => host.displayWarningIcon(hoverText, detailedText),
         });
-        this.formatters = new Formatters(host.locale);
+        this.formatters = this.renderer.formatters;
         this.interactivity = new Interactivity(
             {
                 selectionManager: host.createSelectionManager(),
@@ -65,22 +65,26 @@ export class Visual implements IVisual {
             const applied = applySettings(dataView, {
                 palette: this.host.colorPalette,
                 strings: this.strings,
-                ...readInstances(dataView, (groupIndex) => this.seriesSelector(dataView, groupIndex), (value, format) => this.formatters.value(value, format, this.strings("blank"))),
+                ...readInstances(dataView, (values, group) => this.seriesSelector(values, group), (value, format) => this.formatters.value(value, format, this.strings("blank"))),
             });
             this.formattingSettings = applied.model;
             const scene = this.renderer.render(dataView, options.viewport, toRenderOptions(applied));
             this.interactivity.update(scene, dataView);
             this.events.renderingFinished(options);
         } catch (error) {
+            // Nothing half-drawn stays on screen, and clicks can't act on the previous data.
+            try {
+                this.interactivity.update(null, undefined);
+                this.renderer.showFailure();
+            } catch {
+                // Already failing: renderingFailed below still reports the original error.
+            }
             this.events.renderingFailed(options, String(error));
         }
     }
 
     /** Selector of one series group, for per-series Format pane settings. */
-    private seriesSelector(dataView: powerbi.DataView | undefined, groupIndex: number): powerbi.data.Selector | null {
-        const values = dataView?.categorical?.values;
-        const group = values?.grouped()[groupIndex];
-        if (!values || !group) return null;
+    private seriesSelector(values: powerbi.DataViewValueColumns, group: powerbi.DataViewValueColumnGroup): powerbi.data.Selector | null {
         return this.host.createSelectionIdBuilder().withSeries(values, group).createSelectionId().getSelector();
     }
 

@@ -28,6 +28,7 @@ const EMPTY_MESSAGES: Record<EmptyStateKind, StringKey> = {
     missingBuckets: "missingBuckets",
     missingMeasures: "missingMeasures",
     dateHierarchy: "dateHierarchy",
+    categoryHierarchy: "categoryHierarchy",
     noRows: "noRows",
 };
 
@@ -43,7 +44,8 @@ export class Renderer {
     private readonly message: Selection<HTMLDivElement, unknown, null, undefined>;
     private readonly note: Selection<HTMLDivElement, unknown, null, undefined>;
     private readonly strings: Strings;
-    private readonly formatters: Formatters;
+    /** Shared with the Visual, so the Format pane and the drawing reuse one formatter cache. */
+    readonly formatters: Formatters;
     private readonly scrollbarSize: number;
     private readonly ids: { chartClip: string; matrixClip: string };
     private measure: TextMeasurer | null = null;
@@ -183,6 +185,11 @@ export class Renderer {
         for (const group of this.scrolled) {
             group.attr("transform", `translate(${this.plotLeft - this.scrollX},0)`);
         }
+    }
+
+    /** Replaces whatever was drawn with a message, after an update that failed part-way (Hard Rule #6). */
+    showFailure(): void {
+        this.showMessage(null, this.strings("renderFailed"), "renderFailed");
     }
 
     private showMessage(title: string | null, body: string, kind: string): void {

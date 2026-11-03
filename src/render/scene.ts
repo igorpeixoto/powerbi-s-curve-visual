@@ -8,7 +8,7 @@ import type { MeasureInfo, SCurveModel } from "../model/types";
 import { THEME_LIGHT_TINT } from "../format/presets";
 import { DataColors, mix, themeColors, type PaletteLike, type ThemeColors } from "./colors";
 import type { Formatters, NumberFormatter } from "./format";
-import { computeLayout, type Layout } from "./layout";
+import { computeLayout, LEGEND_SIDE_SHARE, type Layout } from "./layout";
 import { truncate, type TextMeasurer } from "./measure";
 import { ptToPx, type LineStyle, type RenderOptions, type TextFont } from "./options";
 import type { Strings } from "./strings";
@@ -113,6 +113,7 @@ const AXIS_LABEL_PADDING = 10;
 const HIGH_CONTRAST_LINE_STYLES: LineStyle[] = ["solid", "dashed", "dotted"];
 const LEGEND_SWATCH = 16;
 const LEGEND_SWATCH_GAP = 5;
+const LEGEND_MAX_LABEL_WIDTH = 220;
 const MATRIX_PADDING = 12;
 
 function axisScene(domain: NiceDomain | null, format: NumberFormatter): AxisScene | null {
@@ -270,10 +271,14 @@ export function buildScene(input: SceneInput): Scene {
 
     const legendFont = options.legend.fontSize;
     const legendTitleFont: TextFont = { ...options.legend.font, bold: true };
-    const legendTitleWidth = titles.legend ? Math.min(measure(titles.legend, legendFont, legendTitleFont), 220) : 0;
+    // Each entry fits the legend it's drawn in: a side legend is capped at a share of the width, a top or bottom one
+    // at the whole width. Labels are truncated to the same widths below.
+    const sideLegend = options.legend.position === "left" || options.legend.position === "right";
+    const legendMaxWidth = Math.max(0, input.viewport.width * (sideLegend ? LEGEND_SIDE_SHARE : 1));
+    const legendTitleWidth = titles.legend ? Math.min(measure(titles.legend, legendFont, legendTitleFont), LEGEND_MAX_LABEL_WIDTH, legendMaxWidth) : 0;
     const itemWidths = [
         ...(titles.legend ? [legendTitleWidth] : []),
-        ...legendItems.map((item) => LEGEND_SWATCH + LEGEND_SWATCH_GAP + Math.min(measure(item.label, legendFont, options.legend.font), 220)),
+        ...legendItems.map((item) => Math.min(LEGEND_SWATCH + LEGEND_SWATCH_GAP + Math.min(measure(item.label, legendFont, options.legend.font), LEGEND_MAX_LABEL_WIDTH), legendMaxWidth)),
     ];
 
     const axisWidth = (axis: AxisScene | null, fontSize: number, font: TextFont) =>
@@ -321,7 +326,7 @@ export function buildScene(input: SceneInput): Scene {
         layout,
         theme,
         ink,
-        titles,
+        titles: { ...titles, legend: titles.legend && truncate(titles.legend, legendTitleWidth, (t) => measure(t, legendFont, legendTitleFont)) },
         colors,
         measure,
         strings,

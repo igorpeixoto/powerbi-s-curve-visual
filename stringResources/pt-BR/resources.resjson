@@ -5,6 +5,8 @@
     "Visual_missingMeasures": "Adicione pelo menos uma medida em Valores de coluna, Valores de linha ou Valores somente da tabela.",
     "Visual_noRows": "Não há dados para os filtros atuais.",
     "Visual_dateHierarchy": "Use o próprio campo de data, não a Hierarquia de Datas dele: em Data, abra o menu do campo e escolha o nome do campo.",
+    "Visual_categoryHierarchy": "Categoria aceita um campo, não uma hierarquia: remova os níveis extras de Categoria ou, para uma data, abra o menu do campo e escolha o nome do campo.",
+    "Visual_renderFailed": "Não foi possível desenhar este visual com os dados ou as configurações atuais.",
     "Visual_tooSmall": "Aumente o visual para ver o gráfico.",
     "Visual_matrixHidden": "Matriz oculta: não há espaço suficiente.",
     "Visual_cumulativeSuffix": " (acumulado)",

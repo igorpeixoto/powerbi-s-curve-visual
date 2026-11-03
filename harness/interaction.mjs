@@ -2,7 +2,7 @@
 // high contrast. Clicks are dispatched on whatever document.elementFromPoint() returns at the mark's centre, so a
 // mark covered by a label or a hit target fails here exactly as it would for a real pointer.
 import { createMockHost } from "./mock-host.mjs";
-import { dailyDescendingDataView, progressDataView } from "./data.mjs";
+import { categoryDataView, dailyDescendingDataView, progressDataView } from "./data.mjs";
 
 const PLANNED = "Sum(progress.PlannedQty)";
 const COLUMN_PLANNED = `columnValues:${PLANNED}`;
@@ -317,6 +317,42 @@ export function runInteractionChecks(plugin, check) {
     pointerAt(hcBar(3));
     check("a deselected bar gets its own stroke back in high contrast", hcBar(9).getAttribute("stroke") === hcRestingStroke && hcBar(9).getAttribute("stroke-width") === "1.5", hcBar(9).getAttribute("stroke"));
 
-    for (const c of [container, lockedContainer, hcContainer]) c.remove();
-    return [calls, focusHost.calls, shortHost.calls, rowsHost.calls, locked.calls, hc.calls];
+    // A Category value that repeats is still its own bucket: clicking one bar selects only that row.
+    const repeatContainer = newContainer();
+    const repeat = createMockHost();
+    const repeatVisual = plugin.create({ element: repeatContainer, host: repeat.host });
+    render(repeatVisual, repeatContainer, categoryDataView(["Phase A", "Phase B", "Phase A", null, "null"]));
+    const repeatBar = (bucket) => repeatContainer.querySelector(`[data-role="bar"][data-bucket="${bucket}"][data-measure="${COLUMN_PLANNED}"]`);
+    pointerAt(repeatBar(2));
+    check("a repeated Category value selects only the clicked bucket",
+        repeat.calls.select.at(-1)?.keys.join() === `c:progress.Phase:2|m:${PLANNED}` && opacity(repeatBar(2)) === "1" && opacity(repeatBar(0)) === "0.4",
+        JSON.stringify(repeat.calls.select.at(-1)));
+    pointerAt(repeatBar(4));
+    check("a blank Category and the text null are different buckets",
+        repeat.calls.select.at(-1)?.keys.join() === `c:progress.Phase:4|m:${PLANNED}` && opacity(repeatBar(4)) === "1" && opacity(repeatBar(3)) === "0.4",
+        JSON.stringify(repeat.calls.select.at(-1)));
+
+    // An update that throws part-way leaves a message, not the previous drawing, and clicks do nothing. Its own host,
+    // so the check that nothing else ever fails stays strict.
+    const failContainer = newContainer();
+    const failing = createMockHost();
+    const failVisual = plugin.create({ element: failContainer, host: failing.host });
+    render(failVisual, failContainer, progressDataView({ reportedWeeks: 20 }));
+    const broken = progressDataView({ reportedWeeks: 20 });
+    Object.defineProperty(broken.categorical, "values", { get() { throw new Error("broken dataView"); } });
+    render(failVisual, failContainer, broken);
+    const failedMessage = failContainer.querySelector(".s-curve__message");
+    check("a failed update reports renderingFailed and shows a message instead of the old chart",
+        failing.calls.renderingFailed.some((r) => r.includes("broken dataView")) && failedMessage?.getAttribute("data-state") === "renderFailed"
+            && failedMessage.textContent.length > 0 && getComputedStyle(failContainer.querySelector(".s-curve__chart")).display === "none",
+        JSON.stringify({ failed: failing.calls.renderingFailed, state: failedMessage?.getAttribute("data-state") }));
+    const stale = failContainer.querySelector('[data-role="bar"]');
+    stale?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    check("after a failed update a click sends no selection", failing.calls.select.length === 0 && failing.calls.clear === 0);
+    render(failVisual, failContainer, progressDataView({ reportedWeeks: 20 }));
+    check("the next good update draws again",
+        failContainer.querySelectorAll('[data-role="bar"]').length > 0 && getComputedStyle(failContainer.querySelector(".s-curve__message")).display === "none");
+
+    for (const c of [container, lockedContainer, hcContainer, repeatContainer, failContainer]) c.remove();
+    return [calls, focusHost.calls, shortHost.calls, rowsHost.calls, locked.calls, hc.calls, repeat.calls];
 }

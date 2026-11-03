@@ -3,7 +3,7 @@ import type powerbi from "powerbi-visuals-api";
 
 import { formattingSettings } from "powerbi-visuals-utils-formattingmodel";
 
-import { applySettings, type ApplyContext } from "../applySettings";
+import { applySettings, readInstances, type ApplyContext } from "../applySettings";
 import { createStrings } from "../../render/strings";
 import { THEME_LIGHT_TINT } from "../presets";
 import { toRenderOptions } from "../toRenderOptions";
@@ -319,5 +319,25 @@ describe("toRenderOptions", () => {
             ],
         })));
         expect(options.model.percentBaseline).toBe("A");
+    });
+});
+
+describe("readInstances", () => {
+    const column = (queryName: string | undefined, displayName: string, role: string) =>
+        ({ queryName, displayName, roles: { [role]: true } }) as powerbi.DataViewMetadataColumn;
+    const read = (columns: powerbi.DataViewMetadataColumn[]) =>
+        readInstances({ metadata: { columns } } as powerbi.DataView, () => null, String).measures.map((m) => `${m.role}:${m.queryName}`);
+
+    it("lists measures by role, then in well order, however the host interleaves the columns", () => {
+        const colB = { ...column("B", "B", "columnValues"), rolesIndex: { columnValues: [1] } } as powerbi.DataViewMetadataColumn;
+        const colA = { ...column("A", "A", "columnValues"), rolesIndex: { columnValues: [0] } } as powerbi.DataViewMetadataColumn;
+        expect(read([colB, column("X", "X", "lineValues"), colA])).toEqual(["columnValues:A", "columnValues:B", "lineValues:X"]);
+        // Without rolesIndex, column order is the well order, as parseDataView reads it.
+        expect(read([column("A", "A", "columnValues"), column("X", "X", "lineValues"), column("B", "B", "columnValues")]))
+            .toEqual(["columnValues:A", "columnValues:B", "lineValues:X"]);
+    });
+
+    it("gives a column without a queryName its settings under its display name, as the chart draws it", () => {
+        expect(read([column(undefined, "Planned", "columnValues")])).toEqual(["columnValues:Planned"]);
     });
 });

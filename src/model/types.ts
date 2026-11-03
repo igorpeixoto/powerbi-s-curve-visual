@@ -80,6 +80,8 @@ export interface ModelWarnings {
     emptyWeeksSkipped: boolean;
     /** The Date well holds a date hierarchy (Year/Quarter/Month/Day columns) instead of a date. */
     dateHierarchy: boolean;
+    /** The Category well holds a hierarchy (one column per level) instead of one field. */
+    categoryHierarchy: boolean;
 }
 
 export interface ModelOptions {

@@ -121,6 +121,15 @@ export function categoryDataView(values, format) {
     return view;
 }
 
+/** A hierarchy in the Category well: one category column per level. */
+export function categoryHierarchyDataView() {
+    const view = categoryDataView(["2026", "2026"]);
+    const year = view.categorical.categories[0];
+    const month = { source: { ...year.source, displayName: "Month", queryName: "progress.Month" }, values: ["January", "February"], identity: [{}, {}] };
+    view.categorical.categories = [year, month];
+    return view;
+}
+
 /** Measures bound, no Date/Category field. */
 export function measuresOnlyDataView() {
     const view = progressDataView({ series: false });

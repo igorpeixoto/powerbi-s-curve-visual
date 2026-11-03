@@ -20,7 +20,8 @@ export function drawLegend(svg: SvgSelection, scene: Scene): void {
         .style("left", `${legend.rect.x}px`).style("top", `${legend.rect.y}px`)
         .attr("width", legend.rect.width).attr("height", legend.rect.height);
 
-    const offset = scene.titles.legend ? 1 : 0;
+    // The layout has one more slot than items when it placed a title, even one truncated to nothing.
+    const offset = legend.items.length > scene.legendItems.length ? 1 : 0;
     const titlePosition = legend.items[0];
     if (scene.titles.legend && titlePosition) {
         svg.append("text")

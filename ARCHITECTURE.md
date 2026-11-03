@@ -121,7 +121,7 @@ Selections are held as stable keys rather than indices, so a filter change or an
 **Host to visual:**
 
 - **Highlights** from another visual arrive in the next dataView, and `parseDataView` keeps them next to the values: bars draw the full value faded with the highlighted part solid, and lines draw both.
-- **Restored selections** from bookmarks arrive through `registerOnSelectCallback`. `restore` offers each known ID and maps the matches back to selectors. A measure in both wells is one host column, so its bar and line point share an ID and a restored point can't tell them apart.
+- **Restored selections** from bookmarks arrive through `registerOnSelectCallback`. `restore` looks each one up in an index of every ID the visual can send, built on the first restore after an update, and maps the matches back to selectors. A measure in both wells is one host column, so its bar and line point share an ID and a restored point can't tell them apart.
 - After each update, `pruneSelection` drops selectors whose week, series or measure no longer exists.
 
 ## Settings

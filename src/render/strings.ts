@@ -10,6 +10,8 @@ export const defaultStrings = {
     missingMeasures: "Add at least one measure to Column values, Line values or Table-only values.",
     noRows: "No data for the current filters.",
     dateHierarchy: "Use the date field itself, not its Date Hierarchy: in the Date well, open the field's menu and choose the field's name.",
+    categoryHierarchy: "Category takes one field, not a hierarchy: remove the extra levels from the Category well, or for a date, open the field's menu and choose the field's name.",
+    renderFailed: "This visual couldn't be drawn with the current data or settings.",
     tooSmall: "Make the visual larger to see the chart.",
     matrixHidden: "Matrix hidden: not enough space.",
     cumulativeSuffix: " (cumulative)",

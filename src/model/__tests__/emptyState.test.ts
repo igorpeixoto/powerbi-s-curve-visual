@@ -27,6 +27,13 @@ describe("classifyEmptyState", () => {
         expect(classify({ bucketRole: "categoryDate", buckets: [null], measures: [measure] })).toBe("noRows");
     });
 
+    it("asks for one field when the Category well holds a hierarchy", () => {
+        const dataView = makeDataView({ bucketRole: "category", buckets: ["2026"], measures: [measure] });
+        const categories = dataView.categorical?.categories ?? [];
+        categories.push({ ...categories[0], values: ["January"] });
+        expect(classifyEmptyState(parseDataView(dataView, defaultModelOptions))).toBe("categoryHierarchy");
+    });
+
     it("returns null when there is something to draw", () => {
         expect(classify({ bucketRole: "categoryDate", buckets: [d(2026, 2, 2)], measures: [measure] })).toBeNull();
     });

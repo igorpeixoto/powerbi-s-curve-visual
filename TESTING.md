@@ -12,26 +12,26 @@
 
 ## What's automated
 
-### Unit tests: 197
+### Unit tests: 206
 
 The time zone is pinned to `Europe/Berlin` in `vitest.config.mjs`, with a guard test, so date logic can't pass just because of the machine it runs on.
 
 | Area | Tests | Covers |
 |---|---:|---|
-| `src/model` | 118 | Parsing both dataView shapes, weekly bucketing and empty weeks, a week's rows in date order, combining tooltip rows, running totals, % of baseline, axis domains at the capability limits, shared geometry, column layout, highlights in a stack, ISO weeks, matrix rows and row order, empty states, selection identities |
-| `src/format` | 36 | The resolution rule, presets, per-instance settings, unit conversion and clamps, number limits, pane language |
-| `src/render` | 23 | Theme colours, layout, string tables (en-US matches the defaults, pt-BR has the same keys and placeholders, no unused strings) |
+| `src/model` | 121 | Parsing both dataView shapes, unique text bucket keys, weekly bucketing and empty weeks, a week's rows in date order, combining tooltip rows, running totals, % of baseline, axis domains at the capability limits, shared geometry, column layout, highlights in a stack, ISO weeks, matrix rows and row order, empty states, selection identities |
+| `src/format` | 38 | The resolution rule, presets, per-instance settings and their order, unit conversion and clamps, number limits, pane language |
+| `src/render` | 27 | Theme colours, layout, the auto-unit formatter cache, string tables (en-US matches the defaults, pt-BR has the same keys and placeholders, no unused strings) |
 | `src/behaviour` | 20 | Click rules, stale selections, keyboard moves, keeping the focus on the grid, tooltip contents |
 
-### Harness checks: 216
+### Harness checks: 225
 
 These load the JavaScript and CSS from the packaged visual, not from the source, into a mock host. Clicks go through `document.elementFromPoint`, so a mark covered by something else fails as it would for a real pointer. Any page error or console error also fails the run.
 
 | Area | Checks | Covers |
 |---|---:|---|
-| Rendering and data shapes | 31 | Real data, zero rows, missing wells, date hierarchy, null measures, lone line points, reduced data, tiny viewports, redraws without leaks, alignment within 0.5 px at 400 to 2000 px |
-| Interaction | 57 | Selection, multi-select, cross-filter IDs, highlights in a stack, tooltips over a week of daily rows, context menu, keyboard after a filter and with a hidden matrix, high contrast including deselecting, interactions disabled, moved matrix rows |
-| Format pane | 89 | Text options in every section, label backgrounds, category and series formats, labels at the plot's edges, each preset's effect, explicit over preset, the pane model, per-series and per-measure settings, fixed axis ranges, two-line labels, Sunday-start ISO weeks, row order and lines, number limits, alignment while scrolled |
+| Rendering and data shapes | 32 | Real data, zero rows, missing wells, date hierarchy, Category hierarchy, null measures, lone line points, reduced data, tiny viewports, redraws without leaks, alignment within 0.5 px at 400 to 2000 px |
+| Interaction | 62 | Selection, multi-select, cross-filter IDs, repeated and blank Category values, a failed update, highlights in a stack, tooltips over a week of daily rows, context menu, keyboard after a filter and with a hidden matrix, high contrast including deselecting, interactions disabled, moved matrix rows |
+| Format pane | 92 | Text options in every section, side legends in a narrow visual, pane order with interleaved columns, label backgrounds, category and series formats, labels at the plot's edges, each preset's effect, explicit over preset, the pane model, per-series and per-measure settings, fixed axis ranges, two-line labels, Sunday-start ISO weeks, row order and lines, number limits, alignment while scrolled |
 | Localization | 39 | Both languages in the package, the Portuguese pane and visual, formats for each of the 20 format-only locales, fallback to English |
 
 ### Sample data: 16
@@ -56,6 +56,8 @@ The **Status** column records what has actually been seen in Power BI Desktop, i
 | Zero rows shows the message, not an empty rectangle | Observed (sample report before its first refresh) |
 | A measure with no values leaves its marks empty | Not yet |
 | Date hierarchy in the Date well shows the specific message | Not yet |
+| A hierarchy in the Category well, or a date with its Date Hierarchy there, shows the specific message | Not yet |
+| A left or right legend in a narrow visual cuts long entries with an ellipsis | Not yet |
 | Resizing in both directions keeps everything aligned | Not yet |
 | Second x-axis label line | Observed |
 | Daily dates sorted descending or by a measure: an as-provided line takes the week's last day, and Tooltips fields cover the whole week | Not yet |

@@ -52,7 +52,7 @@ The full contract, including non-goals such as drill-down, monthly bucketing and
 2. In Power BI Desktop, open **…** (Get more visuals) in the Visualizations pane, then **Import a visual from a file**, and choose the file.
 3. Add a date field to **Date**, and your planned and actual measures to both **Column values** and **Line values**.
 
-In the Date well, use the date field itself rather than its Date Hierarchy. The visual tells you if you forget.
+In the Date well, use the date field itself rather than its Date Hierarchy, and put one field in the Category well, not a hierarchy. The visual tells you if you forget.
 
 ### Open the sample
 

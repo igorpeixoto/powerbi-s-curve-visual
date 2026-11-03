@@ -24,7 +24,7 @@ describe("parseDataView", () => {
             measures: [{ name: "Planned", roles: ["columnValues"], format: "#,0", values: [30, 10, 20] }],
         }));
         expect(parsed.bucketRole).toBe("category");
-        expect(parsed.buckets.map((b) => b.key)).toEqual(["W03", "W01", "W02"]);
+        expect(parsed.buckets.map((b) => b.key)).toEqual(["string:W03", "string:W01", "string:W02"]);
         expect(parsed.buckets[1]).toMatchObject({ kind: "text", value: "W01", rowIndices: [1], inserted: false });
         expect(parsed.measures).toEqual([expect.objectContaining({
             key: "columnValues:Sum(Progress.Planned)", role: "columnValues", displayName: "Planned", format: "#,0", roleIndex: 0,
@@ -136,7 +136,7 @@ describe("parseDataView", () => {
             measures: [{ name: "Planned", roles: ["columnValues"], values: [1, 2] }],
             reduced: true,
         }));
-        expect(parsed.warnings).toEqual({ excludedDateRows: 1, dataReduced: true, emptyWeeksSkipped: false, dateHierarchy: false });
+        expect(parsed.warnings).toEqual({ excludedDateRows: 1, dataReduced: true, emptyWeeksSkipped: false, dateHierarchy: false, categoryHierarchy: false });
         expect(parsed.values["columnValues:Sum(Progress.Planned)"]).toEqual([[1]]);
     });
 
@@ -153,6 +153,31 @@ describe("parseDataView", () => {
         const parsed = parse(dataView);
         expect(parsed.warnings.dateHierarchy).toBe(true);
         expect(parsed.bucketRole).toBe("categoryDate");
+        expect(parsed.buckets).toEqual([]);
+    });
+
+    it("keys every text bucket uniquely, telling a blank from the text null and a number from its digits", () => {
+        const parsed = parse(makeDataView({
+            bucketRole: "category",
+            buckets: [null, "null", 5, "5", "a", "a", "a#1"],
+            measures: [{ name: "Planned", roles: ["columnValues"], values: [1, 2, 3, 4, 5, 6, 7] }],
+        }));
+        const keys = parsed.buckets.map((b) => b.key);
+        expect(new Set(keys).size).toBe(keys.length);
+        expect(keys.slice(0, 4)).toEqual(["blank", "string:null", "number:5", "string:5"]);
+    });
+
+    it("recognises a hierarchy in the Category well and builds no buckets from it", () => {
+        const dataView = makeDataView({
+            bucketRole: "category",
+            buckets: ["2026", "2026"],
+            measures: [{ name: "Planned", roles: ["columnValues"], values: [1, 2] }],
+        });
+        const categories = dataView.categorical?.categories ?? [];
+        categories.push({ ...categories[0], source: { ...categories[0].source, queryName: "Progress.Month" }, values: ["January", "February"] });
+        const parsed = parse(dataView);
+        expect(parsed.warnings.categoryHierarchy).toBe(true);
+        expect(parsed.bucketRole).toBe("category");
         expect(parsed.buckets).toEqual([]);
     });
 

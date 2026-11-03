@@ -241,29 +241,36 @@ export function applySettings(dataView: powerbi.DataView | undefined, context: A
 }
 
 /** Measures and series the Format pane offers per-instance settings for, read defensively from the dataView. */
-export function readInstances(dataView: powerbi.DataView | undefined, seriesSelector: (groupIndex: number) => Selector | null, seriesName: (value: unknown, format: string | undefined) => string): Pick<ApplyContext, "measures" | "series"> {
+export function readInstances(
+    dataView: powerbi.DataView | undefined,
+    seriesSelector: (values: powerbi.DataViewValueColumns, group: powerbi.DataViewValueColumnGroup) => Selector | null,
+    seriesName: (value: unknown, format: string | undefined) => string,
+): Pick<ApplyContext, "measures" | "series"> {
+    const roles = ["columnValues", "lineValues", "tableOnlyValues"] as const;
     const measures: MeasureInstance[] = [];
     const wellIndex = new Map<MeasureInstance, number>();
     const seen = new Set<string>();
     for (const column of dataView?.metadata?.columns ?? []) {
-        for (const role of ["columnValues", "lineValues", "tableOnlyValues"] as const) {
-            if (!column.roles?.[role] || !column.queryName) continue;
-            const key = `${role}|${column.queryName}`;
+        // The same fallback as parseDataView, so every measure drawn has its settings.
+        const queryName = column.queryName ?? column.displayName;
+        for (const role of roles) {
+            if (!column.roles?.[role] || !queryName) continue;
+            const key = `${role}|${queryName}`;
             if (seen.has(key)) continue;
             seen.add(key);
-            const measure: MeasureInstance = { queryName: column.queryName, displayName: column.displayName, role, objects: column.objects as ObjectsLike };
+            const measure: MeasureInstance = { queryName, displayName: column.displayName, role, objects: column.objects as ObjectsLike };
             wellIndex.set(measure, roleIndexOf(column, role) ?? measures.filter((m) => m.role === role).length);
             measures.push(measure);
         }
     }
     // The same order the matrix uses, so the positions shown in the pane match the rows.
-    measures.sort((a, b) => (a.role === b.role ? (wellIndex.get(a) ?? 0) - (wellIndex.get(b) ?? 0) : 0));
+    measures.sort((a, b) => roles.indexOf(a.role) - roles.indexOf(b.role) || (wellIndex.get(a) ?? 0) - (wellIndex.get(b) ?? 0));
 
     const values = dataView?.categorical?.values;
     const series: SeriesInstance[] = [];
     if (values?.source && typeof values.grouped === "function") {
-        values.grouped().forEach((group, index) => {
-            const selector = seriesSelector(index);
+        values.grouped().forEach((group) => {
+            const selector = seriesSelector(values, group);
             if (!selector) return;
             const key = String(group.name);
             series.push({ key, displayName: seriesName(group.name, values.source?.format), objects: group.objects as ObjectsLike, selector });

@@ -21,7 +21,7 @@ export function emptyParsedDataView(): ParsedDataView {
         values: {},
         highlights: null,
         tooltipValues: {},
-        warnings: { excludedDateRows: 0, dataReduced: false, emptyWeeksSkipped: false, dateHierarchy: false },
+        warnings: { excludedDateRows: 0, dataReduced: false, emptyWeeksSkipped: false, dateHierarchy: false, categoryHierarchy: false },
     };
 }
 
@@ -75,14 +75,23 @@ function readBuckets(category: powerbi.DataViewCategoryColumn, role: BucketRole,
     if (role === "categoryDate") {
         return buildWeekBuckets(category.values, options);
     }
-    const buckets = category.values.map((value, rowIndex): Bucket => ({
-        key: String(value),
-        kind: "text",
-        value,
-        rowIndices: [rowIndex],
-        inserted: false,
-    }));
+    // Keys tell a blank from the text "null" and a number from its digits, and stay unique even if a value repeats,
+    // so selecting one bucket never selects another.
+    const used = new Set<string>();
+    const buckets = category.values.map((value, rowIndex): Bucket => {
+        const base = textBucketKey(value);
+        let key = base;
+        for (let repeat = 1; used.has(key); repeat += 1) key = `${base}#${repeat}`;
+        used.add(key);
+        return { key, kind: "text", value, rowIndices: [rowIndex], inserted: false };
+    });
     return { buckets, excludedRows: 0, emptyWeeksSkipped: false };
+}
+
+function textBucketKey(value: unknown): string {
+    if (value === null || value === undefined) return "blank";
+    if (value instanceof Date) return `date:${value.getTime()}`;
+    return `${typeof value}:${String(value)}`;
 }
 
 /**
@@ -114,6 +123,12 @@ export function parseDataView(dataView: DataView | undefined, options: ModelOpti
         // Year/Quarter/Month/Day levels instead of a date: nothing to bucket (SPEC §8).
         parsed.bucketRole = "categoryDate";
         parsed.warnings.dateHierarchy = true;
+        return parsed;
+    }
+    if (category?.source.roles?.category && (categorical?.categories?.length ?? 0) > 1) {
+        // A hierarchy in the Category well arrives as one column per level: show a message rather than guess (SPEC §8).
+        parsed.bucketRole = "category";
+        parsed.warnings.categoryHierarchy = true;
         return parsed;
     }
     const bucketRole: BucketRole | null = category?.source.roles?.categoryDate ? "categoryDate" : category ? "category" : null;

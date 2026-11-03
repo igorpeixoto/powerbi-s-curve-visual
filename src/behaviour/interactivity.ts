@@ -48,6 +48,10 @@ function numberAttr(element: Element, name: string): number | null {
     return value === null || value === "" ? null : Number(value);
 }
 
+function identityKey(id: SelectionId): string {
+    return typeof id.getKey === "function" ? id.getKey() : JSON.stringify(id.getSelector());
+}
+
 function readMark(element: Element): Mark | null {
     const role = element.getAttribute("data-role");
     const bucket = numberAttr(element, "data-bucket");
@@ -82,6 +86,7 @@ function readMark(element: Element): Mark | null {
 export class Interactivity {
     private scene: Scene | null = null;
     private identities: Identities<SelectionId> | null = null;
+    private restoreLookup: Map<string, Selector[]> | null = null;
     private selected: Selector[] = [];
     private focus: Focus | null = null;
     private focusRows: FocusRow[] = [];
@@ -113,6 +118,7 @@ export class Interactivity {
     /** Called after every render; scene is null while an empty state or message is shown. */
     update(scene: Scene | null, dataView: powerbi.DataView | undefined): void {
         this.scene = scene;
+        this.restoreLookup = null;
         this.hideTooltip();
         if (!scene) {
             this.identities = null;
@@ -236,34 +242,47 @@ export class Interactivity {
     }
 
     private restore(ids: SelectionId[]): void {
-        const scene = this.scene;
-        const identities = this.identities;
-        if (!scene || !identities) return;
-        const key = (id: SelectionId) => (typeof id.getKey === "function" ? id.getKey() : JSON.stringify(id.getSelector()));
-        const wanted = new Set(ids.map(key));
+        if (!this.scene || !this.identities) return;
+        const index = ids.length ? this.restoreIndex() : new Map<string, Selector[]>();
         const found = new Map<string, Selector>();
-        const offer = (id: SelectionId | undefined, selector: Selector) => {
-            if (id && wanted.has(key(id))) found.set(selectorKey(selector), selector);
-        };
-        const model = scene.model;
-        model.buckets.forEach((bucket, b) => identities.buckets[b].forEach((id) => offer(id, { bucket: bucket.key, series: null, measure: null })));
-        model.series.forEach((series, s) => offer(identities.series[s], { bucket: null, series: series.key, measure: null }));
-        // Every point the visual can send, not only the chart's marks: a table-only row has none, and neither has a
-        // total-row cell when the chart splits that measure by series. A measure bound to both wells is one host
-        // column, so its bar and line point share an identity, and both come back selected.
-        const seriesIndices = [null, ...model.series.map((_, s) => s)];
-        if (wanted.size > 0) {
-            for (const measure of model.measures.filter((m) => m.role !== "tooltips")) {
-                for (const seriesIndex of seriesIndices) {
-                    const series = this.seriesKey(seriesIndex);
-                    model.buckets.forEach((bucket, b) => {
-                        identities.point(measure.key, seriesIndex, b).forEach((id) => offer(id, { bucket: bucket.key, series, measure: measure.key }));
-                    });
-                }
-            }
+        for (const id of ids) {
+            for (const selector of index.get(identityKey(id)) ?? []) found.set(selectorKey(selector), selector);
         }
         this.selected = [...found.values()];
         this.applyEmphasis();
+    }
+
+    /**
+     * Every identity the visual can send, keyed for lookup, built on the first restore after an update. That covers
+     * every point, not only the chart's marks: a table-only row has none, and neither has a total-row cell when the
+     * chart splits that measure by series. A measure bound to both wells is one host column, so its bar and line
+     * point share an identity, and both come back selected.
+     */
+    private restoreIndex(): Map<string, Selector[]> {
+        if (this.restoreLookup) return this.restoreLookup;
+        const index = new Map<string, Selector[]>();
+        const model = (this.scene as Scene).model;
+        const identities = this.identities as Identities<SelectionId>;
+        const offer = (id: SelectionId | undefined, selector: Selector) => {
+            if (!id) return;
+            const key = identityKey(id);
+            const selectors = index.get(key);
+            if (selectors) selectors.push(selector);
+            else index.set(key, [selector]);
+        };
+        model.buckets.forEach((bucket, b) => identities.buckets[b].forEach((id) => offer(id, { bucket: bucket.key, series: null, measure: null })));
+        model.series.forEach((series, s) => offer(identities.series[s], { bucket: null, series: series.key, measure: null }));
+        const seriesIndices = [null, ...model.series.map((_, s) => s)];
+        for (const measure of model.measures.filter((m) => m.role !== "tooltips")) {
+            for (const seriesIndex of seriesIndices) {
+                const series = this.seriesKey(seriesIndex);
+                model.buckets.forEach((bucket, b) => {
+                    identities.point(measure.key, seriesIndex, b).forEach((id) => offer(id, { bucket: bucket.key, series, measure: measure.key }));
+                });
+            }
+        }
+        this.restoreLookup = index;
+        return index;
     }
 
     // ----- emphasis -----
@@ -309,9 +328,13 @@ export class Interactivity {
             else setOpacity(element, state);
             if (scene.highContrast) element.setAttribute("fill", state === "selected" ? scene.theme.selected : scene.theme.text);
         });
+        // One pass over the texts, rather than a query per cell.
+        const cellKey = (element: Element) => `${element.getAttribute("data-bucket")}|${element.getAttribute("data-row")}`;
+        const texts = new Map<string, Element>();
+        this.root.querySelectorAll('[data-role="cell-text"]').forEach((text) => texts.set(cellKey(text), text));
         this.root.querySelectorAll('[data-role="cell"]').forEach((cell) => {
             const state = emphasis(cell);
-            const text = this.root.querySelector(`[data-role="cell-text"][data-bucket="${cell.getAttribute("data-bucket")}"][data-row="${cell.getAttribute("data-row")}"]`);
+            const text = texts.get(cellKey(cell));
             if (text) {
                 setOpacity(text, state);
                 if (scene.highContrast) text.setAttribute("fill", state === "selected" ? scene.theme.selected : scene.theme.text);

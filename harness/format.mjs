@@ -176,6 +176,24 @@ export function runFormatChecks(plugin, check) {
     const panePositions = ["columnRowPosition", "lineRowPosition", "tableRowPosition"].flatMap((p) => paneSlices(rowModel, p).map((s) => s.value));
     check("the Format pane shows each row's effective position", JSON.stringify(panePositions) === JSON.stringify([2, 3, 5, 4, 1]), JSON.stringify(panePositions));
     check("per-row position slices are per-measure", paneSlices(rowModel, "lineRowPosition").every((s) => s.descriptor.selector?.metadata));
+
+    // Metadata columns interleaved by role, with the well order only in rolesIndex: the pane still lists the rows
+    // in the order the matrix draws them.
+    const interleaved = progressDataView({ reportedWeeks: 20, series: false });
+    const [dateColumn, plannedColumn, actualColumn, tableColumn] = interleaved.metadata.columns;
+    interleaved.metadata.columns = [
+        dateColumn,
+        { ...actualColumn, rolesIndex: { columnValues: [1], lineValues: [1] } },
+        tableColumn,
+        { ...plannedColumn, rolesIndex: { columnValues: [0], lineValues: [0] } },
+    ];
+    render(visual, container, interleaved);
+    const interleavedModel = visual.getFormattingModel();
+    const paneRows = ["columnRowPosition", "lineRowPosition"].flatMap((p) => paneSlices(interleavedModel, p).map((s) => `${s.descriptor.selector?.metadata}=${s.value}`));
+    check("the pane lists interleaved measures in the matrix's row order",
+        JSON.stringify(paneRows) === JSON.stringify([`${PLANNED}=1`, `${actualColumn.queryName}=2`, `${PLANNED}=3`, `${actualColumn.queryName}=4`])
+            && headersText()[0].startsWith("Sum of PlannedQty"),
+        `${JSON.stringify(paneRows)} / ${JSON.stringify(headersText())}`);
     const paneLimits = (property) => {
         const slice = paneSlices(rowModel, property)[0];
         return [slice?.options?.minValue?.value, slice?.options?.maxValue?.value, slice?.value];
@@ -368,6 +386,17 @@ export function runFormatChecks(plugin, check) {
     check("the last x-axis label shows in full with no gutter", showsInFull(shownLabels().at(-1)));
     render(visual, container, progressDataView({ reportedWeeks: 20, objects: { dataLabels: { columnLabelsShow: true } } }));
     check("the first column label shows in full", showsInFull(q('[data-role="column-label"]')));
+
+    // A side legend gets a share of a narrow visual's width: every entry and the title are cut to fit inside it.
+    const longNames = ["Civil and structural works, north area", "Electrical and instrumentation, substation"];
+    for (const legendPosition of ["right", "left"]) {
+        render(visual, container, progressDataView({ reportedWeeks: 20, seriesValues: longNames, objects: { legend: { legendPosition, legendShowTitle: true, legendTitleText: "Discipline of the work package" } } }), 400, 500);
+        const legendBox = q(".s-curve__legend").getBoundingClientRect();
+        const texts = qa('.s-curve__legend text');
+        const overflow = texts.filter((t) => { const r = t.getBoundingClientRect(); return r.left < legendBox.left - 0.5 || r.right > legendBox.right + 0.5; });
+        check(`a ${legendPosition} legend in a narrow visual keeps its text inside`, texts.length > 0 && overflow.length === 0 && texts.some((t) => t.textContent.endsWith("…")),
+            `legend ${legendBox.left}-${legendBox.right}: ${overflow.map((t) => `${t.textContent} ${t.getBoundingClientRect().right}`).join("; ")}`);
+    }
 
     container.remove();
     return [calls];
