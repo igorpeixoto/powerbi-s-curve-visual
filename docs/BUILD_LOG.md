@@ -171,3 +171,9 @@ How this visual was built, session by session: what the AI (Claude Code) did and
 - Mutation check: with the old `src/` and the new harness, the 8 new checks that compare old and new behaviour failed, then passed again after restoring.
 - Not checked in Desktop: all of the above. The Category hierarchy message and the narrow side legend are on the manual list in `TESTING.md`; the new Portuguese strings need the maintainer's review.
 - Tests: 206 unit, 225 harness, all green.
+
+## 2026-11-03: Phase 9 (second review committed, README GIF)
+- Time: TODO(igor) h
+- I did: ran `/code-review medium src/` a second time, in its own session, and asked for all its findings to be fixed. Asked for the README GIF to be recorded here rather than in Desktop. TODO(igor): anything else.
+- AI did: checked the second review's uncommitted fixes before committing them (`npm test` green on a fresh package; earlier fixes and the text options intact; no local paths), and committed them. Noted in `CLAUDE.md` that the auto-unit rounding copies the pinned formatter's behaviour. Synced the sample report after checking that Desktop had a different report open.
+- AI did, GIF: recorded `docs/demo.gif` in headless Chrome from the packaged visual, the harness's mock host and `samples/data/epc_progress.csv` shaped like the sample report's model. It shows selection from the legend, a week and a matrix cell, two presets and horizontal scrolling. Checked frame by frame that each click selected what it says. Power BI's tooltips and Format pane can't appear in it, and the README says so. The recording script isn't in the repo. Added `*.gif binary` to `.gitattributes`.
