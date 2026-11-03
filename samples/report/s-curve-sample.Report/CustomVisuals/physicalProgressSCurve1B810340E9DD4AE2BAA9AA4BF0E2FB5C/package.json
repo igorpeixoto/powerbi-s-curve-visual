@@ -1,5 +1,5 @@
 {
-  "version": "0.1.0.0",
+  "version": "1.0.0.0",
   "author": {
     "name": "Igor Peixoto",
     "email": "visuals@igorpp.dev"
@@ -15,7 +15,7 @@
     "guid": "physicalProgressSCurve1B810340E9DD4AE2BAA9AA4BF0E2FB5C",
     "name": "physicalProgressSCurve",
     "displayName": "Physical Progress S-Curve",
-    "version": "0.1.0.0",
+    "version": "1.0.0.0",
     "description": "Planned vs. actual physical progress S-curve for project controls: weekly bars, cumulative lines and a summary matrix, all aligned on one time axis.",
     "supportUrl": "https://github.com/igorpeixoto/powerbi-s-curve-visual/issues",
     "gitHubUrl": "https://github.com/igorpeixoto/powerbi-s-curve-visual",

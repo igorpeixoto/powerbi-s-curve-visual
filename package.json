@@ -1,7 +1,7 @@
 {
   "name": "powerbi-s-curve-visual",
   "description": "Planned vs. actual physical progress S-curve for project controls: weekly bars, cumulative lines and a summary matrix, all aligned on one time axis.",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "author": "Igor Peixoto <visuals@igorpp.dev>",
   "license": "MIT",
