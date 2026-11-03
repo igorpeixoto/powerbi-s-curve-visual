@@ -77,8 +77,6 @@ This visual is also an experiment: how much of a real, tested Power BI visual ca
 - **How it worked:** spec first, then pure logic with tests, then rendering, interaction and the Format pane. The test suite runs the packaged visual in headless Chrome against a mock host. New tests were checked by breaking the code on purpose and confirming that they failed.
 - **What only the real Power BI could show:** a measure in two wells arrives as one column with its well order lost; the Date well can send a date hierarchy instead of dates; group names that are unique per card still collided in the Format pane; a default line width of 0.5 couldn't be reached with the pane's arrows. Each one came from a Desktop session, not from a passing test.
 
-Time spent: `TODO(igor): total hours`.
-
 ## Architecture
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for how a field well becomes a pixel, where the shared geometry lives and how selections flow. [TESTING.md](TESTING.md) lists what's automated and what's still a manual check.
