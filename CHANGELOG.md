@@ -9,7 +9,7 @@ Every version heading must match `pbiviz.json`'s `visual.version` and a `vX.Y.Z`
 
 ## [Unreleased]
 
-## [1.0.0] - 2026-11-02
+## [1.0.0] - 2026-11-04
 
 First release. Everything below is new.
 

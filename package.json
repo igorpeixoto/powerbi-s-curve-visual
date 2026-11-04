@@ -13,7 +13,7 @@
     "url": "https://github.com/igorpeixoto/powerbi-s-curve-visual/issues"
   },
   "engines": {
-    "node": ">=22.12.0"
+    "node": ">=24"
   },
   "scripts": {
     "pbiviz": "pbiviz",
