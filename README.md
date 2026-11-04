@@ -4,9 +4,9 @@
 
 Planned vs. actual physical progress S-curve for project controls: weekly bars, cumulative lines and a summary matrix, all aligned on one time axis.
 
-![The visual with the sample data: selecting a discipline from the legend, a week and a matrix cell, the Weekly progress and Minimal presets, and scrolling with the matrix aligned](docs/demo.gif)
+![The visual with the sample data: selecting a series from the legend, a week and a matrix cell, the Weekly progress and Minimal presets, and scrolling with the matrix aligned](docs/demo.gif)
 
-*Recorded in headless Chrome with the sample data and the test harness's mock host, so Power BI's own tooltips and Format pane aren't shown.*
+*Recorded in headless Chrome with the sample report's data and formatting and the test harness's mock host, so Power BI's own tooltips and Format pane aren't shown.*
 
 ## Why
 

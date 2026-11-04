@@ -54,16 +54,16 @@ The **Status** column records what has actually been seen in Power BI Desktop, i
 |---|---|
 | Renders with real data bound | Observed |
 | Zero rows shows the message, not an empty rectangle | Observed (sample report before its first refresh) |
-| A measure with no values leaves its marks empty | Not yet |
-| Date hierarchy in the Date well shows the specific message | Not yet |
-| A hierarchy in the Category well, or a date with its Date Hierarchy there, shows the specific message | Not yet |
-| A left or right legend in a narrow visual cuts long entries with an ellipsis | Not yet |
-| Resizing in both directions keeps everything aligned | Not yet |
+| A measure with no values leaves its marks empty | Observed |
+| Date hierarchy in the Date well shows the specific message | Observed |
+| A hierarchy in the Category well, or a date with its Date Hierarchy there, shows the specific message | Observed |
+| A left or right legend in a narrow visual cuts long entries with an ellipsis | Observed |
+| Resizing in both directions keeps everything aligned | Observed |
 | Second x-axis label line | Observed |
-| Daily dates sorted descending or by a measure: an as-provided line takes the week's last day, and Tooltips fields cover the whole week | Not yet |
-| A fixed axis minimum or maximum cuts bars and lines at the plot's edge | Not yet |
-| A date or number in the Category or Series well shows in its column's format on the axis, legend, matrix, tooltip and Format pane | Not yet |
-| The first and last x-axis labels show in full, and look right against the axis labels above them and while scrolled | Not yet |
+| Daily dates sorted descending or by a measure: an as-provided line takes the week's last day, and Tooltips fields cover the whole week | Observed |
+| A fixed axis minimum or maximum cuts bars and lines at the plot's edge | Observed |
+| A date or number in the Category or Series well shows in its column's format on the axis, legend, matrix, tooltip and Format pane | Observed |
+| The first and last x-axis labels show in full, and look right against the axis labels above them and while scrolled | Observed |
 
 ### Cross-filtering in a report
 
@@ -71,19 +71,19 @@ The **Status** column records what has actually been seen in Power BI Desktop, i
 |---|---|
 | Selecting a mark filters another visual on the page | Observed |
 | Selecting in another visual highlights this one | Observed, before the stacked highlight fix |
-| A highlight in a stacked chart sits inside its own series | Not yet |
+| A highlight in a stacked chart sits inside its own series | Observed |
 | Tooltips appear at the cursor with the right content | Observed |
-| A report-page tooltip works | Not yet |
-| The context menu opens on a mark | Not yet |
-| A bookmark restores a selection, including one made on a table-only cell or a total-row cell | Not yet |
-| Keyboard: Enter from the visual container, then arrows, then Esc | Not yet |
+| A report-page tooltip works | Observed |
+| The context menu opens on a mark | Observed |
+| A bookmark restores a selection, including one made on a table-only cell or a total-row cell | Observed |
+| Keyboard: Enter from the visual container, then arrows, then Esc | Observed |
 
 ### Themes and accessibility
 
 | Check | Status |
 |---|---|
-| Switching the report theme recolours everything not set by hand, including data label backgrounds | Not yet |
-| A Windows high-contrast theme uses only foreground, background and selected colours, including data label backgrounds | Not yet |
+| Switching the report theme recolours everything not set by hand, including data label backgrounds | Observed |
+| A Windows high-contrast theme uses only foreground, background and selected colours, including data label backgrounds | Observed |
 
 ### The Format pane as an author sees it
 
@@ -93,8 +93,8 @@ The **Status** column records what has actually been seen in Power BI Desktop, i
 | Per-series colours and per-measure line styles apply and save | Observed |
 | Presets change the look, and a value set by hand beats them | Observed |
 | Reset to default falls back to the preset | Observed |
-| The font control and the data label background appear in each card, apply, save, and reset to default | Not yet |
-| A section with no font of its own follows the General card's font | Not yet |
+| The font control and the data label background appear in each card, apply, save, and reset to default | Observed |
+| A section with no font of its own follows the General card's font | Observed |
 | Matrix row positions per row kind survive a save and reopen | Observed |
 | Line widths, including 0 and with Borders off | Reported |
 | Out-of-range numbers are refused by the pane's limits | Reported |
@@ -103,10 +103,10 @@ The **Status** column records what has actually been seen in Power BI Desktop, i
 
 | Check | Status |
 |---|---|
-| Portuguese in the pane, wells and visual, with Desktop's language set to Português (Brasil) | Not yet |
+| Portuguese in the pane, wells and visual, with Desktop's language set to Português (Brasil) | Observed |
 | A package with the empty locale files loads | Observed |
-| Another locale's formats, such as en-GB, in Desktop | Not yet |
-| The visual in the Power BI Service | Not yet |
+| Another locale's formats, such as en-GB, in Desktop | Observed |
+| The visual in the Power BI Service | Observed |
 
 ### The sample report
 
